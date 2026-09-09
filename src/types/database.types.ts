@@ -6,7 +6,7 @@
  * 
  *   npx supabase gen types typescript --project-id <your-project-id> > src/types/database.types.ts
  * 
- * The initial architecture is prepared below.
+ * The architecture is prepared below.
  */
 
 export type Json =
@@ -64,6 +64,68 @@ export interface Database {
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;
       };
+      brand_profiles: {
+        Row: {
+          id: string;
+          business_id: string;
+          positioning: string | null;
+          promise: string | null;
+          story: string | null;
+          personality: Json;
+          values: Json;
+          tone: Json;
+          humor_level: number | null;
+          commercial_intensity: number | null;
+          formality_level: number | null;
+          preferred_vocabulary: Json;
+          avoided_vocabulary: Json;
+          signature_phrases: Json;
+          communication_do: Json;
+          communication_dont: Json;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          positioning?: string | null;
+          promise?: string | null;
+          story?: string | null;
+          personality?: Json;
+          values?: Json;
+          tone?: Json;
+          humor_level?: number | null;
+          commercial_intensity?: number | null;
+          formality_level?: number | null;
+          preferred_vocabulary?: Json;
+          avoided_vocabulary?: Json;
+          signature_phrases?: Json;
+          communication_do?: Json;
+          communication_dont?: Json;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          positioning?: string | null;
+          promise?: string | null;
+          story?: string | null;
+          personality?: Json;
+          values?: Json;
+          tone?: Json;
+          humor_level?: number | null;
+          commercial_intensity?: number | null;
+          formality_level?: number | null;
+          preferred_vocabulary?: Json;
+          avoided_vocabulary?: Json;
+          signature_phrases?: Json;
+          communication_do?: Json;
+          communication_dont?: Json;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
       subscriptions: {
         Row: Record<string, unknown>;
         Insert: Record<string, unknown>;
@@ -86,6 +148,22 @@ export interface Database {
           p_country_code?: string | null;
           p_region?: string | null;
           p_city?: string | null;
+        };
+        Returns: Json;
+      };
+      save_brand_profile: {
+        Args: {
+          p_positioning?: string | null;
+          p_promise?: string | null;
+          p_story?: string | null;
+          p_personality?: Json;
+          p_values?: Json;
+          p_tone?: Json;
+          p_preferred_vocabulary?: Json;
+          p_avoided_vocabulary?: Json;
+          p_signature_phrases?: Json;
+          p_communication_do?: Json;
+          p_communication_dont?: Json;
         };
         Returns: Json;
       };

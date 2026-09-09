@@ -38,5 +38,5 @@ export async function submitBusinessAction(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/app')
+  redirect('/onboarding/brand')
 }

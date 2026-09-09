@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ensureInitialWorkspace } from '@/services/workspace'
 import { getActiveWorkspaceBusiness } from '@/services/business'
+import { getBrandProfile } from '@/services/brand'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -33,12 +34,20 @@ export default async function DashboardPage() {
   // 2. Check if active workspace contains at least one Business
   const { business } = await getActiveWorkspaceBusiness(workspace.workspace_id)
 
-  // 3. If no business exists yet, redirect user to initial onboarding form
+  // 3. If no business exists yet, redirect user to initial business onboarding form
   if (!business) {
     redirect('/onboarding/business')
   }
 
-  // 4. Retrieve user first_name for greeting
+  // 4. Check if active business contains a BrandProfile
+  const { brandProfile } = await getBrandProfile(business.id)
+
+  // 5. If no brand profile exists yet, redirect user to brand onboarding form
+  if (!brandProfile) {
+    redirect('/onboarding/brand')
+  }
+
+  // 6. Retrieve user first_name for greeting
   let firstName = ''
   const { data: profile } = await supabase
     .from('profiles')
@@ -77,16 +86,23 @@ export default async function DashboardPage() {
             {greeting}
           </h2>
           <p className="text-base font-medium text-ink">
-            Votre espace Mūza est prêt.
+            Votre espace Mūza et le profil de marque de <span className="font-semibold text-terracotta">{business.name}</span> sont prêts.
           </p>
         </div>
+
+        {brandProfile.promise && (
+          <div className="bg-ivory/60 p-3 rounded-xl border border-terracotta-border/30">
+            <p className="text-xs font-semibold text-terracotta uppercase tracking-wider mb-0.5">Promesse</p>
+            <p className="text-sm font-medium text-ink">« {brandProfile.promise} »</p>
+          </div>
+        )}
 
         <p className="text-xs text-ink-muted italic border-t border-terracotta-border/40 pt-3">
           « Mūza propose. Vous choisissez. Mūza s&apos;occupe du reste. »
         </p>
       </Card>
 
-      {/* Active Business & Workspace Context */}
+      {/* Active Business & Brand Profile Context */}
       <Card variant="default" className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-ink flex items-center gap-1.5">
@@ -95,13 +111,45 @@ export default async function DashboardPage() {
           </h3>
           <Badge variant="ivory">{business.industry}</Badge>
         </div>
-        <div className="text-xs text-ink-muted flex flex-col gap-1 pt-1 border-t border-ivory-border/60">
-          <p>
-            Workspace : <span className="font-medium text-ink">{workspace.name}</span> ({workspace.slug})
-          </p>
-          <p>
-            Business ID : <code className="text-ink font-mono bg-ivory-subtle px-1.5 py-0.5 rounded">{business.slug}</code>
-          </p>
+
+        {/* Brand Details Summary */}
+        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
+          {brandProfile.tone?.description && (
+            <p>
+              <strong className="text-ink">Ton de marque :</strong> {String(brandProfile.tone.description)}
+            </p>
+          )}
+
+          {brandProfile.personality.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <strong className="text-ink">Personnalité :</strong>
+              {brandProfile.personality.map((p, idx) => (
+                <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
+                  {p}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {brandProfile.values.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <strong className="text-ink">Valeurs :</strong>
+              {brandProfile.values.map((v, idx) => (
+                <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
+                  {v}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-ivory-border/40 flex flex-col gap-1 text-[11px]">
+            <p>
+              Workspace : <span className="font-medium text-ink">{workspace.name}</span> ({workspace.slug})
+            </p>
+            <p>
+              Business Slug : <code className="text-ink font-mono bg-ivory-subtle px-1.5 py-0.5 rounded">{business.slug}</code>
+            </p>
+          </div>
         </div>
       </Card>
     </div>
