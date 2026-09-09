@@ -241,6 +241,56 @@ export interface Database {
           updated_at?: string | null;
         };
       };
+      goals: {
+        Row: {
+          id: string;
+          business_id: string;
+          offer_id: string | null;
+          type: string;
+          title: string;
+          description: string | null;
+          metric: string | null;
+          target_value: number | null;
+          priority: number;
+          starts_at: string | null;
+          ends_at: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          offer_id?: string | null;
+          type: string;
+          title: string;
+          description?: string | null;
+          metric?: string | null;
+          target_value?: number | null;
+          priority?: number;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          offer_id?: string | null;
+          type?: string;
+          title?: string;
+          description?: string | null;
+          metric?: string | null;
+          target_value?: number | null;
+          priority?: number;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       subscriptions: {
         Row: Record<string, unknown>;
         Insert: Record<string, unknown>;
@@ -311,6 +361,19 @@ export interface Database {
           p_questions?: Json;
           p_buying_triggers?: Json;
           p_language_patterns?: Json;
+        };
+        Returns: Json;
+      };
+      save_primary_goal: {
+        Args: {
+          p_type: string;
+          p_title: string;
+          p_description?: string | null;
+          p_metric?: string | null;
+          p_target_value?: number | null;
+          p_priority?: number | null;
+          p_starts_at?: string | null;
+          p_ends_at?: string | null;
         };
         Returns: Json;
       };

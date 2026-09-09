@@ -5,6 +5,7 @@ import { getActiveWorkspaceBusiness } from '@/services/business'
 import { getBrandProfile } from '@/services/brand'
 import { getCreatorProfile } from '@/services/creator'
 import { getPrimaryAudience } from '@/services/audience'
+import { getPrimaryGoal } from '@/services/goal'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -65,7 +66,15 @@ export default async function DashboardPage() {
     redirect('/onboarding/audience')
   }
 
-  // 10. Retrieve user first_name for greeting
+  // 10. Check if active business contains a primary active Goal
+  const { goal } = await getPrimaryGoal(business.id)
+
+  // 11. If no primary goal exists yet, redirect user to goals onboarding form
+  if (!goal) {
+    redirect('/onboarding/goals')
+  }
+
+  // 12. Retrieve user first_name for greeting
   let firstName = ''
   const { data: profile } = await supabase
     .from('profiles')
@@ -104,7 +113,7 @@ export default async function DashboardPage() {
             {greeting}
           </h2>
           <p className="text-base font-medium text-ink">
-            L&apos;onboarding de <span className="font-semibold text-terracotta">{business.name}</span> est complet (Business, Marque, Créateur, Audience).
+            L&apos;onboarding de <span className="font-semibold text-terracotta">{business.name}</span> est complet (Business, Marque, Créateur, Audience, Objectif).
           </p>
         </div>
 
@@ -120,7 +129,7 @@ export default async function DashboardPage() {
         </p>
       </Card>
 
-      {/* Active Business, Brand, Creator & Audience Context */}
+      {/* Active Business, Brand, Creator, Audience & Goal Context */}
       <Card variant="default" className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-ink flex items-center gap-1.5">
@@ -194,6 +203,23 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Goal Details Summary */}
+        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
+          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Objectif principal actif</p>
+          <p>
+            <strong className="text-ink">Titre :</strong> {goal.title} ({goal.type})
+          </p>
+          {goal.description && (
+            <p>
+              <strong className="text-ink">Résultat recherché :</strong> {goal.description}
+            </p>
+          )}
+          <p>
+            <strong className="text-ink">Priorité :</strong> {goal.priority} / 10
+            {goal.starts_at && goal.ends_at && ` (Du ${goal.starts_at} au ${goal.ends_at})`}
+          </p>
 
           <div className="pt-2 border-t border-ivory-border/40 flex flex-col gap-1 text-[11px]">
             <p>
@@ -208,3 +234,4 @@ export default async function DashboardPage() {
     </div>
   )
 }
+
