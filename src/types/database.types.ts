@@ -126,6 +126,65 @@ export interface Database {
           updated_at?: string | null;
         };
       };
+      creator_profiles: {
+        Row: {
+          id: string;
+          business_id: string;
+          user_id: string;
+          weekly_minutes: number | null;
+          camera_comfort: number | null;
+          voiceover_comfort: number | null;
+          writing_comfort: number | null;
+          photo_comfort: number | null;
+          video_comfort: number | null;
+          social_skill_level: string | null;
+          preferred_formats: Json;
+          avoided_formats: Json;
+          barriers: Json;
+          strengths: Json;
+          max_effort_level: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          user_id: string;
+          weekly_minutes?: number | null;
+          camera_comfort?: number | null;
+          voiceover_comfort?: number | null;
+          writing_comfort?: number | null;
+          photo_comfort?: number | null;
+          video_comfort?: number | null;
+          social_skill_level?: string | null;
+          preferred_formats?: Json;
+          avoided_formats?: Json;
+          barriers?: Json;
+          strengths?: Json;
+          max_effort_level?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          user_id?: string;
+          weekly_minutes?: number | null;
+          camera_comfort?: number | null;
+          voiceover_comfort?: number | null;
+          writing_comfort?: number | null;
+          photo_comfort?: number | null;
+          video_comfort?: number | null;
+          social_skill_level?: string | null;
+          preferred_formats?: Json;
+          avoided_formats?: Json;
+          barriers?: Json;
+          strengths?: Json;
+          max_effort_level?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
       subscriptions: {
         Row: Record<string, unknown>;
         Insert: Record<string, unknown>;
@@ -164,6 +223,23 @@ export interface Database {
           p_signature_phrases?: Json;
           p_communication_do?: Json;
           p_communication_dont?: Json;
+        };
+        Returns: Json;
+      };
+      save_creator_profile: {
+        Args: {
+          p_weekly_minutes?: number | null;
+          p_camera_comfort?: number | null;
+          p_voiceover_comfort?: number | null;
+          p_writing_comfort?: number | null;
+          p_photo_comfort?: number | null;
+          p_video_comfort?: number | null;
+          p_social_skill_level?: string | null;
+          p_preferred_formats?: Json;
+          p_avoided_formats?: Json;
+          p_barriers?: Json;
+          p_strengths?: Json;
+          p_max_effort_level?: number | null;
         };
         Returns: Json;
       };

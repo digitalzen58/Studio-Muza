@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ensureInitialWorkspace } from '@/services/workspace'
 import { getActiveWorkspaceBusiness } from '@/services/business'
 import { getBrandProfile } from '@/services/brand'
+import { getCreatorProfile } from '@/services/creator'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -47,7 +48,15 @@ export default async function DashboardPage() {
     redirect('/onboarding/brand')
   }
 
-  // 6. Retrieve user first_name for greeting
+  // 6. Check if active business contains a CreatorProfile
+  const { creatorProfile } = await getCreatorProfile(business.id)
+
+  // 7. If no creator profile exists yet, redirect user to creator onboarding form
+  if (!creatorProfile) {
+    redirect('/onboarding/creator')
+  }
+
+  // 8. Retrieve user first_name for greeting
   let firstName = ''
   const { data: profile } = await supabase
     .from('profiles')
@@ -86,13 +95,13 @@ export default async function DashboardPage() {
             {greeting}
           </h2>
           <p className="text-base font-medium text-ink">
-            Votre espace Mūza et le profil de marque de <span className="font-semibold text-terracotta">{business.name}</span> sont prêts.
+            Votre profil créateur Mūza pour <span className="font-semibold text-terracotta">{business.name}</span> est configuré.
           </p>
         </div>
 
         {brandProfile.promise && (
           <div className="bg-ivory/60 p-3 rounded-xl border border-terracotta-border/30">
-            <p className="text-xs font-semibold text-terracotta uppercase tracking-wider mb-0.5">Promesse</p>
+            <p className="text-xs font-semibold text-terracotta uppercase tracking-wider mb-0.5">Promesse de marque</p>
             <p className="text-sm font-medium text-ink">« {brandProfile.promise} »</p>
           </div>
         )}
@@ -102,8 +111,8 @@ export default async function DashboardPage() {
         </p>
       </Card>
 
-      {/* Active Business & Brand Profile Context */}
-      <Card variant="default" className="flex flex-col gap-3">
+      {/* Active Business, Brand & Creator Context */}
+      <Card variant="default" className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-ink flex items-center gap-1.5">
             <MuzaSymbol size="sm" />
@@ -114,6 +123,7 @@ export default async function DashboardPage() {
 
         {/* Brand Details Summary */}
         <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
+          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Profil de marque</p>
           {brandProfile.tone?.description && (
             <p>
               <strong className="text-ink">Ton de marque :</strong> {String(brandProfile.tone.description)}
@@ -130,13 +140,34 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
+        </div>
 
-          {brandProfile.values.length > 0 && (
+        {/* Creator Details Summary */}
+        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
+          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Profil créateur</p>
+          {creatorProfile.weekly_minutes !== null && (
+            <p>
+              <strong className="text-ink">Temps hebdo :</strong> ~{creatorProfile.weekly_minutes} min/semaine
+            </p>
+          )}
+
+          {creatorProfile.preferred_formats.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <strong className="text-ink">Valeurs :</strong>
-              {brandProfile.values.map((v, idx) => (
+              <strong className="text-ink">Formats préférés :</strong>
+              {creatorProfile.preferred_formats.map((fmt, idx) => (
                 <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
-                  {v}
+                  {fmt}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {creatorProfile.avoided_formats.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <strong className="text-ink">Formats évités :</strong>
+              {creatorProfile.avoided_formats.map((fmt, idx) => (
+                <span key={idx} className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded-full text-[11px]">
+                  {fmt}
                 </span>
               ))}
             </div>
