@@ -48,5 +48,5 @@ export async function submitGoalAction(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/app')
+  redirect('/onboarding/offers')
 }

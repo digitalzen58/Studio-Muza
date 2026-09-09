@@ -291,6 +291,68 @@ export interface Database {
           updated_at?: string;
         };
       };
+      offers: {
+        Row: {
+          id: string;
+          business_id: string;
+          name: string;
+          description: string | null;
+          price_from: number | null;
+          price_to: number | null;
+          currency: string | null;
+          url: string | null;
+          cta: string | null;
+          benefits: Json;
+          objections: Json;
+          seasonality: Json;
+          available_from: string | null;
+          available_until: string | null;
+          priority: number;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          name: string;
+          description?: string | null;
+          price_from?: number | null;
+          price_to?: number | null;
+          currency?: string | null;
+          url?: string | null;
+          cta?: string | null;
+          benefits?: Json;
+          objections?: Json;
+          seasonality?: Json;
+          available_from?: string | null;
+          available_until?: string | null;
+          priority?: number;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          name?: string;
+          description?: string | null;
+          price_from?: number | null;
+          price_to?: number | null;
+          currency?: string | null;
+          url?: string | null;
+          cta?: string | null;
+          benefits?: Json;
+          objections?: Json;
+          seasonality?: Json;
+          available_from?: string | null;
+          available_until?: string | null;
+          priority?: number;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       subscriptions: {
         Row: Record<string, unknown>;
         Insert: Record<string, unknown>;
@@ -374,6 +436,24 @@ export interface Database {
           p_priority?: number | null;
           p_starts_at?: string | null;
           p_ends_at?: string | null;
+        };
+        Returns: Json;
+      };
+      save_primary_offer: {
+        Args: {
+          p_name: string;
+          p_description?: string | null;
+          p_price_from?: number | null;
+          p_price_to?: number | null;
+          p_currency?: string | null;
+          p_url?: string | null;
+          p_cta?: string | null;
+          p_benefits?: Json;
+          p_objections?: Json;
+          p_seasonality?: Json;
+          p_available_from?: string | null;
+          p_available_until?: string | null;
+          p_priority?: number | null;
         };
         Returns: Json;
       };

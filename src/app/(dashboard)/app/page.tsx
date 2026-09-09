@@ -6,6 +6,7 @@ import { getBrandProfile } from '@/services/brand'
 import { getCreatorProfile } from '@/services/creator'
 import { getPrimaryAudience } from '@/services/audience'
 import { getPrimaryGoal } from '@/services/goal'
+import { getPrimaryOffer } from '@/services/offer'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -74,7 +75,15 @@ export default async function DashboardPage() {
     redirect('/onboarding/goals')
   }
 
-  // 12. Retrieve user first_name for greeting
+  // 12. Check if active business contains a primary active Offer
+  const { offer } = await getPrimaryOffer(business.id)
+
+  // 13. If no primary offer exists yet, redirect user to offers onboarding form
+  if (!offer) {
+    redirect('/onboarding/offers')
+  }
+
+  // 14. Retrieve user first_name for greeting
   let firstName = ''
   const { data: profile } = await supabase
     .from('profiles')
@@ -113,7 +122,7 @@ export default async function DashboardPage() {
             {greeting}
           </h2>
           <p className="text-base font-medium text-ink">
-            L&apos;onboarding de <span className="font-semibold text-terracotta">{business.name}</span> est complet (Business, Marque, Créateur, Audience, Objectif).
+            L&apos;onboarding de <span className="font-semibold text-terracotta">{business.name}</span> est complet (Business, Marque, Créateur, Audience, Objectif, Offre).
           </p>
         </div>
 
@@ -129,7 +138,7 @@ export default async function DashboardPage() {
         </p>
       </Card>
 
-      {/* Active Business, Brand, Creator, Audience & Goal Context */}
+      {/* Active Business, Brand, Creator, Audience, Goal & Offer Context */}
       <Card variant="default" className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-ink flex items-center gap-1.5">
@@ -220,6 +229,40 @@ export default async function DashboardPage() {
             <strong className="text-ink">Priorité :</strong> {goal.priority} / 10
             {goal.starts_at && goal.ends_at && ` (Du ${goal.starts_at} au ${goal.ends_at})`}
           </p>
+        </div>
+
+        {/* Offer Details Summary */}
+        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
+          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Offre principale active</p>
+          <p>
+            <strong className="text-ink">Nom :</strong> {offer.name}
+          </p>
+          {offer.description && (
+            <p>
+              <strong className="text-ink">Description :</strong> {offer.description}
+            </p>
+          )}
+          {(offer.price_from !== null || offer.price_to !== null) && (
+            <p>
+              <strong className="text-ink">Tarif :</strong>{' '}
+              {offer.price_from !== null && offer.price_to !== null
+                ? `De ${offer.price_from} € à ${offer.price_to} €`
+                : offer.price_from !== null
+                ? `À partir de ${offer.price_from} €`
+                : `Jusqu'à ${offer.price_to} €`}
+            </p>
+          )}
+
+          {offer.benefits.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <strong className="text-ink">Bénéfices :</strong>
+              {offer.benefits.map((b, idx) => (
+                <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
+                  {b}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="pt-2 border-t border-ivory-border/40 flex flex-col gap-1 text-[11px]">
             <p>
