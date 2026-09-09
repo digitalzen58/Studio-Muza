@@ -185,6 +185,62 @@ export interface Database {
           updated_at?: string | null;
         };
       };
+      audiences: {
+        Row: {
+          id: string;
+          business_id: string;
+          name: string;
+          description: string | null;
+          needs: Json;
+          desires: Json;
+          problems: Json;
+          objections: Json;
+          motivations: Json;
+          questions: Json;
+          buying_triggers: Json;
+          language_patterns: Json;
+          priority: number;
+          active: boolean;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          name: string;
+          description?: string | null;
+          needs?: Json;
+          desires?: Json;
+          problems?: Json;
+          objections?: Json;
+          motivations?: Json;
+          questions?: Json;
+          buying_triggers?: Json;
+          language_patterns?: Json;
+          priority?: number;
+          active?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          name?: string;
+          description?: string | null;
+          needs?: Json;
+          desires?: Json;
+          problems?: Json;
+          objections?: Json;
+          motivations?: Json;
+          questions?: Json;
+          buying_triggers?: Json;
+          language_patterns?: Json;
+          priority?: number;
+          active?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
       subscriptions: {
         Row: Record<string, unknown>;
         Insert: Record<string, unknown>;
@@ -240,6 +296,21 @@ export interface Database {
           p_barriers?: Json;
           p_strengths?: Json;
           p_max_effort_level?: number | null;
+        };
+        Returns: Json;
+      };
+      save_primary_audience: {
+        Args: {
+          p_name: string;
+          p_description?: string | null;
+          p_needs?: Json;
+          p_desires?: Json;
+          p_problems?: Json;
+          p_objections?: Json;
+          p_motivations?: Json;
+          p_questions?: Json;
+          p_buying_triggers?: Json;
+          p_language_patterns?: Json;
         };
         Returns: Json;
       };

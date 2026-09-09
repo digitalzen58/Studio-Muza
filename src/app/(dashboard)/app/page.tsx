@@ -4,6 +4,7 @@ import { ensureInitialWorkspace } from '@/services/workspace'
 import { getActiveWorkspaceBusiness } from '@/services/business'
 import { getBrandProfile } from '@/services/brand'
 import { getCreatorProfile } from '@/services/creator'
+import { getPrimaryAudience } from '@/services/audience'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -56,7 +57,15 @@ export default async function DashboardPage() {
     redirect('/onboarding/creator')
   }
 
-  // 8. Retrieve user first_name for greeting
+  // 8. Check if active business contains a primary active Audience
+  const { audience } = await getPrimaryAudience(business.id)
+
+  // 9. If no primary audience exists yet, redirect user to audience onboarding form
+  if (!audience) {
+    redirect('/onboarding/audience')
+  }
+
+  // 10. Retrieve user first_name for greeting
   let firstName = ''
   const { data: profile } = await supabase
     .from('profiles')
@@ -95,7 +104,7 @@ export default async function DashboardPage() {
             {greeting}
           </h2>
           <p className="text-base font-medium text-ink">
-            Votre profil créateur Mūza pour <span className="font-semibold text-terracotta">{business.name}</span> est configuré.
+            L&apos;onboarding de <span className="font-semibold text-terracotta">{business.name}</span> est complet (Business, Marque, Créateur, Audience).
           </p>
         </div>
 
@@ -111,7 +120,7 @@ export default async function DashboardPage() {
         </p>
       </Card>
 
-      {/* Active Business, Brand & Creator Context */}
+      {/* Active Business, Brand, Creator & Audience Context */}
       <Card variant="default" className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-ink flex items-center gap-1.5">
@@ -161,13 +170,26 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
+        </div>
 
-          {creatorProfile.avoided_formats.length > 0 && (
+        {/* Audience Details Summary */}
+        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
+          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Audience cible principale</p>
+          <p>
+            <strong className="text-ink">Nom :</strong> {audience.name}
+          </p>
+          {audience.description && (
+            <p>
+              <strong className="text-ink">Cible :</strong> {audience.description}
+            </p>
+          )}
+
+          {audience.needs.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <strong className="text-ink">Formats évités :</strong>
-              {creatorProfile.avoided_formats.map((fmt, idx) => (
-                <span key={idx} className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded-full text-[11px]">
-                  {fmt}
+              <strong className="text-ink">Besoins :</strong>
+              {audience.needs.map((need, idx) => (
+                <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
+                  {need}
                 </span>
               ))}
             </div>

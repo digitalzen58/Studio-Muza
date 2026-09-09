@@ -52,5 +52,5 @@ export async function submitCreatorAction(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/app')
+  redirect('/onboarding/audience')
 }
