@@ -41,3 +41,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Supabase local development
+/supabase/.temp/
+/supabase/.branches/
+
+# Temporary remote schema snapshot
+/supabase/schema_remote_snapshot.sql
