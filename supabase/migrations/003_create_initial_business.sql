@@ -44,17 +44,18 @@ BEGIN
     RAISE EXCEPTION 'Industry is required' USING ERRCODE = '22023';
   END IF;
 
-  -- 3. Retrieve user's active workspace from workspace_members
+  -- 3. Retrieve user's active OWNER workspace from workspace_members
   SELECT wm.workspace_id
   INTO v_workspace_id
   FROM public.workspace_members wm
   WHERE wm.user_id = v_user_id
     AND wm.status = 'ACTIVE'
+    AND wm.role = 'OWNER'
   ORDER BY wm.created_at ASC
   LIMIT 1;
 
   IF v_workspace_id IS NULL THEN
-    RAISE EXCEPTION 'No active workspace found for user' USING ERRCODE = '42000';
+    RAISE EXCEPTION 'No active OWNER workspace found for user' USING ERRCODE = '42000';
   END IF;
 
   -- 4. Concurrency Control: Transaction lock on workspace_id to prevent duplicate business creation
