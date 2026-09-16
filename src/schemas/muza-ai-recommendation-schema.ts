@@ -6,20 +6,20 @@ import {
 } from '@/schemas/muza-recommendation-schema'
 
 /**
- * Reason schema for OpenAI Structured Outputs transport.
+ * Reason schema for AI provider transport.
  * Must remain strictly simple without custom refinements or transforms.
  */
-export const muzaOpenAIReasonSchema = z.object({
+export const muzaAIReasonSchema = z.object({
   label: z.string(),
   explanation: z.string(),
 })
 
 /**
- * Recommendation item schema for OpenAI Structured Outputs transport.
+ * Recommendation item schema for AI provider transport.
  * All fields are required in JSON schema; optional values are explicitly marked as .nullable().
  * No .refine(), .transform(), or custom validators.
  */
-export const muzaOpenAIRecommendationSchema = z.object({
+export const muzaAIRecommendationSchema = z.object({
   type: recommendationTypeSchema,
 
   title: z.string(),
@@ -28,7 +28,7 @@ export const muzaOpenAIRecommendationSchema = z.object({
   priority: recommendationPrioritySchema,
 
   whyNow: z.string(),
-  reasons: z.array(muzaOpenAIReasonSchema),
+  reasons: z.array(muzaAIReasonSchema),
 
   suggestedFormats: z.array(recommendationFormatSchema),
 
@@ -46,19 +46,18 @@ export const muzaOpenAIRecommendationSchema = z.object({
 })
 
 /**
- * Recommendation batch schema for OpenAI Structured Outputs transport.
+ * Recommendation batch schema for AI provider transport.
  * All fields are required in JSON schema. No custom refinements or datetime regexes.
  */
-export const muzaOpenAIRecommendationBatchSchema = z.object({
-  recommendations: z.array(muzaOpenAIRecommendationSchema),
+export const muzaAIRecommendationBatchSchema = z.object({
+  recommendations: z.array(muzaAIRecommendationSchema),
   strategicSummary: z.string(),
-  generatedAt: z.string(),
 })
 
-export type MuzaOpenAIReason = z.infer<typeof muzaOpenAIReasonSchema>
-export type MuzaOpenAIRecommendation = z.infer<
-  typeof muzaOpenAIRecommendationSchema
+export type MuzaAIReason = z.infer<typeof muzaAIReasonSchema>
+export type MuzaAIRecommendation = z.infer<
+  typeof muzaAIRecommendationSchema
 >
-export type MuzaOpenAIRecommendationBatch = z.infer<
-  typeof muzaOpenAIRecommendationBatchSchema
+export type MuzaAIRecommendationBatch = z.infer<
+  typeof muzaAIRecommendationBatchSchema
 >

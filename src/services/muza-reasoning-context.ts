@@ -1,6 +1,7 @@
 import { getMuzaStrategicContext } from '@/services/muza-strategic-context'
 import { resolveMuzaBusinessModel } from '@/services/muza-industry-resolver'
 import { getBaseIndustryPlaybook } from '@/config/muza-industry-playbooks'
+import { buildMuzaGroundingContext } from '@/services/muza-grounding-context'
 import { MUZA_REASONING_PRINCIPLES } from '@/config/muza-recommendation-rules'
 import type { MuzaReasoningContext } from '@/types/muza-reasoning-context'
 import type { MuzaStrategicContext } from '@/types/muza-strategic-context'
@@ -19,6 +20,7 @@ export function buildMuzaReasoningContext(
 
   const resolution = resolveMuzaBusinessModel(industry, subindustry)
   const playbook = getBaseIndustryPlaybook(resolution.businessModel)
+  const grounding = buildMuzaGroundingContext(strategicContext)
 
   return {
     strategicContext,
@@ -26,6 +28,7 @@ export function buildMuzaReasoningContext(
       resolution,
       playbook,
     },
+    grounding,
     reasoningPrinciples: MUZA_REASONING_PRINCIPLES,
   }
 }

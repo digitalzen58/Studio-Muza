@@ -15,6 +15,6 @@ export const MUZA_REASONING_PRINCIPLES = [
   'Prefer actionable recommendations that can realistically be executed.',
   'Use the active offer only when commercially relevant.',
   'Balance visibility, conversion, trust and engagement instead of optimizing a single metric blindly.',
-  'Never invent business facts that are absent from the provided strategic context.',
+  'Never invent business facts, availability, external trends, or metrics absent from context; frame unverified items as conditional recommendations or strategic hypotheses.',
   'Recommendations must remain consistent with the brand positioning, vocabulary and communication constraints.',
 ] as const

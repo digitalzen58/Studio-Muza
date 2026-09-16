@@ -1,13 +1,15 @@
 import 'server-only'
 
-import { zodTextFormat } from 'openai/helpers/zod'
-import { getOpenAIClient } from '@/lib/openai/server'
 import { MUZA_AI_CONFIG } from '@/config/muza-ai'
-import { muzaOpenAIRecommendationBatchSchema } from '@/schemas/muza-openai-recommendation-schema'
 import { getMuzaReasoningContext } from '@/services/muza-reasoning-context'
 import { validateMuzaRecommendationBatch } from '@/services/muza-recommendation-validator'
+import { assertMuzaRecommendationGrounding } from '@/services/muza-grounding-guard'
+import { generateGeminiRecommendationBatch } from '@/services/ai-providers/gemini-recommendation-provider'
+import { generateOpenAIRecommendationBatch } from '@/services/ai-providers/openai-recommendation-provider'
+import type { MuzaAIProvider } from '@/types/muza-ai-provider'
 import type { MuzaReasoningContext } from '@/types/muza-reasoning-context'
 import type { MuzaRecommendationBatch } from '@/types/muza-recommendation-engine'
+import type { MuzaAIRecommendationBatch } from '@/schemas/muza-ai-recommendation-schema'
 
 /**
  * System instructions guiding Mūza's AI recommendation engine.
@@ -30,14 +32,28 @@ STRICT GUIDELINES:
 10. Integrate active offer details only when commercially relevant to the active goal.
 11. Balance visibility, trust, conversion, and engagement metrics across the recommendation batch.
 12. NEVER invent business facts, performance metrics, web search findings, or trend data that are not explicitly provided in the context.
-13. Set "generatedAt" to a valid current ISO 8601 timestamp string (e.g. YYYY-MM-DDTHH:mm:ss.sssZ).`
+
+STRICT GROUNDING & ANTI-FABRICATION RULES:
+- "grounding.knownFacts" are the ONLY business-specific facts you may assert as factual reality.
+- "grounding.unavailableEvidence" categories MUST NOT be presented as known, observed, or verified facts.
+- If a recommendation depends on unavailable evidence, phrase the dependency conditionally (e.g. "si...", "à vérifier...", "si ces données confirment...").
+- Industry playbook knowledge is strategic guidance, NOT proof that a fact or trend is true for this specific business or audience.
+- Treat ONLY information explicitly present in the supplied reasoning context as established facts about the business.
+- NEVER invent or assume business attributes (e.g. amenities, services, pricing, policies, location features, opening hours, availability, remaining booking dates, promotions, reviews, past performance, existing website content, social metrics).
+- NEVER claim current external trends, live search demand, SEO volume, competitor activity, or audience behavior data as observed facts unless explicitly provided in context.
+- Frame general marketing knowledge as strategic reasoning/hypotheses rather than current observed evidence (e.g. "Content around X addresses Y audience motivations" vs "People are actively searching for X right now").
+- Suggestions may propose creating or highlighting features, but MUST NEVER state the business already possesses them unless confirmed in context (e.g. "If amenity X is offered, highlight it" vs "Showcase your X").
+- NEVER claim real scarcity or availability unless availability data is explicitly present in context (e.g. "If slots remain for October, communicate them" vs "Book the last remaining October slots").
+- "whyNow" MUST be grounded strictly in active business goals, declared timeframe/season, offer, audience, or strategy — NEVER manufacture external urgency or fake market data.
+- Frame SEO suggestions as opportunities/hypotheses, not verified keyword volume.
+- Preserve creativity: Propose creative angles, formats, experiments, and strategic ideas freely, but NEVER fabricate unverified FACTS.`
 
 /**
  * Serializes the MuzaReasoningContext into a clean, deterministic input string for the model.
- * Contains only strategic context, industry resolution, playbook, and reasoning principles.
+ * Contains strategic context, industry resolution, playbook, grounding context, and reasoning principles.
  *
  * @param reasoningContext - The reasoning context for the business
- * @returns Formatted JSON string input for OpenAI
+ * @returns Formatted JSON string input for AI provider
  */
 function buildRecommendationInput(
   reasoningContext: MuzaReasoningContext
@@ -47,6 +63,7 @@ function buildRecommendationInput(
       strategicContext: reasoningContext.strategicContext,
       industryResolution: reasoningContext.industry.resolution,
       industryPlaybook: reasoningContext.industry.playbook,
+      grounding: reasoningContext.grounding,
       reasoningPrinciples: reasoningContext.reasoningPrinciples,
     },
     null,
@@ -56,43 +73,49 @@ function buildRecommendationInput(
 
 /**
  * Server-side AI recommendation engine for Mūza.
- * Assembles ReasoningContext, invokes OpenAI Responses API with Structured Outputs,
- * and validates the output against the domain schema.
+ * Assembles ReasoningContext, delegates to configured AI provider,
+ * and validates the transport-level output against the domain business schema.
  *
  * @returns Promise<MuzaRecommendationBatch>
  */
 export async function generateMuzaRecommendations(): Promise<MuzaRecommendationBatch> {
   const reasoningContext = await getMuzaReasoningContext()
-  const client = getOpenAIClient()
-
   const inputPrompt = buildRecommendationInput(reasoningContext)
 
-  const response = await client.responses.parse({
-    model: MUZA_AI_CONFIG.recommendationModel,
-    instructions: MUZA_RECOMMENDATION_INSTRUCTIONS,
-    input: [
-      {
-        role: 'user',
-        content: inputPrompt,
-      },
-    ],
-    text: {
-      format: zodTextFormat(
-        muzaOpenAIRecommendationBatchSchema,
-        'muza_recommendation_batch'
-      ),
-    },
-  })
+  const provider = MUZA_AI_CONFIG.recommendationProvider as MuzaAIProvider
 
-  if (response.status !== 'completed') {
-    throw new Error('Mūza recommendation generation did not complete')
+  let transportBatch: MuzaAIRecommendationBatch
+
+  switch (provider) {
+    case 'gemini':
+      transportBatch = await generateGeminiRecommendationBatch(
+        inputPrompt,
+        MUZA_RECOMMENDATION_INSTRUCTIONS
+      )
+      break
+    case 'openai':
+      transportBatch = await generateOpenAIRecommendationBatch(
+        inputPrompt,
+        MUZA_RECOMMENDATION_INSTRUCTIONS
+      )
+      break
+    default: {
+      const exhaustiveCheck: never = provider
+      throw new Error(
+        `Unsupported AI recommendation provider: ${exhaustiveCheck}`
+      )
+    }
   }
 
-  const parsed = response.output_parsed
+  assertMuzaRecommendationGrounding(
+    transportBatch,
+    reasoningContext.grounding
+  )
 
-  if (!parsed) {
-    throw new Error('Mūza recommendation generation returned no parsed output')
+  const businessBatch = {
+    ...transportBatch,
+    generatedAt: new Date().toISOString(),
   }
 
-  return validateMuzaRecommendationBatch(parsed)
+  return validateMuzaRecommendationBatch(businessBatch)
 }
