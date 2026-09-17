@@ -1,3 +1,5 @@
+import type { MuzaAIProvider } from '@/types/muza-ai-provider'
+
 export type RecommendationType =
   | 'CONTENT'
   | 'SEO'
@@ -62,3 +64,17 @@ export type MuzaRecommendationBatch = {
 
   generatedAt: string
 }
+
+export type MuzaPersistedBatchResult = {
+  batchId: string
+  recommendationIds: string[]
+  recommendationCount: number
+}
+
+export type MuzaPersistedRecommendationBatch = {
+  batch: MuzaRecommendationBatch
+  persistence: MuzaPersistedBatchResult
+  provider: MuzaAIProvider
+  model: string
+}
+
