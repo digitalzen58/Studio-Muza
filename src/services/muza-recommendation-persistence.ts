@@ -1,5 +1,3 @@
-import 'server-only'
-
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import type { MuzaAIProvider } from '@/types/muza-ai-provider'
@@ -63,6 +61,10 @@ export async function persistMuzaRecommendationBatch({
     requiresVoiceover: rec.requiresVoiceover,
     contentAngle: rec.contentAngle,
     callToAction: rec.callToAction,
+    editorialTopic: rec.editorialTopic,
+    editorialAngle: rec.editorialAngle,
+    conceptKey: rec.conceptKey,
+    noveltyReason: rec.noveltyReason,
   }))
 
   const supabase = await createClient()

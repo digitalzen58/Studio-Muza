@@ -1,5 +1,6 @@
 export type MuzaStrategicContext = {
   business: {
+    id: string
     name: string
     industry: string
     subindustry: string | null

@@ -7,9 +7,10 @@ import { getCreatorProfile } from '@/services/creator'
 import { getPrimaryAudience } from '@/services/audience'
 import { getPrimaryGoal } from '@/services/goal'
 import { getPrimaryOffer } from '@/services/offer'
-import { MuzaSymbol } from '@/components/ui/muza-symbol'
+import { getBusinessMediaAssets } from '@/services/media'
+import { getLatestRecommendationBatchForActiveBusiness } from '@/services/muza-recommendation-fetcher'
+import { RecommendationSection } from '@/components/recommendations/recommendation-section'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -83,7 +84,13 @@ export default async function DashboardPage() {
     redirect('/onboarding/offers')
   }
 
-  // 14. Retrieve user first_name for greeting
+  // 14. Fetch latest persisted recommendation batch for this business
+  const initialBatch = await getLatestRecommendationBatchForActiveBusiness()
+
+  // 15. Fetch business media assets for brand visual previews
+  const { mediaAssets } = await getBusinessMediaAssets(business.id)
+
+  // 16. Retrieve user first_name for greeting
   let firstName = ''
   const { data: profile } = await supabase
     .from('profiles')
@@ -96,184 +103,26 @@ export default async function DashboardPage() {
     firstName = rawName.trim().split(' ')[0]
   }
 
-  const greeting = firstName ? `Bonjour ${firstName}` : 'Bonjour'
+  const strategicContext = {
+    businessName: business.name,
+    industry: business.industry,
+    goalTitle: goal.title,
+    audienceName: audience.name,
+    weeklyMinutes: creatorProfile.weekly_minutes ?? 60,
+    offerName: offer.name,
+    firstName: firstName,
+    positioning: brandProfile.positioning,
+    personality: brandProfile.personality,
+    mediaAssets: mediaAssets,
+  }
 
   return (
-    <div className="flex flex-col gap-6 py-4">
-      {/* Brand Title */}
-      <div className="flex items-center gap-2">
-        <h1 className="font-serif text-3xl font-bold text-ink">
-          Studio Mūza
-        </h1>
-        <MuzaSymbol size="lg" />
-      </div>
-
-      {/* Main Status Card */}
-      <Card variant="accent" className="flex flex-col gap-4 py-6">
-        <div className="flex items-center justify-between">
-          <Badge variant="terracotta" showSymbol>
-            {business.name}
-          </Badge>
-          <span className="text-xs text-terracotta-dark/70 font-mono">v0.1</span>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <h2 className="font-serif text-2xl text-terracotta-dark">
-            {greeting}
-          </h2>
-          <p className="text-base font-medium text-ink">
-            L&apos;onboarding de <span className="font-semibold text-terracotta">{business.name}</span> est complet (Business, Marque, Créateur, Audience, Objectif, Offre).
-          </p>
-        </div>
-
-        {brandProfile.promise && (
-          <div className="bg-ivory/60 p-3 rounded-xl border border-terracotta-border/30">
-            <p className="text-xs font-semibold text-terracotta uppercase tracking-wider mb-0.5">Promesse de marque</p>
-            <p className="text-sm font-medium text-ink">« {brandProfile.promise} »</p>
-          </div>
-        )}
-
-        <p className="text-xs text-ink-muted italic border-t border-terracotta-border/40 pt-3">
-          « Mūza propose. Vous choisissez. Mūza s&apos;occupe du reste. »
-        </p>
-      </Card>
-
-      {/* Active Business, Brand, Creator, Audience, Goal & Offer Context */}
-      <Card variant="default" className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-ink flex items-center gap-1.5">
-            <MuzaSymbol size="sm" />
-            <span>{business.name}</span>
-          </h3>
-          <Badge variant="ivory">{business.industry}</Badge>
-        </div>
-
-        {/* Brand Details Summary */}
-        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
-          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Profil de marque</p>
-          {brandProfile.tone?.description && (
-            <p>
-              <strong className="text-ink">Ton de marque :</strong> {String(brandProfile.tone.description)}
-            </p>
-          )}
-
-          {brandProfile.personality.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <strong className="text-ink">Personnalité :</strong>
-              {brandProfile.personality.map((p, idx) => (
-                <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
-                  {p}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Creator Details Summary */}
-        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
-          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Profil créateur</p>
-          {creatorProfile.weekly_minutes !== null && (
-            <p>
-              <strong className="text-ink">Temps hebdo :</strong> ~{creatorProfile.weekly_minutes} min/semaine
-            </p>
-          )}
-
-          {creatorProfile.preferred_formats.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <strong className="text-ink">Formats préférés :</strong>
-              {creatorProfile.preferred_formats.map((fmt, idx) => (
-                <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
-                  {fmt}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Audience Details Summary */}
-        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
-          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Audience cible principale</p>
-          <p>
-            <strong className="text-ink">Nom :</strong> {audience.name}
-          </p>
-          {audience.description && (
-            <p>
-              <strong className="text-ink">Cible :</strong> {audience.description}
-            </p>
-          )}
-
-          {audience.needs.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <strong className="text-ink">Besoins :</strong>
-              {audience.needs.map((need, idx) => (
-                <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
-                  {need}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Goal Details Summary */}
-        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
-          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Objectif principal actif</p>
-          <p>
-            <strong className="text-ink">Titre :</strong> {goal.title} ({goal.type})
-          </p>
-          {goal.description && (
-            <p>
-              <strong className="text-ink">Résultat recherché :</strong> {goal.description}
-            </p>
-          )}
-          <p>
-            <strong className="text-ink">Priorité :</strong> {goal.priority} / 10
-            {goal.starts_at && goal.ends_at && ` (Du ${goal.starts_at} au ${goal.ends_at})`}
-          </p>
-        </div>
-
-        {/* Offer Details Summary */}
-        <div className="text-xs text-ink-muted flex flex-col gap-2 pt-2 border-t border-ivory-border/60">
-          <p className="font-semibold text-ink text-xs uppercase tracking-wider">Offre principale active</p>
-          <p>
-            <strong className="text-ink">Nom :</strong> {offer.name}
-          </p>
-          {offer.description && (
-            <p>
-              <strong className="text-ink">Description :</strong> {offer.description}
-            </p>
-          )}
-          {(offer.price_from !== null || offer.price_to !== null) && (
-            <p>
-              <strong className="text-ink">Tarif :</strong>{' '}
-              {offer.price_from !== null && offer.price_to !== null
-                ? `De ${offer.price_from} € à ${offer.price_to} €`
-                : offer.price_from !== null
-                ? `À partir de ${offer.price_from} €`
-                : `Jusqu'à ${offer.price_to} €`}
-            </p>
-          )}
-
-          {offer.benefits.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <strong className="text-ink">Bénéfices :</strong>
-              {offer.benefits.map((b, idx) => (
-                <span key={idx} className="bg-ivory-subtle text-ink border border-ivory-border px-2 py-0.5 rounded-full text-[11px]">
-                  {b}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className="pt-2 border-t border-ivory-border/40 flex flex-col gap-1 text-[11px]">
-            <p>
-              Workspace : <span className="font-medium text-ink">{workspace.name}</span> ({workspace.slug})
-            </p>
-            <p>
-              Business Slug : <code className="text-ink font-mono bg-ivory-subtle px-1.5 py-0.5 rounded">{business.slug}</code>
-            </p>
-          </div>
-        </div>
-      </Card>
+    <div className="py-1 sm:py-2">
+      {/* Primary Content: Interactive Mūza Recommendation Section */}
+      <RecommendationSection
+        initialPersistedBatch={initialBatch}
+        strategicContext={strategicContext}
+      />
     </div>
   )
 }

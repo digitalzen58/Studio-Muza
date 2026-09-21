@@ -51,4 +51,12 @@ export type MuzaIndustryPlaybook = {
   strategicOpportunities: string[]
 
   strategicRisks: string[]
+
+  visualAssetCategories?: Array<{
+    key: string
+    label: string
+    keywords: string[]
+    preferredMediaTypes: string[]
+    captureHints: string
+  }>
 }

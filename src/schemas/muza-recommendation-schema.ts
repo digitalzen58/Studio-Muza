@@ -64,6 +64,11 @@ export const muzaRecommendationSchema = z.object({
 
   contentAngle: z.string().trim().min(1).max(500).nullable(),
   callToAction: z.string().trim().min(1).max(300).nullable(),
+
+  editorialTopic: z.string().trim().min(1).max(200),
+  editorialAngle: z.string().trim().min(1).max(200),
+  conceptKey: z.string().trim().min(1).max(450),
+  noveltyReason: z.string().trim().min(1).max(500).nullable(),
 })
 
 export const muzaRecommendationBatchSchema = z.object({

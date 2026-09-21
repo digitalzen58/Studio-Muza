@@ -98,6 +98,7 @@ export function buildMuzaStrategicContext(context: MuzaContext): MuzaStrategicCo
 
   return {
     business: {
+      id: business.id,
       name: business.name.trim(),
       industry: business.industry.trim(),
       subindustry: business.subindustry ? business.subindustry.trim() || null : null,

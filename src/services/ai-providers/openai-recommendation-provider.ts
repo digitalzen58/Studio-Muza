@@ -1,5 +1,3 @@
-import 'server-only'
-
 import { zodTextFormat } from 'openai/helpers/zod'
 import { getOpenAIClient } from '@/lib/openai/server'
 import { MUZA_AI_CONFIG } from '@/config/muza-ai'

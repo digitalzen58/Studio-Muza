@@ -1,6 +1,8 @@
 import type { MuzaStrategicContext } from '@/types/muza-strategic-context'
 import type { MuzaIndustryResolution } from '@/services/muza-industry-resolver'
 import type { MuzaIndustryPlaybook } from '@/types/muza-industry-playbook'
+import type { MuzaEditorialHistory } from '@/types/muza-editorial-history'
+import type { MuzaRecommendationFeedbackMemory } from '@/types/muza-recommendation-feedback'
 
 /**
  * Strongly typed union of unavailable evidence categories for Mūza recommendation grounding.
@@ -27,10 +29,14 @@ export type MuzaGroundingContext = {
 
 /**
  * Complete reasoning context for Mūza's AI recommendation engine.
- * Assembles strategic business context, industry resolution, base playbook, grounding boundary, and reasoning principles.
+ * Assembles strategic business context, editorial history, feedback memory, industry resolution, base playbook, grounding boundary, and reasoning principles.
  */
 export type MuzaReasoningContext = {
   strategicContext: MuzaStrategicContext
+
+  editorialHistory: MuzaEditorialHistory
+
+  feedbackMemory: MuzaRecommendationFeedbackMemory
 
   industry: {
     resolution: MuzaIndustryResolution

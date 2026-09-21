@@ -1,5 +1,3 @@
-import 'server-only'
-
 import { z } from 'zod'
 import { getGeminiClient } from '@/lib/gemini/server'
 import { MUZA_AI_CONFIG } from '@/config/muza-ai'

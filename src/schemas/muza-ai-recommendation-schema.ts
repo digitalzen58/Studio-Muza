@@ -43,6 +43,10 @@ export const muzaAIRecommendationSchema = z.object({
 
   contentAngle: z.string().nullable(),
   callToAction: z.string().nullable(),
+
+  editorialTopic: z.string(),
+  editorialAngle: z.string(),
+  noveltyReason: z.string().nullable(),
 })
 
 /**

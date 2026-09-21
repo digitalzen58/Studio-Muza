@@ -1,4 +1,3 @@
-import 'server-only'
 import { GoogleGenAI } from '@google/genai'
 
 let clientInstance: GoogleGenAI | null = null

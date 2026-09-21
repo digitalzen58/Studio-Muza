@@ -55,6 +55,25 @@ export type MuzaRecommendation = {
 
   contentAngle: string | null
   callToAction: string | null
+
+  editorialTopic: string
+  editorialAngle: string
+  conceptKey: string
+  noveltyReason: string | null
+
+  assetGuidance?: MuzaRecommendationAssetGuidance
+}
+
+export type MuzaAssetReadiness =
+  | 'READY'
+  | 'PARTIAL'
+  | 'MISSING'
+  | 'NO_MEDIA_REQUIRED'
+
+export type MuzaRecommendationAssetGuidance = {
+  assetReadiness: MuzaAssetReadiness
+  suggestedAssetIds: string[]
+  captureBrief: string | null
 }
 
 export type MuzaRecommendationBatch = {
