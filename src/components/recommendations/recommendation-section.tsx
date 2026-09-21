@@ -13,8 +13,7 @@ import {
 import { RecommendationEmptyState } from './recommendation-empty-state'
 import { RecommendationLoading } from './recommendation-loading'
 import { RecommendationPreviewCard } from './recommendation-preview-card'
-import { BrandVisualHero } from './brand-visual-hero'
-import { WeeklyCommunicationStrip } from './weekly-communication-strip'
+import { BrandGreetingHero, BrandVisualHero } from './brand-visual-hero'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
@@ -104,23 +103,28 @@ export function RecommendationSection({
   }
 
   // 1. Loading State
-  if (isPending) {
+  if (isPending && (!batch || batch.batch.recommendations.length === 0)) {
     return <RecommendationLoading />
   }
 
-  // 2. Error State
-  if (error) {
+  // 2. Error State (when active business has no existing batch)
+  if (error && (!batch || batch.batch.recommendations.length === 0)) {
     return (
       <Card variant="accent" className="flex flex-col gap-4 py-6 px-5 text-center items-center max-w-xl mx-auto">
         <div className="flex flex-col gap-1.5 max-w-sm">
           <h3 className="font-serif text-xl font-bold text-terracotta-dark">
-            Mūza n’a pas pu préparer vos recommandations.
+            Mūza n’a pas réussi à préparer vos idées.
           </h3>
           <p className="text-xs text-ink/80 leading-relaxed">
-            {error}
+            Vos informations sont bien conservées. Vous pourrez réessayer dans quelques instants.
           </p>
         </div>
-        <Button variant="primary" size="md" onClick={handleGenerate}>
+        <Button
+          variant="primary"
+          size="md"
+          onClick={handleGenerate}
+          disabled={isPending}
+        >
           <span>Réessayer</span>
           <MuzaSymbol size="sm" className="ml-1 text-white" />
         </Button>
@@ -136,8 +140,8 @@ export function RecommendationSection({
 
     return (
       <div className="flex flex-col gap-5 w-full max-w-xl mx-auto py-1">
-        {/* 1. BRAND VISUAL HERO */}
-        <BrandVisualHero context={strategicContext} />
+        {/* 1. BRAND GREETING HERO */}
+        <BrandGreetingHero context={strategicContext} />
 
         {/* 2. SINGLE CONTEXTUAL CHIP */}
         <div className="w-full flex justify-center">
@@ -153,7 +157,8 @@ export function RecommendationSection({
             <div className="flex items-center gap-2">
               <MuzaSymbol size="md" />
               <h2 className="font-serif text-2xl font-bold text-ink">
-                3 idées pour cette semaine
+                {batch.batch.recommendations.length}{' '}
+                {batch.batch.recommendations.length > 1 ? 'idées' : 'idée'} pour cette semaine
               </h2>
             </div>
             <Button
@@ -169,11 +174,37 @@ export function RecommendationSection({
             </Button>
           </div>
 
-          {/* Strategic Summary Quote */}
-          {batch.batch.strategicSummary && (
-            <p className="text-xs text-ink-muted italic bg-terracotta-light/40 border border-terracotta-border/40 p-3 rounded-xl">
-              « {batch.batch.strategicSummary} »
-            </p>
+          {/* Error notification banner if new generation attempt failed, preserving existing batch */}
+          {error && (
+            <div className="bg-terracotta-light/60 border border-terracotta-border/80 p-3.5 rounded-xl flex items-center justify-between gap-3 text-xs text-ink animate-fadeIn">
+              <div className="flex flex-col gap-0.5 text-left">
+                <span className="font-serif font-bold text-terracotta-dark">
+                  Mūza n’a pas réussi à préparer de nouvelles idées.
+                </span>
+                <span className="text-[11px] text-ink-muted">
+                  Vos recommandations actuelles sont conservées. Vous pourrez réessayer dans quelques instants.
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerate}
+                  disabled={isPending}
+                  className="text-xs py-1 px-2.5 h-auto"
+                >
+                  Réessayer
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="text-xs text-ink-muted hover:text-ink px-1.5 py-1"
+                  aria-label="Fermer l'alerte"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Recommendations Visual Preview Cards List */}
@@ -297,8 +328,8 @@ export function RecommendationSection({
           )}
         </div>
 
-        {/* 4. WEEKLY COMMUNICATION STRIP */}
-        <WeeklyCommunicationStrip />
+        {/* 4. STUDIO VISUAL SHOWCASE */}
+        <BrandVisualHero context={strategicContext} />
 
         {/* 5. PRIMARY CREATION MOMENT CTA */}
         <div className="flex flex-col items-center gap-2 pt-2 pb-4">

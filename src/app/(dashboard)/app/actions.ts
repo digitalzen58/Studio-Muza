@@ -57,7 +57,7 @@ export async function generateRecommendationsAction(): Promise<GenerateRecommend
     return {
       success: false,
       message:
-        'Mūza n’a pas pu préparer vos recommandations pour le moment. Réessayez dans un instant.',
+        'Mūza n’a pas réussi à préparer vos idées. Vos informations sont bien conservées. Vous pourrez réessayer dans quelques instants.',
     }
   }
 }

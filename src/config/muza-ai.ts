@@ -5,6 +5,7 @@ import { MuzaAIConfig } from '@/types/muza-ai-provider'
  */
 export const MUZA_AI_CONFIG = {
   recommendationProvider: 'gemini',
+  generationTimeoutMs: 25000,
   providers: {
     gemini: {
       recommendationModel: 'gemini-3.6-flash',

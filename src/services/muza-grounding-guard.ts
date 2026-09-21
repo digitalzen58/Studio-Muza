@@ -192,51 +192,177 @@ function checkAvailabilityViolation(
 }
 
 /**
- * 2. LIVE_SEARCH_DEMAND_DATA rules
+ * 2. LIVE_SEARCH_DEMAND_DATA & VERIFIED_CURRENT_SEO_VOLUME rules
  */
-const SEARCH_CONDITIONAL_PATTERNS = [
-  /opportunite\s+seo/i,
-  /peut\s+aider\s+a\s+etre\s+trouve/i,
-  /aide\s+a\s+etre\s+trouve/i,
-  /peut\s+capter\s+(des|les)\s+recherches/i,
-  /pour\s+capter\s+(des|les)\s+recherches/i,
-  /pour\s+travailler\s+la\s+visibilite/i,
+const SEARCH_AND_SEO_CONDITIONAL_PATTERNS = [
   /si\s+les\s+donnees\s+de\s+recherche\s+confirment/i,
+  /a\s+verifier\s+selon\s+les\s+donnees\s+de\s+recherche/i,
+  /si\s+le\s+volume\s+de\s+recherche\s+le\s+confirme/i,
 ]
 
-const SEARCH_FORBIDDEN_PATTERNS = [
+const SEARCH_AND_SEO_FORBIDDEN_PATTERNS = [
+  {
+    pattern: /volume\s+de\s+recherche\s+(eleve|important|fort|en\s+hausse)/i,
+    label: 'volume de recherche élevé/important',
+    message: 'Assertion of search volume without verified SEO volume data',
+    isVolume: true,
+  },
+  {
+    pattern: /(genere(nt)?|avec)\s+beaucoup\s+de\s+recherches/i,
+    label: 'génère beaucoup de recherches',
+    message: 'Assertion of high search volume without verified SEO volume data',
+    isVolume: true,
+  },
+  {
+    pattern: /beaucoup\s+de\s+recherches\s+(sur|pour)/i,
+    label: 'beaucoup de recherches',
+    message: 'Assertion of search volume without verified SEO volume data',
+    isVolume: true,
+  },
+  {
+    pattern: /(mots?[- ]cles?|requetes?)\s+populaires/i,
+    label: 'mots-clés/requêtes populaires',
+    message: 'Assertion of keyword popularity without verified SEO data',
+    isVolume: true,
+  },
+  {
+    pattern: /recherches\s+populaires(\s+actuellement)?/i,
+    label: 'recherches populaires',
+    message: 'Assertion of search popularity without verified SEO data',
+    isVolume: true,
+  },
+  {
+    pattern: /recherches\s+en\s+hausse/i,
+    label: 'recherches en hausse',
+    message: 'Assertion of rising search trends without verified SEO data',
+    isVolume: true,
+  },
+  {
+    pattern: /(voyageurs|internautes|utilisateurs|clients)\s+actifs\s+sur\s+google/i,
+    label: 'voyageurs/utilisateurs actifs sur Google',
+    message: 'Assertion of active searchers on Google without live search analytics',
+    isVolume: false,
+  },
   {
     pattern: /cherchent\s+activement(\s+sur\s+google)?/i,
     label: 'cherchent activement sur Google',
-  },
-  { pattern: /recherchent\s+activement/i, label: 'recherchent activement' },
-  { pattern: /recherches\s+en\s+hausse/i, label: 'recherches en hausse' },
-  {
-    pattern: /volume\s+de\s+recherche\s+eleve/i,
-    label: 'volume de recherche élevé',
+    message: 'Assertion of active search demand without live search analytics',
+    isVolume: false,
   },
   {
-    pattern: /recherches\s+populaires\s+actuellement/i,
-    label: 'recherches populaires actuellement',
+    pattern: /recherchent\s+activement/i,
+    label: 'recherchent activement',
+    message: 'Assertion of active search demand without live search analytics',
+    isVolume: false,
   },
   {
     pattern: /recherchent\s+en\s+ce\s+moment/i,
     label: 'recherchent en ce moment',
+    message: 'Assertion of live search demand without live search analytics',
+    isVolume: false,
+  },
+  {
+    pattern: /(intentions?\s+de\s+recherche|requetes?|mots?[- ]cles?)\s+a\s+forte\s+conversion/i,
+    label: 'intentions de recherche/mots-clés à forte conversion',
+    message: 'Assertion of high-conversion search intent without conversion data',
+    isVolume: true,
+  },
+  {
+    pattern: /forte\s+conversion\s+(sur|pour)/i,
+    label: 'forte conversion',
+    message: 'Assertion of conversion strength without conversion data',
+    isVolume: true,
+  },
+  {
+    pattern: /fort\s+taux\s+de\s+conversion/i,
+    label: 'fort taux de conversion',
+    message: 'Assertion of conversion rate without analytics data',
+    isVolume: true,
   },
 ]
 
-function checkSearchDemandViolation(
+function checkSearchDemandAndSeoVolumeViolation(
   text: string
-): { matchedTerm: string; index: number; length: number } | null {
+): { matchedTerm: string; index: number; length: number; message: string; isVolume: boolean } | null {
   const norm = normalizeText(text)
 
-  for (const cond of SEARCH_CONDITIONAL_PATTERNS) {
+  for (const cond of SEARCH_AND_SEO_CONDITIONAL_PATTERNS) {
     if (cond.test(norm)) {
       return null
     }
   }
 
-  for (const item of SEARCH_FORBIDDEN_PATTERNS) {
+  for (const item of SEARCH_AND_SEO_FORBIDDEN_PATTERNS) {
+    const match = norm.match(item.pattern)
+    if (match && match.index !== undefined) {
+      return {
+        matchedTerm: item.label,
+        index: match.index,
+        length: match[0].length,
+        message: item.message,
+        isVolume: item.isVolume,
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * 3. VERIFIED_CUSTOMER_OBJECTION_FREQUENCY rules
+ */
+const OBJECTION_FREQUENCY_CONDITIONAL_PATTERNS = [
+  /si\s+les\s+retours\s+clients\s+le\s+confirment/i,
+  /a\s+verifier\s+selon\s+les\s+retours\s+clients/i,
+]
+
+const OBJECTION_FREQUENCY_FORBIDDEN_PATTERNS = [
+  {
+    pattern: /(leur|la|le|cette|notre|votre)\s+interrogation\s+principale/i,
+    label: 'interrogation principale',
+  },
+  {
+    pattern: /(leur|la|le|cette|notre|votre)\s+question\s+principale/i,
+    label: 'question principale',
+  },
+  {
+    pattern: /principale\s+(question|interrogation|objection|peur|inquietude|frein)/i,
+    label: 'principale question/objection',
+  },
+  {
+    pattern: /(leur|le|ce|un)\s+frein\s+principal/i,
+    label: 'frein principal',
+  },
+  {
+    pattern: /(leur|la|cette|une)\s+objection\s+principale/i,
+    label: 'objection principale',
+  },
+  {
+    pattern: /c['’]est\s+la\s+principale\s+(question|objection|interrogation|peur|inquietude|priorite)/i,
+    label: "c'est la principale question/objection",
+  },
+  {
+    pattern: /(la|le)\s+(question|objection|frein|interrogation)\s+(numero\s*1|n[°o]\s*1|la\s+plus\s+frequente?)/i,
+    label: 'question/objection numéro 1 ou la plus fréquente',
+  },
+  {
+    pattern: /(planifient|reservent|reservations)\s+([^,.;]{1,80}?\s+)?des\s+(le\s+)?debut\s+[a-z]+/i,
+    label: 'planifient/réservent dès le début [mois]',
+  },
+]
+
+function checkCustomerObjectionFrequencyViolation(
+  text: string
+): { matchedTerm: string; index: number; length: number } | null {
+  const norm = normalizeText(text)
+
+  for (const cond of OBJECTION_FREQUENCY_CONDITIONAL_PATTERNS) {
+    if (cond.test(norm)) {
+      return null
+    }
+  }
+
+  for (const item of OBJECTION_FREQUENCY_FORBIDDEN_PATTERNS) {
     const match = norm.match(item.pattern)
     if (match && match.index !== undefined) {
       return {
@@ -251,7 +377,7 @@ function checkSearchDemandViolation(
 }
 
 /**
- * 3. TRAVEL_TIME_FROM_AUDIENCE rules
+ * 4. TRAVEL_TIME_FROM_AUDIENCE rules
  */
 const TRAVEL_CONDITIONAL_PATTERNS = [
   /selon\s+le\s+temps\s+de\s+trajet\s+reel/i,
@@ -328,22 +454,42 @@ export function validateMuzaRecommendationGrounding(
       }
     }
 
-    // 2. Check LIVE_SEARCH_DEMAND_DATA
-    if (unavailable.has('LIVE_SEARCH_DEMAND_DATA')) {
-      const match = checkSearchDemandViolation(value)
+    // 2. Check LIVE_SEARCH_DEMAND_DATA & VERIFIED_CURRENT_SEO_VOLUME
+    if (
+      unavailable.has('LIVE_SEARCH_DEMAND_DATA') ||
+      unavailable.has('VERIFIED_CURRENT_SEO_VOLUME')
+    ) {
+      const match = checkSearchDemandAndSeoVolumeViolation(value)
       if (match) {
+        const evidenceKey = match.isVolume
+          ? 'VERIFIED_CURRENT_SEO_VOLUME'
+          : 'LIVE_SEARCH_DEMAND_DATA'
         violations.push({
-          evidenceKey: 'LIVE_SEARCH_DEMAND_DATA',
+          evidenceKey,
           fieldPath: path,
           matchedTerm: match.matchedTerm,
           snippet: extractSnippet(value, match.index, match.length),
-          message:
-            'Assertion of active search demand/trends without available search data',
+          message: match.message,
         })
       }
     }
 
-    // 3. Check TRAVEL_TIME_FROM_AUDIENCE
+    // 3. Check VERIFIED_CUSTOMER_OBJECTION_FREQUENCY
+    if (unavailable.has('VERIFIED_CUSTOMER_OBJECTION_FREQUENCY')) {
+      const match = checkCustomerObjectionFrequencyViolation(value)
+      if (match) {
+        violations.push({
+          evidenceKey: 'VERIFIED_CUSTOMER_OBJECTION_FREQUENCY',
+          fieldPath: path,
+          matchedTerm: match.matchedTerm,
+          snippet: extractSnippet(value, match.index, match.length),
+          message:
+            'Assertion of primary customer objection/question or unverified empirical audience booking behavior',
+        })
+      }
+    }
+
+    // 4. Check TRAVEL_TIME_FROM_AUDIENCE
     if (unavailable.has('TRAVEL_TIME_FROM_AUDIENCE')) {
       const match = checkTravelTimeViolation(value)
       if (match) {

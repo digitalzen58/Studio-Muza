@@ -12,6 +12,7 @@ import {
   loadBusinessMediaInventory,
   enrichMuzaRecommendationsWithMediaAssets,
 } from '@/services/muza-media-intelligence'
+import { withProviderTimeout } from '@/services/muza-provider-timeout'
 import type { MuzaAIProvider } from '@/types/muza-ai-provider'
 import type { MuzaReasoningContext } from '@/types/muza-reasoning-context'
 import type { MuzaRecommendationBatch } from '@/types/muza-recommendation-engine'
@@ -110,15 +111,21 @@ export async function generateMuzaRecommendations(): Promise<MuzaRecommendationB
 
   switch (provider) {
     case 'gemini':
-      transportBatch = await generateGeminiRecommendationBatch(
-        inputPrompt,
-        MUZA_RECOMMENDATION_INSTRUCTIONS
+      transportBatch = await withProviderTimeout(
+        generateGeminiRecommendationBatch(
+          inputPrompt,
+          MUZA_RECOMMENDATION_INSTRUCTIONS
+        ),
+        MUZA_AI_CONFIG.generationTimeoutMs
       )
       break
     case 'openai':
-      transportBatch = await generateOpenAIRecommendationBatch(
-        inputPrompt,
-        MUZA_RECOMMENDATION_INSTRUCTIONS
+      transportBatch = await withProviderTimeout(
+        generateOpenAIRecommendationBatch(
+          inputPrompt,
+          MUZA_RECOMMENDATION_INSTRUCTIONS
+        ),
+        MUZA_AI_CONFIG.generationTimeoutMs
       )
       break
     default: {

@@ -6,6 +6,7 @@ export interface MuzaAIProviderConfig {
 
 export interface MuzaAIConfig {
   recommendationProvider: MuzaAIProvider
+  generationTimeoutMs: number
   providers: Record<MuzaAIProvider, MuzaAIProviderConfig>
 }
 

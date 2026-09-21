@@ -10,18 +10,11 @@ interface BrandVisualHeroProps {
 }
 
 /**
- * Editorial Moodboard Visual Hero Component for Studio Mūza.
- * Supports progressive visual enrichment:
- * Level 1: Real brand media assets
- * Level 2: Graphic content templates derived from Brand Identity & Visual Identity
- * Level 3: Studio Mūza foundational visual system
+ * Greeting and Headline Header for Studio Mūza Home.
+ * Displays greeting, business name, industry badge, and main editorial headline.
  */
-export function BrandVisualHero({ context }: BrandVisualHeroProps) {
+export function BrandGreetingHero({ context }: BrandVisualHeroProps) {
   const greeting = context.firstName ? `Bonjour ${context.firstName}` : 'Bonjour'
-  const media = context.mediaAssets || []
-  const primaryMedia = media.length > 0 ? media[0] : null
-  const secondaryMedia = media.length > 1 ? media[1] : primaryMedia
-  const tertiaryMedia = media.length > 2 ? media[2] : primaryMedia
 
   return (
     <div className="flex flex-col gap-3 w-full max-w-xl mx-auto py-1">
@@ -45,7 +38,25 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
         Et si on trouvait quoi raconter{' '}
         <span className="italic text-terracotta font-serif">cette semaine ?</span>
       </h2>
+    </div>
+  )
+}
 
+/**
+ * Editorial Moodboard Visual Showcase Component for Studio Mūza (Studio Visuel).
+ * Supports progressive visual enrichment:
+ * Level 1: Real brand media assets
+ * Level 2: Graphic content templates derived from Brand Identity & Visual Identity
+ * Level 3: Studio Mūza foundational visual system
+ */
+export function BrandVisualHero({ context }: BrandVisualHeroProps) {
+  const media = context.mediaAssets || []
+  const primaryMedia = media.length > 0 ? media[0] : null
+  const secondaryMedia = media.length > 1 ? media[1] : primaryMedia
+  const tertiaryMedia = media.length > 2 ? media[2] : primaryMedia
+
+  return (
+    <div className="w-full max-w-xl mx-auto py-1">
       {/* Visual Moodboard Canvas Composition */}
       <div className="relative w-full rounded-2xl bg-ivory-card border border-ivory-border/80 p-3.5 sm:p-4 overflow-hidden shadow-xs">
         {/* Soft Organic Background Accent Glow */}
@@ -213,3 +224,5 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
     </div>
   )
 }
+
+export const StudioVisualShowcase = BrandVisualHero

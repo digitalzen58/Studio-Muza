@@ -3,7 +3,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
-import { BrandVisualHero } from './brand-visual-hero'
+import { BrandGreetingHero } from './brand-visual-hero'
 import type { StrategicContext } from './recommendation-section'
 
 interface RecommendationEmptyStateProps {
@@ -14,8 +14,8 @@ interface RecommendationEmptyStateProps {
 
 /**
  * Creative Studio Visual Empty State for Mūza Home before recommendation generation.
- * Features 3 progressive visual levels (Real Media -> Brand Identity Templates -> Studio Mūza Fallback),
- * Zero-Media Onboarding Nudge when mediaAssets count is zero, and dominant Terracotta CTA.
+ * Features immediate greeting & objective, prominent first-generation CTA above-the-fold,
+ * and format previews below.
  */
 export function RecommendationEmptyState({
   onGenerate,
@@ -33,8 +33,8 @@ export function RecommendationEmptyState({
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-xl mx-auto py-1">
-      {/* 1. TOP / HERO - Brand Visual Moodboard (Level 1 / Level 2 / Level 3) */}
-      <BrandVisualHero context={strategicContext} />
+      {/* 1. TOP / HERO - Greeting & Business Headline */}
+      <BrandGreetingHero context={strategicContext} />
 
       {/* 2. SINGLE CONTEXTUAL CHIP */}
       <div className="w-full flex justify-center">
@@ -44,7 +44,41 @@ export function RecommendationEmptyState({
         </div>
       </div>
 
-      {/* 3. VISUAL CREATIVE DESK / BRAND CONTENT PREVIEWS */}
+      {/* 3. PRIMARY GENERATION CTA CARD (PROMINENT ABOVE-THE-FOLD) */}
+      <div className="relative w-full rounded-2xl bg-ivory-card border border-ivory-border/80 p-5 text-center overflow-hidden shadow-xs flex flex-col items-center gap-3">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-b from-transparent via-terracotta-light/15 to-transparent pointer-events-none"
+        />
+
+        <div className="relative z-10 flex flex-col items-center gap-1.5 max-w-sm">
+          <p className="font-serif text-xl sm:text-2xl font-bold text-ink leading-snug">
+            Mūza prépare votre première sélection d’idées sur mesure.
+          </p>
+          <p className="text-xs text-ink-muted leading-relaxed">
+            En un instant, Mūza compose une première sélection d’idées visuelles pensées spécifiquement pour votre activité et votre objectif.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center gap-2 w-full max-w-xs sm:max-w-sm mx-auto pt-1 relative z-10">
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={onGenerate}
+            disabled={isPending}
+            className="min-h-[46px] py-3 px-6 text-base shadow-md font-medium tracking-wide hover:shadow-lg transform transition-all duration-200 active:scale-[0.98]"
+          >
+            <span>Créer mes premières idées</span>
+            <span className="ml-2 text-white text-lg">✦</span>
+          </Button>
+          <span className="text-[11px] text-terracotta-dark/80 font-medium tracking-tight">
+            Une sélection sur mesure de 3 à 5 idées
+          </span>
+        </div>
+      </div>
+
+      {/* 4. VISUAL CREATIVE DESK / BRAND CONTENT PREVIEWS */}
       <div className="relative w-full rounded-2xl bg-ivory-card border border-ivory-border/80 p-4 text-center overflow-hidden shadow-xs">
         {/* Background Subtle Accent */}
         <div
@@ -182,28 +216,6 @@ export function RecommendationEmptyState({
               </Button>
             </div>
           )}
-
-          <p className="font-serif text-lg sm:text-xl font-medium text-ink leading-snug max-w-sm mt-0.5">
-            Mūza prépare votre prochaine semaine de communication.
-          </p>
-        </div>
-
-        {/* 4. PRIMARY GENERATION CTA */}
-        <div className="flex flex-col items-center gap-2 w-full max-w-xs sm:max-w-sm mx-auto pt-3 relative z-10">
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            onClick={onGenerate}
-            disabled={isPending}
-            className="min-h-[46px] py-3 px-6 text-base shadow-md font-medium tracking-wide hover:shadow-lg transform transition-all duration-200 active:scale-[0.98]"
-          >
-            <span>Voir ce que Mūza me propose</span>
-            <span className="ml-2 text-white text-lg">✦</span>
-          </Button>
-          <span className="text-[11px] text-terracotta-dark/80 font-medium tracking-tight">
-            3 à 5 idées choisies pour vous
-          </span>
         </div>
       </div>
     </div>

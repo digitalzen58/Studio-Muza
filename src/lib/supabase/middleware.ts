@@ -47,8 +47,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect logged-in users away from /login and /signup
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+  // Redirect logged-in users away from /login, /signup, and /forgot-password
+  if (
+    user &&
+    (request.nextUrl.pathname === '/login' ||
+      request.nextUrl.pathname === '/signup' ||
+      request.nextUrl.pathname === '/forgot-password')
+  ) {
     const url = request.nextUrl.clone()
     url.pathname = '/app'
     return NextResponse.redirect(url)

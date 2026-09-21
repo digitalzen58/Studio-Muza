@@ -65,13 +65,29 @@ export default function LoginPage() {
               required
             />
 
-            <Input
-              label="Mot de passe"
-              type="password"
-              name="password"
-              placeholder="••••••••"
-              required
-            />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="password"
+                  className="text-xs font-medium text-ink-muted uppercase tracking-wider"
+                >
+                  Mot de passe
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-ink-muted hover:text-terracotta transition-colors font-medium"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
+              <Input
+                type="password"
+                name="password"
+                id="password"
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
             <Button
               type="submit"
