@@ -155,8 +155,9 @@ export function RecommendationPreviewCard({
   const readiness = recommendation.assetGuidance?.assetReadiness
 
   return (
-    <Card variant="default" className="flex flex-col gap-4 p-4 sm:p-5 transition-all hover:shadow-md border-ivory-border/80">
-      {/* Top Header Metadata - Simplified */}
+    <Card variant="default" className="flex flex-col justify-between gap-4 p-4 sm:p-5 transition-all hover:shadow-md border-ivory-border/80 h-full">
+      <div className="flex flex-col gap-4">
+        {/* Top Header Metadata - Simplified */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
           <Badge variant="terracotta" showSymbol>
@@ -232,6 +233,7 @@ export function RecommendationPreviewCard({
           )}
         </div>
       )}
+      </div>
 
       {/* Feedback Confirmation State */}
       {recordedFeedback ? (

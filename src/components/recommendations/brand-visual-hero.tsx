@@ -20,7 +20,7 @@ export function BrandGreetingHero({ context }: BrandGreetingHeroProps) {
   const greeting = context.firstName ? `Bonjour ${context.firstName}` : 'Bonjour'
 
   return (
-    <div className="flex flex-col gap-3 w-full max-w-xl mx-auto py-1">
+    <div className="flex flex-col gap-2.5 w-full py-1">
       {/* Top Greeting & Business Badge */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-wrap">
@@ -34,7 +34,7 @@ export function BrandGreetingHero({ context }: BrandGreetingHeroProps) {
       </div>
 
       {/* Main Editorial Headline - Compact Height */}
-      <h2 className="font-serif text-2.5xl sm:text-3xl text-ink font-normal leading-tight text-balance">
+      <h2 className="font-serif text-2xl sm:text-3xl lg:text-3.5xl text-ink font-normal leading-tight text-balance max-w-3xl">
         Et si on trouvait quoi raconter{' '}
         <span className="italic text-terracotta font-serif">cette semaine ?</span>
       </h2>
@@ -56,7 +56,7 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
   const tertiaryMedia = media.length > 2 ? media[2] : primaryMedia
 
   return (
-    <div className="w-full max-w-xl mx-auto py-1">
+    <div className="w-full py-1">
       {/* Visual Moodboard Canvas Composition */}
       <div className="relative w-full rounded-2xl bg-ivory-card border border-ivory-border/80 p-3.5 sm:p-4 overflow-hidden shadow-xs">
         {/* Soft Organic Background Accent Glow */}

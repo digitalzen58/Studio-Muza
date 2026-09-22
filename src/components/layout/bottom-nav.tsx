@@ -11,7 +11,14 @@ export function BottomNav() {
   const pathname = usePathname()
   const [chooserOpen, setChooserOpen] = useState(false)
 
-  const navItems = [
+  const navItems: Array<{
+    label: string
+    href?: string
+    icon?: React.ComponentType<{ className?: string }>
+    isPrimary?: boolean
+    isMuza?: boolean
+    disabled?: boolean
+  }> = [
     { label: 'Accueil', href: '/app', icon: Home },
     { label: 'Inspirations', href: '/app/inspirations', icon: Lightbulb },
     { label: 'Créer', icon: PlusCircle, isPrimary: true },
@@ -46,10 +53,29 @@ export function BottomNav() {
               )
             }
 
+            if (item.disabled || !item.href) {
+              return (
+                <div
+                  key={item.label}
+                  aria-disabled="true"
+                  className="flex flex-col items-center justify-center px-2 py-1 rounded-xl text-ink-muted/50 cursor-default select-none"
+                >
+                  {item.isMuza ? (
+                    <div className="p-1 rounded-lg opacity-60">
+                      <MuzaSymbol size="md" />
+                    </div>
+                  ) : Icon ? (
+                    <Icon className="w-5 h-5 opacity-60" />
+                  ) : null}
+                  <span className="text-[10px] mt-1">{item.label}</span>
+                </div>
+              )
+            }
+
             return (
               <Link
                 key={item.label}
-                href={item.href || '/app'}
+                href={item.href}
                 className={`flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-colors ${
                   isActive
                     ? 'text-terracotta font-medium'

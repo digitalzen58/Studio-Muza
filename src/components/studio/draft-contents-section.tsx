@@ -60,7 +60,7 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
   }
 
   return (
-    <section className="flex flex-col gap-3.5 w-full max-w-xl mx-auto pt-2 pb-1">
+    <section className="flex flex-col gap-3.5 w-full pt-2 pb-1">
       {/* Section Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -78,8 +78,8 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
         Reprenez vos créations là où vous les avez laissées avant d’explorer de nouvelles idées.
       </p>
 
-      {/* Draft Cards List */}
-      <div className="flex flex-col gap-3">
+      {/* Draft Cards Responsive Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {drafts.map((draft) => {
           const primaryVariant = draft.content_variants?.[0]
           const formatBadge = getFormatBadgeLabel(primaryVariant?.format)
@@ -89,27 +89,29 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
           return (
             <div
               key={draft.id}
-              className="bg-white border border-ivory-border/80 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow flex flex-col gap-3"
+              className="bg-white border border-ivory-border/80 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between gap-3 h-full"
             >
-              {/* Top Row: Format & Status */}
-              <div className="flex items-center justify-between gap-2">
-                <Badge variant="terracotta" className="text-[10px]">
-                  {formatBadge}
-                </Badge>
+              <div className="flex flex-col gap-2.5">
+                {/* Top Row: Format & Status */}
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="terracotta" className="text-[10px]">
+                    {formatBadge}
+                  </Badge>
 
-                <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-                  <Clock className="w-3 h-3" />
-                  <span>{formatRelativeTime(draft.updated_at)}</span>
+                  <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+                    <Clock className="w-3 h-3" />
+                    <span>{formatRelativeTime(draft.updated_at)}</span>
+                  </div>
                 </div>
+
+                {/* Title */}
+                <h3 className="text-sm font-semibold text-ink line-clamp-2 leading-snug">
+                  {displayTitle}
+                </h3>
               </div>
 
-              {/* Title */}
-              <h3 className="text-sm font-semibold text-ink line-clamp-2 leading-snug">
-                {displayTitle}
-              </h3>
-
               {/* Bottom Row: State & CTA */}
-              <div className="flex items-center justify-between gap-2 pt-1 border-t border-ivory-subtle">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-ivory-subtle">
                 <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full">
                   Brouillon
                 </span>

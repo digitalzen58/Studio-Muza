@@ -172,33 +172,36 @@ export function RecommendationSection({
       .filter(({ recommendation }) => isActionableContentRecommendation(recommendation))
 
     return (
-      <div className="flex flex-col gap-5 w-full max-w-xl mx-auto py-1">
+      <div className="flex flex-col gap-5 w-full max-w-5xl lg:max-w-6xl mx-auto py-1">
         {/* 1. BRAND GREETING HERO */}
         <BrandGreetingHero
           context={strategicContext}
           onOpenCreate={() => setChooserOpen(true)}
         />
 
-        {/* 2. SINGLE CONTEXTUAL CHIP */}
-        <div className="w-full flex justify-center">
-          <div className="inline-flex items-center gap-2 bg-terracotta-light/70 border border-terracotta-border/60 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-terracotta-dark shadow-2xs text-center">
-            <MuzaSymbol size="sm" />
-            <span>Cette semaine, Mūza vous aide à {goalContext}.</span>
+        {/* 2. LOWER HERO ROW: WEEKLY OBJECTIVE + PRIMARY CREATE CTA */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pt-0.5 pb-1">
+          {/* Objective Chip */}
+          <div className="flex justify-center md:justify-start">
+            <div className="inline-flex items-center gap-2 bg-terracotta-light/70 border border-terracotta-border/60 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-terracotta-dark shadow-2xs text-center md:text-left">
+              <MuzaSymbol size="sm" />
+              <span>Cette semaine, Mūza vous aide à {goalContext}.</span>
+            </div>
           </div>
-        </div>
 
-        {/* 2.2 PRIMARY PROMINENT CREATE ACTION (CENTERED, LARGE TERRACOTTA) */}
-        <div className="w-full flex justify-center py-1">
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={() => setChooserOpen(true)}
-            className="w-full sm:w-auto min-w-[240px] min-h-[50px] py-3.5 px-8 text-base font-semibold shadow-md hover:shadow-lg bg-terracotta hover:bg-terracotta-dark text-white rounded-2xl gap-2 transition-all transform active:scale-[0.98] cursor-pointer"
-            aria-label="Créer un nouveau contenu"
-          >
-            <Plus className="w-5 h-5 text-white" />
-            <span>Créer un contenu</span>
-          </Button>
+          {/* Primary Create Action */}
+          <div className="flex justify-center md:justify-end">
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => setChooserOpen(true)}
+              className="w-full sm:w-auto min-w-[220px] md:min-w-[190px] min-h-[48px] md:min-h-[44px] py-3 md:py-2.5 px-6 md:px-5 text-sm md:text-base font-semibold shadow-md hover:shadow-lg bg-terracotta hover:bg-terracotta-dark text-white rounded-2xl gap-2 transition-all transform active:scale-[0.98] cursor-pointer"
+              aria-label="Créer un nouveau contenu"
+            >
+              <Plus className="w-4 h-4 md:w-5 md:h-5 text-white" />
+              <span>Créer un contenu</span>
+            </Button>
+          </div>
         </div>
 
         {/* 2.5 ACTIVE DRAFTS AREA (VOS BROUILLONS EN COURS) */}
@@ -263,8 +266,8 @@ export function RecommendationSection({
               </div>
             )}
 
-            {/* Actionable Recommendations Visual Preview Cards List */}
-            <div className="flex flex-col gap-4">
+            {/* Actionable Recommendations Visual Preview Cards Responsive Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {actionableRecommendations.map(({ recommendation, recId, idx }) => {
                 const hasDraft = Boolean(
                   recommendation.status === 'ACCEPTED' ||

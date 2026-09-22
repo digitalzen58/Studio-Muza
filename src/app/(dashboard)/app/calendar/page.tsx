@@ -3,8 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { ensureInitialWorkspace } from '@/services/workspace'
 import { getActiveWorkspaceBusiness } from '@/services/business'
 import { getBusinessMediaAssets } from '@/services/media'
-import { CalendarAgendaView, type CalendarScheduledItem } from '@/components/calendar/calendar-agenda-view'
-import { Calendar } from 'lucide-react'
+import { type CalendarScheduledItem } from '@/components/calendar/calendar-agenda-view'
+import { CalendarViewContainer } from '@/components/calendar/calendar-view-container'
+import { getBusinessPublicationsHistory } from '@/services/publication-history/fetcher'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,7 +69,7 @@ export default async function CalendarPage() {
   }
 
   // 6. Map to CalendarScheduledItem view model
-  const items: CalendarScheduledItem[] = (scheduledContents || []).map((c) => {
+  const scheduledItems: CalendarScheduledItem[] = (scheduledContents || []).map((c) => {
     const variant = Array.isArray(c.content_variants) && c.content_variants.length > 0
       ? c.content_variants[0]
       : null
@@ -100,33 +101,14 @@ export default async function CalendarPage() {
     }
   })
 
+  // 7. Fetch full publication history items (published, scheduled, failed)
+  const { data: publicationItems } = await getBusinessPublicationsHistory(business.id)
+
   return (
-    <div className="space-y-6 pb-20">
-      {/* Top Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-terracotta-light/60 flex items-center justify-center text-terracotta">
-              <Calendar className="w-4 h-4" />
-            </div>
-            <h1 className="text-xl font-serif font-bold text-ink">
-              Calendrier éditorial
-            </h1>
-          </div>
-          <p className="text-xs text-ink-muted">
-            Visualisez et gérez vos publications planifiées pour {business.name}.
-          </p>
-        </div>
-
-        {items.length > 0 && (
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-ivory-card border border-ivory-border text-ink-muted">
-            {items.length} planifié{items.length > 1 ? 's' : ''}
-          </span>
-        )}
-      </div>
-
-      {/* Agenda Timeline List */}
-      <CalendarAgendaView items={items} />
-    </div>
+    <CalendarViewContainer
+      scheduledItems={scheduledItems}
+      publicationItems={publicationItems || []}
+      businessName={business.name}
+    />
   )
 }
