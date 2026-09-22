@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { validateCarouselReadiness } from '@/services/content-readiness/carousel-readiness'
+import { validatePostReadiness } from '@/services/content-readiness/post-readiness'
 import { convertLocalWallClockToUTC } from '@/services/scheduling/timezone-utils'
 import type { ReadinessIssue } from '@/services/content-readiness/types'
 import type { CarouselSlideData } from './content'
@@ -102,16 +103,38 @@ export async function scheduleContentAction(
       }
     }
 
-    const slides = (variant.metadata?.slides || []) as CarouselSlideData[]
+    // 4. Server-side deterministic readiness validation based on format
+    let readiness
+    if (variant.format === 'CAROUSEL') {
+      const slides = (variant.metadata?.slides || []) as CarouselSlideData[]
+      readiness = validateCarouselReadiness({
+        workingTitle: content.topic,
+        hook: content.hook,
+        slides,
+        caption: variant.caption || content.body,
+        cta: content.cta,
+      })
+    } else {
+      // POST format: check primary media in metadata or content_media
+      const { data: mediaRows } = await supabase
+        .from('content_media')
+        .select('media_asset_id')
+        .eq('content_id', contentId)
+        .limit(1)
 
-    // 4. Server-side deterministic readiness validation
-    const readiness = validateCarouselReadiness({
-      workingTitle: content.topic,
-      hook: content.hook,
-      slides,
-      caption: variant.caption || content.body,
-      cta: content.cta,
-    })
+      const primaryMediaId =
+        variant.metadata?.primary_media_id ||
+        variant.metadata?.media_id ||
+        mediaRows?.[0]?.media_asset_id ||
+        null
+
+      readiness = validatePostReadiness({
+        workingTitle: content.topic,
+        body: variant.caption || content.body,
+        primaryMediaId,
+        cta: content.cta,
+      })
+    }
 
     if (!readiness.ready) {
       return {

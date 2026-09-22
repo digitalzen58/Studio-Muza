@@ -19,6 +19,24 @@ const stockTypesContent = fs.readFileSync(
   'utf8'
 )
 
+const studioComponentContent = [
+  fs.readFileSync(path.resolve(process.cwd(), 'src/components/studio/content-studio.tsx'), 'utf8'),
+  fs.existsSync(path.resolve(process.cwd(), 'src/components/studio/carousel-editor.tsx'))
+    ? fs.readFileSync(path.resolve(process.cwd(), 'src/components/studio/carousel-editor.tsx'), 'utf8')
+    : '',
+  fs.existsSync(path.resolve(process.cwd(), 'src/components/studio/post-editor.tsx'))
+    ? fs.readFileSync(path.resolve(process.cwd(), 'src/components/studio/post-editor.tsx'), 'utf8')
+    : '',
+].join('\n')
+
+const carouselEditorContent = fs.existsSync(path.resolve(process.cwd(), 'src/components/studio/carousel-editor.tsx'))
+  ? fs.readFileSync(path.resolve(process.cwd(), 'src/components/studio/carousel-editor.tsx'), 'utf8')
+  : ''
+
+const postEditorContent = fs.existsSync(path.resolve(process.cwd(), 'src/components/studio/post-editor.tsx'))
+  ? fs.readFileSync(path.resolve(process.cwd(), 'src/components/studio/post-editor.tsx'), 'utf8')
+  : ''
+
 const stockMediaModalContent = fs.readFileSync(
   path.resolve(process.cwd(), 'src/components/studio/stock-media-modal.tsx'),
   'utf8'
@@ -26,11 +44,6 @@ const stockMediaModalContent = fs.readFileSync(
 
 const mediaPickerModalContent = fs.readFileSync(
   path.resolve(process.cwd(), 'src/components/studio/media-picker-modal.tsx'),
-  'utf8'
-)
-
-const studioComponentContent = fs.readFileSync(
-  path.resolve(process.cwd(), 'src/components/studio/content-studio.tsx'),
   'utf8'
 )
 
@@ -243,6 +256,8 @@ console.log('✓ TEST EB: Stock asset appears in “Mes médias” with subtle d
 // ============================================================================
 assert.ok(
   studioComponentContent.includes('Photo d’illustration') ||
+  carouselEditorContent.includes('Photo d’illustration') ||
+  postEditorContent.includes('Photo d’illustration') ||
   studioComponentContent.includes("Photo d'illustration"),
   'EC FAILED: Active slide in Content Studio must display "Photo d’illustration" badge for stock media'
 )

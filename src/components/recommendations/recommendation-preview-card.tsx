@@ -28,33 +28,28 @@ const TYPE_LABELS: Record<RecommendationType, string> = {
 }
 
 const FORMAT_LABELS: Record<RecommendationFormat, string> = {
-  INSTAGRAM_POST: 'Post Instagram',
-  INSTAGRAM_CAROUSEL: 'Carrousel Instagram',
-  INSTAGRAM_REEL: 'Reel Instagram',
-  INSTAGRAM_STORY: 'Story Instagram',
-  FACEBOOK_POST: 'Post Facebook',
-  TIKTOK: 'TikTok',
-  LINKEDIN_POST: 'Post LinkedIn',
-  YOUTUBE_SHORT: 'Short YouTube',
-  BLOG_ARTICLE: 'Article de blog',
+  INSTAGRAM_POST: 'Publication',
+  INSTAGRAM_CAROUSEL: 'Carrousel',
+  INSTAGRAM_REEL: 'Vidéo courte',
+  INSTAGRAM_STORY: 'Story',
+  FACEBOOK_POST: 'Publication',
+  TIKTOK: 'Vidéo courte',
+  LINKEDIN_POST: 'Publication',
+  YOUTUBE_SHORT: 'Vidéo courte',
+  BLOG_ARTICLE: 'Article',
   WEBSITE_PAGE: 'Page du site',
   GOOGLE_BUSINESS_PROFILE: 'Fiche Google',
   OTHER: 'Autre',
 }
 
 function getCtaLabel(type: RecommendationType, hasExistingDraft?: boolean): string {
-  switch (type) {
-    case 'CONTENT':
-      return hasExistingDraft ? 'Reprendre le brouillon' : 'Créer ce contenu'
-    case 'SEO':
-      return 'Travailler cette action'
-    case 'OFFER':
-      return 'Voir cette offre'
-    case 'VISIBILITY':
-    case 'ENGAGEMENT':
-    default:
-      return 'Voir cette action'
+  if (type === 'CONTENT') {
+    return hasExistingDraft ? 'Continuer' : 'Créer ce contenu'
   }
+  if (type === 'OFFER') {
+    return 'Découvrir cette offre'
+  }
+  return 'Voir cette suggestion'
 }
 
 interface RecommendationPreviewCardProps {
@@ -161,23 +156,15 @@ export function RecommendationPreviewCard({
 
   return (
     <Card variant="default" className="flex flex-col gap-4 p-4 sm:p-5 transition-all hover:shadow-md border-ivory-border/80">
-      {/* Top Header Metadata */}
+      {/* Top Header Metadata - Simplified */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
           <Badge variant="terracotta" showSymbol>
-            {TYPE_LABELS[type] || type}
-          </Badge>
-          <span className="text-[11px] font-semibold text-ink-muted bg-ivory-subtle border border-ivory-border px-2.5 py-0.5 rounded-full">
             {formatLabel}
-          </span>
-          {/* Asset Readiness Creative Guidance Badge */}
-          {readiness && (
-            <span className="text-[10px] font-semibold text-terracotta-dark bg-terracotta-light/60 border border-terracotta-border/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-              <span>✦</span>
-              {readiness === 'READY' && 'Prêt à créer'}
-              {readiness === 'PARTIAL' && 'À compléter'}
-              {readiness === 'MISSING' && '1 média à préparer'}
-              {readiness === 'NO_MEDIA_REQUIRED' && 'Prêt sans photo'}
+          </Badge>
+          {type !== 'CONTENT' && (
+            <span className="text-[11px] font-semibold text-ink-muted bg-ivory-subtle border border-ivory-border px-2.5 py-0.5 rounded-full">
+              {TYPE_LABELS[type] || type}
             </span>
           )}
         </div>

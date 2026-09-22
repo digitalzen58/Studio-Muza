@@ -364,8 +364,9 @@ async function runAllTests() {
   // -------------------------------------------------------------
   {
     assert.ok(
-      sectionContent.includes('{batch.batch.recommendations.length}'),
-      'TEST AM FAILED: RecommendationSection heading must use batch.batch.recommendations.length'
+      sectionContent.includes('{batch.batch.recommendations.length}') ||
+        sectionContent.includes('{actionableRecommendations.length}'),
+      'TEST AM FAILED: RecommendationSection heading must use dynamic recommendation count'
     )
     assert.ok(
       sectionContent.includes('pour cette semaine'),
@@ -793,7 +794,8 @@ async function runAllTests() {
   // -------------------------------------------------------------
   {
     assert.ok(
-      currentSectionContent.includes('batch.batch.recommendations.map'),
+      currentSectionContent.includes('batch.batch.recommendations.map') ||
+        currentSectionContent.includes('actionableRecommendations.map'),
       'TEST BD FAILED: Recommendations mapping must remain active'
     )
     assert.ok(

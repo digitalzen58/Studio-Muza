@@ -2,22 +2,39 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { ensureInitialWorkspace } from '@/services/workspace'
+import { getActiveWorkspaceBusiness } from '@/services/business'
+
+import { validateVisualComposition } from '@/services/visual-composition/validation'
+import type { VisualComposition } from '@/services/visual-composition/types'
+import { validatePhone, validateUrl } from '@/services/business-contact'
 
 export interface CarouselSlideData {
   index: number
-  type: string
-  label: string
+  type?: string
+  label?: string
   text: string
   media_id: string | null
+}
+
+export type ContentActionType = 'NONE' | 'PHONE' | 'BOOKING' | 'APPOINTMENT'
+
+export interface ContentActionPayload {
+  type: ContentActionType
+  destination?: string | null
+  is_override?: boolean
 }
 
 export interface SaveContentDraftPayload {
   contentId: string
   workingTitle: string
-  hook: string | null
-  caption: string | null
-  cta: string | null
+  hook?: string | null
+  caption?: string | null
+  cta?: string | null
   slides?: CarouselSlideData[]
+  primaryMediaId?: string | null
+  visualComposition?: VisualComposition | null
+  action?: ContentActionPayload | null
 }
 
 export type CreateOrGetDraftResult =
@@ -25,6 +42,16 @@ export type CreateOrGetDraftResult =
       success: true
       contentId: string
       isNew: boolean
+    }
+  | {
+      success: false
+      message: string
+    }
+
+export type CreateManualDraftResult =
+  | {
+      success: true
+      contentId: string
     }
   | {
       success: false
@@ -39,6 +66,112 @@ export type SaveDraftResult =
       success: false
       message: string
     }
+
+/**
+ * Deterministically creates a new manual draft content without recommendation.
+ * Strictly 0 AI calls.
+ */
+export async function createManualContentDraftAction(
+  format: 'POST' | 'CAROUSEL'
+): Promise<CreateManualDraftResult> {
+  try {
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return {
+        success: false,
+        message: 'Vous devez être connecté pour créer un contenu.',
+      }
+    }
+
+    const { data: workspace } = await ensureInitialWorkspace()
+    if (!workspace?.workspace_id) {
+      return {
+        success: false,
+        message: 'Espace de travail introuvable.',
+      }
+    }
+
+    const { business } = await getActiveWorkspaceBusiness(workspace.workspace_id)
+    if (!business?.id) {
+      return {
+        success: false,
+        message: 'Entreprise introuvable.',
+      }
+    }
+
+    const initialTopic = format === 'CAROUSEL' ? 'Nouveau carrousel' : 'Nouvelle publication'
+
+    // 1. Create canonical contents row (conforming strictly to contents schema)
+    const { data: content, error: contentError } = await supabase
+      .from('contents')
+      .insert({
+        business_id: business.id,
+        recommendation_id: null,
+        content_type: 'SOCIAL',
+        topic: initialTopic,
+        status: 'DRAFT',
+      })
+      .select('id')
+      .single()
+
+    if (contentError || !content) {
+      console.error('Error creating manual content draft:', contentError)
+      return {
+        success: false,
+        message: contentError?.message || 'Impossible de créer le brouillon.',
+      }
+    }
+
+    // 2. Create initial variant
+    const initialSlides =
+      format === 'CAROUSEL'
+        ? [
+            { index: 1, type: 'COVER', label: 'Couverture', text: '', media_id: null },
+            { index: 2, type: 'STORY_1', label: 'Page 2', text: '', media_id: null },
+            { index: 3, type: 'STORY_2', label: 'Page 3', text: '', media_id: null },
+            { index: 4, type: 'STORY_3', label: 'Page 4', text: '', media_id: null },
+            { index: 5, type: 'CTA', label: 'Page 5 • Fin', text: '', media_id: null },
+          ]
+        : []
+
+    const { error: variantError } = await supabase.from('content_variants').insert({
+      content_id: content.id,
+      platform: 'INSTAGRAM',
+      format: format,
+      title: initialTopic,
+      metadata: format === 'CAROUSEL' ? { slides: initialSlides } : {},
+      status: 'DRAFT',
+    })
+
+    if (variantError) {
+      console.error('Error creating manual variant:', variantError)
+      return {
+        success: false,
+        message: variantError.message || 'Impossible de créer la variante de contenu.',
+      }
+    }
+
+    revalidatePath('/app')
+    revalidatePath(`/app/content/${content.id}`)
+
+    return {
+      success: true,
+      contentId: content.id,
+    }
+  } catch (err) {
+    console.error('Unexpected error in createManualContentDraftAction:', err)
+    return {
+      success: false,
+      message: 'Une erreur imprévue est survenue.',
+    }
+  }
+}
 
 /**
  * Deterministically creates or retrieves a canonical draft content for a given recommendation.
@@ -159,18 +292,72 @@ export async function saveContentDraftAction(
       }
     }
 
-    // 2. Update platform variants (RLS enforced)
+    // 2. Validate visual composition if provided
+    let sanitizedVisualComposition: VisualComposition | null = null
+    if (payload.visualComposition) {
+      const validation = validateVisualComposition(payload.visualComposition)
+      if (!validation.valid) {
+        return {
+          success: false,
+          message: validation.error || 'Composition visuelle invalide.',
+        }
+      }
+      sanitizedVisualComposition = validation.sanitized || null
+    }
+
+    // 2b. Validate action intent & destination if provided
+    let sanitizedAction: ContentActionPayload | null = null
+    if (payload.action && payload.action.type !== 'NONE') {
+      const actType = payload.action.type
+      const dest = payload.action.destination?.trim() || null
+      if (actType === 'PHONE') {
+        if (dest) {
+          const pVal = validatePhone(dest)
+          if (!pVal.valid) {
+            return { success: false, message: pVal.error || 'Numéro de téléphone invalide.' }
+          }
+        }
+      } else if (actType === 'BOOKING' || actType === 'APPOINTMENT') {
+        if (dest) {
+          const uVal = validateUrl(dest)
+          if (!uVal.valid) {
+            return { success: false, message: uVal.error || 'Lien invalide.' }
+          }
+        }
+      }
+      sanitizedAction = {
+        type: actType,
+        destination: dest,
+        is_override: Boolean(payload.action.is_override),
+      }
+    } else if (payload.action && payload.action.type === 'NONE') {
+      sanitizedAction = { type: 'NONE', destination: null, is_override: false }
+    }
+
+    // 3. Update platform variants (RLS enforced)
+    const variantMetadata: Record<string, unknown> = {
+      ...(payload.slides && Array.isArray(payload.slides) && payload.slides.length > 0
+        ? { slides: payload.slides }
+        : sanitizedVisualComposition
+        ? {
+            visual_composition: sanitizedVisualComposition,
+            primary_media_id:
+              sanitizedVisualComposition.background.type === 'IMAGE'
+                ? sanitizedVisualComposition.background.mediaAssetId
+                : null,
+          }
+        : payload.primaryMediaId !== undefined
+        ? { primary_media_id: payload.primaryMediaId }
+        : {}),
+      ...(sanitizedAction ? { action: sanitizedAction } : {}),
+    }
+
     const variantUpdates: Record<string, unknown> = {
       title: payload.workingTitle?.trim() || null,
       caption: payload.caption?.trim() || null,
       cta: payload.cta?.trim() || null,
+      metadata: variantMetadata,
       updated_at: now,
-    }
-
-    if (payload.slides && Array.isArray(payload.slides)) {
-      variantUpdates.metadata = {
-        slides: payload.slides,
-      }
     }
 
     const { error: variantUpdateError } = await supabase
@@ -186,13 +373,18 @@ export async function saveContentDraftAction(
       }
     }
 
-    // 3. Synchronize canonical content_media assignments (RLS enforced)
+    // 4. Synchronize canonical content_media assignments (RLS enforced)
     await supabase
       .from('content_media')
       .delete()
       .eq('content_id', payload.contentId)
 
-    if (payload.slides && Array.isArray(payload.slides)) {
+    const effectivePrimaryMediaId =
+      sanitizedVisualComposition?.background.type === 'IMAGE'
+        ? sanitizedVisualComposition.background.mediaAssetId
+        : payload.primaryMediaId
+
+    if (payload.slides && Array.isArray(payload.slides) && payload.slides.length > 0) {
       const mediaAssignments = payload.slides
         .filter((s) => Boolean(s.media_id))
         .map((s) => ({
@@ -214,6 +406,19 @@ export async function saveContentDraftAction(
         if (mediaInsertError) {
           console.error('Error inserting canonical content_media:', mediaInsertError.message)
         }
+      }
+    } else if (effectivePrimaryMediaId) {
+      const { error: mediaInsertError } = await supabase
+        .from('content_media')
+        .insert({
+          content_id: payload.contentId,
+          media_asset_id: effectivePrimaryMediaId,
+          position: 0,
+          usage_type: 'PRIMARY_IMAGE',
+        })
+
+      if (mediaInsertError) {
+        console.error('Error inserting primary content_media:', mediaInsertError.message)
       }
     }
 

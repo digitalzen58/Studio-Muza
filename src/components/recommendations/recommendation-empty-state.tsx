@@ -1,10 +1,12 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { BrandGreetingHero } from './brand-visual-hero'
 import { DraftContentsSection, type DraftContentSummary } from '@/components/studio/draft-contents-section'
+import { CreationChooserModal } from '@/components/studio/creation-chooser-modal'
 import type { StrategicContext } from './recommendation-section'
 
 interface RecommendationEmptyStateProps {
@@ -16,7 +18,7 @@ interface RecommendationEmptyStateProps {
 
 /**
  * Creative Studio Visual Empty State for Mūza Home before recommendation generation.
- * Features immediate greeting & objective, prominent first-generation CTA above-the-fold,
+ * Features immediate greeting & objective, prominent create action, prominent first-generation CTA,
  * and format previews below.
  */
 export function RecommendationEmptyState({
@@ -25,6 +27,7 @@ export function RecommendationEmptyState({
   strategicContext,
   draftContents,
 }: RecommendationEmptyStateProps) {
+  const [chooserOpen, setChooserOpen] = useState(false)
   const goalContext = strategicContext.goalTitle
     ? strategicContext.goalTitle.toLowerCase()
     : "remplir vos séjours d’automne"
@@ -35,22 +38,40 @@ export function RecommendationEmptyState({
   const storyAsset = media.length > 2 ? media[2] : reelAsset
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-xl mx-auto py-1">
-      {/* 1. TOP / HERO - Greeting & Business Headline */}
-      <BrandGreetingHero context={strategicContext} />
+    <>
+      <div className="flex flex-col gap-4 w-full max-w-xl mx-auto py-1">
+        {/* 1. TOP / HERO - Greeting & Business Headline */}
+        <BrandGreetingHero
+          context={strategicContext}
+          onOpenCreate={() => setChooserOpen(true)}
+        />
 
-      {/* 2. SINGLE CONTEXTUAL CHIP */}
-      <div className="w-full flex justify-center">
-        <div className="inline-flex items-center gap-2 bg-terracotta-light/70 border border-terracotta-border/60 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-terracotta-dark shadow-2xs text-center">
-          <MuzaSymbol size="sm" />
-          <span>Cette semaine, Mūza vous aide à {goalContext}.</span>
+        {/* 2. SINGLE CONTEXTUAL CHIP */}
+        <div className="w-full flex justify-center">
+          <div className="inline-flex items-center gap-2 bg-terracotta-light/70 border border-terracotta-border/60 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-terracotta-dark shadow-2xs text-center">
+            <MuzaSymbol size="sm" />
+            <span>Cette semaine, Mūza vous aide à {goalContext}.</span>
+          </div>
         </div>
-      </div>
 
-      {/* 2.5 ACTIVE DRAFTS AREA (VOS BROUILLONS EN COURS) */}
-      {draftContents && draftContents.length > 0 && (
-        <DraftContentsSection drafts={draftContents} />
-      )}
+        {/* 2.2 PRIMARY PROMINENT CREATE ACTION (CENTERED, LARGE TERRACOTTA) */}
+        <div className="w-full flex justify-center py-1">
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => setChooserOpen(true)}
+            className="w-full sm:w-auto min-w-[240px] min-h-[50px] py-3.5 px-8 text-base font-semibold shadow-md hover:shadow-lg bg-terracotta hover:bg-terracotta-dark text-white rounded-2xl gap-2 transition-all transform active:scale-[0.98] cursor-pointer"
+            aria-label="Créer un nouveau contenu"
+          >
+            <Plus className="w-5 h-5 text-white" />
+            <span>Créer un contenu</span>
+          </Button>
+        </div>
+
+        {/* 2.5 ACTIVE DRAFTS AREA (VOS BROUILLONS EN COURS) */}
+        {draftContents && draftContents.length > 0 && (
+          <DraftContentsSection drafts={draftContents} />
+        )}
 
       {/* 3. PRIMARY GENERATION CTA CARD (PROMINENT ABOVE-THE-FOLD) */}
       <div className="relative w-full rounded-2xl bg-ivory-card border border-ivory-border/80 p-5 text-center overflow-hidden shadow-xs flex flex-col items-center gap-3">
@@ -227,5 +248,12 @@ export function RecommendationEmptyState({
         </div>
       </div>
     </div>
+
+    {/* Creation Chooser Modal */}
+    <CreationChooserModal
+      isOpen={chooserOpen}
+      onClose={() => setChooserOpen(false)}
+    />
+  </>
   )
 }

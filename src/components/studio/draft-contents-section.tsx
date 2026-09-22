@@ -47,12 +47,11 @@ function formatRelativeTime(dateString: string): string {
   }
 }
 
-function getFormatBadgeLabel(format?: string | null, platform?: string | null): string {
-  if (format === 'CAROUSEL') return 'Carrousel Instagram'
-  if (format === 'REEL') return 'Reel Instagram'
+function getFormatBadgeLabel(format?: string | null): string {
+  if (format === 'CAROUSEL') return 'Carrousel'
+  if (format === 'REEL') return 'Vidéo courte'
   if (format === 'STORY') return 'Story'
-  if (platform === 'FACEBOOK') return 'Post Facebook'
-  return 'Post Instagram'
+  return 'Publication'
 }
 
 export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
@@ -83,10 +82,7 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
       <div className="flex flex-col gap-3">
         {drafts.map((draft) => {
           const primaryVariant = draft.content_variants?.[0]
-          const formatBadge = getFormatBadgeLabel(
-            primaryVariant?.format,
-            primaryVariant?.platform
-          )
+          const formatBadge = getFormatBadgeLabel(primaryVariant?.format)
           const displayTitle =
             draft.topic || primaryVariant?.title || 'Brouillon sans titre'
 

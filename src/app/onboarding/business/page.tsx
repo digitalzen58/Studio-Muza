@@ -118,6 +118,42 @@ export default function BusinessOnboardingPage() {
               />
             </div>
 
+            {/* Comment vos clients peuvent-ils vous contacter ? */}
+            <div className="pt-3 border-t border-ivory-border/70 flex flex-col gap-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-semibold text-ink-muted uppercase tracking-wider">
+                  Comment vos clients peuvent-ils vous contacter ?
+                </span>
+                <p className="text-[11px] text-ink-light">
+                  Vous pourrez les modifier plus tard.
+                </p>
+              </div>
+
+              <Input
+                label="Téléphone"
+                type="tel"
+                name="phone"
+                placeholder="Ex: 06 12 34 56 78"
+                hint="Optionnel"
+              />
+
+              <Input
+                label="Lien de réservation"
+                type="url"
+                name="bookingUrl"
+                placeholder="https://mon-gite.fr/reservation"
+                hint="Optionnel"
+              />
+
+              <Input
+                label="Lien de rendez-vous"
+                type="url"
+                name="appointmentUrl"
+                placeholder="https://calendly.com/... ou https://..."
+                hint="Optionnel"
+              />
+            </div>
+
             <input type="hidden" name="countryCode" value="FR" />
 
             <div className="pt-2">

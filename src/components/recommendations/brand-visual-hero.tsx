@@ -1,11 +1,14 @@
-'use client'
-
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import type { StrategicContext } from './recommendation-section'
 
-interface BrandVisualHeroProps {
+interface BrandGreetingHeroProps {
+  context: StrategicContext
+  onOpenCreate?: () => void
+}
+
+export interface BrandVisualHeroProps {
   context: StrategicContext
 }
 
@@ -13,14 +16,14 @@ interface BrandVisualHeroProps {
  * Greeting and Headline Header for Studio Mūza Home.
  * Displays greeting, business name, industry badge, and main editorial headline.
  */
-export function BrandGreetingHero({ context }: BrandVisualHeroProps) {
+export function BrandGreetingHero({ context }: BrandGreetingHeroProps) {
   const greeting = context.firstName ? `Bonjour ${context.firstName}` : 'Bonjour'
 
   return (
     <div className="flex flex-col gap-3 w-full max-w-xl mx-auto py-1">
       {/* Top Greeting & Business Badge */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-ink">
             {greeting}
           </h1>
@@ -28,9 +31,6 @@ export function BrandGreetingHero({ context }: BrandVisualHeroProps) {
             {context.businessName}
           </Badge>
         </div>
-        <span className="text-[10px] font-semibold text-ink-muted bg-ivory-subtle border border-ivory-border/70 px-2.5 py-0.5 rounded-full">
-          {context.industry}
-        </span>
       </div>
 
       {/* Main Editorial Headline - Compact Height */}

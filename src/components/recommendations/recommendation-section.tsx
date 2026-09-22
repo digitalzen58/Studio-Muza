@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useTransition } from 'react'
+import { Plus } from 'lucide-react'
 import {
   generateRecommendationsAction,
   recordBatchFeedbackAction,
@@ -15,11 +16,12 @@ import { RecommendationLoading } from './recommendation-loading'
 import { RecommendationPreviewCard } from './recommendation-preview-card'
 import { BrandGreetingHero, BrandVisualHero } from './brand-visual-hero'
 import { DraftContentsSection, type DraftContentSummary } from '@/components/studio/draft-contents-section'
+import { CreationChooserModal } from '@/components/studio/creation-chooser-modal'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import type { BrandMediaAsset } from '@/services/media'
-import type { MuzaPersistedRecommendationBatch } from '@/types/muza-recommendation-engine'
+import type { MuzaPersistedRecommendationBatch, MuzaRecommendation } from '@/types/muza-recommendation-engine'
 
 export interface StrategicContext {
   businessName: string
@@ -41,10 +43,28 @@ interface RecommendationSectionProps {
 }
 
 /**
+ * Filter recommendations to only actionable content creation formats supported in Studio (Post, Carousel).
+ * Filters out SEO, website pages, and unsupported video editor formats from Home creation feed.
+ */
+function isActionableContentRecommendation(rec: MuzaRecommendation): boolean {
+  if (rec.type !== 'CONTENT') return false
+  const format = rec.suggestedFormats?.[0]
+  if (!format) return true
+  const unsupported = [
+    'INSTAGRAM_REEL',
+    'TIKTOK',
+    'YOUTUBE_SHORT',
+    'BLOG_ARTICLE',
+    'WEBSITE_PAGE',
+    'GOOGLE_BUSINESS_PROFILE',
+  ]
+  return !unsupported.includes(format)
+}
+
+/**
  * Main Interactive Recommendation Section Component on /app.
- * Orchestrates brand visual hero, single contextual chip, recommendation cards preview system,
- * weekly communication strip, creation moment CTA, empty state, loading state, error state,
- * and structured batch dissatisfaction feedback ("Rien ne me convient").
+ * Orchestrates brand visual hero, single contextual chip, prominent create action,
+ * recommendation cards preview system, drafts section, and structured batch feedback.
  */
 export function RecommendationSection({
   initialPersistedBatch,
@@ -56,6 +76,7 @@ export function RecommendationSection({
   )
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [chooserOpen, setChooserOpen] = useState(false)
 
   // Batch Feedback State ("Rien ne me convient")
   const [batchFeedbackOpen, setBatchFeedbackOpen] = useState(false)
@@ -98,7 +119,6 @@ export function RecommendationSection({
       const res = await generateRecommendationsAction()
       if (res.success) {
         setBatch(res.data)
-        setError(null)
       } else {
         setError(res.message)
       }
@@ -106,27 +126,29 @@ export function RecommendationSection({
   }
 
   // 1. Loading State
-  if (isPending && (!batch || batch.batch.recommendations.length === 0)) {
+  if (isPending) {
     return <RecommendationLoading />
   }
 
-  // 2. Error State (when active business has no existing batch)
-  if (error && (!batch || batch.batch.recommendations.length === 0)) {
+  // 2. Fatal Error State (Only when no batch is available at all)
+  if (!batch && error) {
     return (
-      <Card variant="accent" className="flex flex-col gap-4 py-6 px-5 text-center items-center max-w-xl mx-auto">
-        <div className="flex flex-col gap-1.5 max-w-sm">
-          <h3 className="font-serif text-xl font-bold text-terracotta-dark">
-            Mūza n’a pas réussi à préparer vos idées.
+      <Card variant="default" className="border-terracotta-border bg-terracotta-light/40 text-terracotta-dark p-4 sm:p-5 flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <MuzaSymbol size="md" />
+          <h3 className="font-serif text-lg font-bold text-ink">
+            Génération momentanément indisponible
           </h3>
-          <p className="text-xs text-ink/80 leading-relaxed">
-            Vos informations sont bien conservées. Vous pourrez réessayer dans quelques instants.
-          </p>
         </div>
+        <p className="text-xs text-ink-muted leading-relaxed">
+          {error}
+        </p>
         <Button
           variant="primary"
-          size="md"
+          size="sm"
           onClick={handleGenerate}
           disabled={isPending}
+          className="self-start"
         >
           <span>Réessayer</span>
           <MuzaSymbol size="sm" className="ml-1 text-white" />
@@ -141,10 +163,21 @@ export function RecommendationSection({
       ? strategicContext.goalTitle.toLowerCase()
       : "remplir vos séjours d’automne"
 
+    const actionableRecommendations = batch.batch.recommendations
+      .map((rec, idx) => ({
+        recommendation: rec,
+        recId: batch.persistence.recommendationIds?.[idx],
+        idx,
+      }))
+      .filter(({ recommendation }) => isActionableContentRecommendation(recommendation))
+
     return (
       <div className="flex flex-col gap-5 w-full max-w-xl mx-auto py-1">
         {/* 1. BRAND GREETING HERO */}
-        <BrandGreetingHero context={strategicContext} />
+        <BrandGreetingHero
+          context={strategicContext}
+          onOpenCreate={() => setChooserOpen(true)}
+        />
 
         {/* 2. SINGLE CONTEXTUAL CHIP */}
         <div className="w-full flex justify-center">
@@ -154,217 +187,220 @@ export function RecommendationSection({
           </div>
         </div>
 
+        {/* 2.2 PRIMARY PROMINENT CREATE ACTION (CENTERED, LARGE TERRACOTTA) */}
+        <div className="w-full flex justify-center py-1">
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => setChooserOpen(true)}
+            className="w-full sm:w-auto min-w-[240px] min-h-[50px] py-3.5 px-8 text-base font-semibold shadow-md hover:shadow-lg bg-terracotta hover:bg-terracotta-dark text-white rounded-2xl gap-2 transition-all transform active:scale-[0.98] cursor-pointer"
+            aria-label="Créer un nouveau contenu"
+          >
+            <Plus className="w-5 h-5 text-white" />
+            <span>Créer un contenu</span>
+          </Button>
+        </div>
+
         {/* 2.5 ACTIVE DRAFTS AREA (VOS BROUILLONS EN COURS) */}
         {draftContents && draftContents.length > 0 && (
           <DraftContentsSection drafts={draftContents} />
         )}
 
-        {/* 3. VISUAL RECOMMENDATIONS AREA */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <MuzaSymbol size="md" />
-              <h2 className="font-serif text-2xl font-bold text-ink">
-                {batch.batch.recommendations.length}{' '}
-                {batch.batch.recommendations.length > 1 ? 'idées' : 'idée'} pour cette semaine
-              </h2>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerate}
-              disabled={isPending}
-              title="Générer un nouveau lot de recommandations"
-              className="text-xs"
-            >
-              <span>Nouvelles idées</span>
-              <MuzaSymbol size="sm" className="ml-1" />
-            </Button>
-          </div>
-
-          {/* Error notification banner if new generation attempt failed, preserving existing batch */}
-          {error && (
-            <div className="bg-terracotta-light/60 border border-terracotta-border/80 p-3.5 rounded-xl flex items-center justify-between gap-3 text-xs text-ink animate-fadeIn">
-              <div className="flex flex-col gap-0.5 text-left">
-                <span className="font-serif font-bold text-terracotta-dark">
-                  Mūza n’a pas réussi à préparer de nouvelles idées.
-                </span>
-                <span className="text-[11px] text-ink-muted">
-                  Vos recommandations actuelles sont conservées. Vous pourrez réessayer dans quelques instants.
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerate}
-                  disabled={isPending}
-                  className="text-xs py-1 px-2.5 h-auto"
-                >
-                  Réessayer
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => setError(null)}
-                  className="text-xs text-ink-muted hover:text-ink px-1.5 py-1"
-                  aria-label="Fermer l'alerte"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Recommendations Visual Preview Cards List */}
+        {/* 3. VISUAL RECOMMENDATIONS AREA (ACTIONABLE CONTENT ONLY) */}
+        {actionableRecommendations.length > 0 && (
           <div className="flex flex-col gap-4">
-            {batch.batch.recommendations.map((recommendation, idx) => {
-              const recId = batch.persistence.recommendationIds?.[idx]
-              const hasDraft = Boolean(
-                recommendation.status === 'ACCEPTED' ||
-                  (recId && draftContents?.some((d) => d.recommendation_id === recId))
-              )
-
-              return (
-                <RecommendationPreviewCard
-                  key={`${batch.persistence.batchId}-${idx}`}
-                  recommendation={recommendation}
-                  recommendationId={recId}
-                  hasExistingDraft={hasDraft}
-                  mediaAssets={strategicContext.mediaAssets}
-                  cardIndex={idx}
-                />
-              )
-            })}
-          </div>
-
-          {/* Batch Dissatisfaction Confirmation Notice */}
-          {batchSuccessNotice && (
-            <div className="bg-ivory-subtle border border-terracotta-border/40 p-3 rounded-xl flex items-center justify-between gap-2 text-xs text-ink-muted animate-fadeIn">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
-                <span className="text-terracotta font-serif font-bold text-sm">✦</span>
-                <span className="text-ink">{batchSuccessNotice}</span>
+                <MuzaSymbol size="md" />
+                <h2 className="font-serif text-2xl font-bold text-ink">
+                  {actionableRecommendations.length}{' '}
+                  {actionableRecommendations.length > 1 ? 'idées' : 'idée'} pour cette semaine
+                </h2>
               </div>
-              <span className="text-[10px] uppercase font-semibold text-terracotta">Enregistré</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerate}
+                disabled={isPending}
+                title="Générer un nouveau lot de recommandations"
+                className="text-xs"
+              >
+                <span>Nouvelles idées</span>
+                <MuzaSymbol size="sm" className="ml-1" />
+              </Button>
             </div>
-          )}
 
-          {/* Action D: "Rien ne me convient" Batch Dissatisfaction Panel */}
-          {batchFeedbackOpen ? (
-            <div className="flex flex-col gap-3 p-4 bg-ivory-subtle/90 border border-terracotta-border/50 rounded-2xl animate-fadeIn shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-serif font-bold text-ink flex items-center gap-1.5">
-                  <MuzaSymbol size="sm" />
-                  Rien ne vous convient dans ce lot ?
-                </span>
-                <button
-                  onClick={() => setBatchFeedbackOpen(false)}
-                  className="text-xs text-ink-muted hover:text-ink transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <p className="text-[11px] text-ink-muted leading-relaxed">
-                Indiquez pourquoi ce lot ne vous convient pas. Mūza mémorise votre préférence pour orienter ses prochaines idées sans relancer de génération automatique.
-              </p>
-
-              {/* 6 Concise Batch Dissatisfaction Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
-                {BATCH_FEEDBACK_OPTIONS.map((opt) => {
-                  const isSelected = selectedBatchReason === opt.reason
-                  return (
-                    <button
-                      key={opt.reason}
-                      type="button"
-                      onClick={() => setSelectedBatchReason(opt.reason)}
-                      className={`text-left p-2.5 rounded-lg text-xs transition-all border ${
-                        isSelected
-                          ? 'bg-terracotta-light border-terracotta text-terracotta-dark font-semibold shadow-2xs'
-                          : 'bg-white/80 border-ivory-border text-ink hover:bg-white'
-                      }`}
-                    >
-                      <div className="font-medium">{opt.label}</div>
-                      <div className="text-[10px] text-ink-muted mt-0.5 line-clamp-1">
-                        {FEEDBACK_REASON_LABELS[opt.reason]?.description}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Optional Batch Free-text Note */}
-              <div className="flex flex-col gap-1 pt-1">
-                <div className="flex items-center justify-between text-[11px] text-ink-muted">
-                  <span>Précision pour Mūza (facultatif)</span>
-                  <span>{batchNote.length}/300</span>
+            {/* Error notification banner if new generation attempt failed, preserving existing batch */}
+            {error && (
+              <div className="bg-terracotta-light/60 border border-terracotta-border/80 p-3.5 rounded-xl flex items-center justify-between gap-3 text-xs text-ink animate-fadeIn">
+                <div className="flex flex-col gap-0.5 text-left">
+                  <span className="font-serif font-bold text-terracotta-dark">
+                    Mūza n’a pas réussi à préparer de nouvelles idées.
+                  </span>
+                  <span className="text-[11px] text-ink-muted">
+                    Vos recommandations actuelles sont conservées. Vous pourrez réessayer dans quelques instants.
+                  </span>
                 </div>
-                <textarea
-                  value={batchNote}
-                  onChange={(e) => setBatchNote(e.target.value.slice(0, 300))}
-                  placeholder="Ex: Je souhaite plutôt axer mes publications sur le calme et l'arrière-saison..."
-                  className="w-full text-xs p-2.5 rounded-lg border border-ivory-border bg-white focus:outline-none focus:ring-1 focus:ring-terracotta/40 resize-none min-h-[58px]"
-                  maxLength={300}
-                />
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerate}
+                    disabled={isPending}
+                    className="text-xs py-1 px-2.5 h-auto"
+                  >
+                    Réessayer
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setError(null)}
+                    className="text-xs text-ink-muted hover:text-ink px-1.5 py-1"
+                    aria-label="Fermer l'alerte"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
+            )}
 
-              {batchActionError && (
-                <p className="text-xs text-terracotta font-medium">{batchActionError}</p>
-              )}
+            {/* Actionable Recommendations Visual Preview Cards List */}
+            <div className="flex flex-col gap-4">
+              {actionableRecommendations.map(({ recommendation, recId, idx }) => {
+                const hasDraft = Boolean(
+                  recommendation.status === 'ACCEPTED' ||
+                    (recId && draftContents?.some((d) => d.recommendation_id === recId))
+                )
 
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setBatchFeedbackOpen(false)}
-                  disabled={isBatchPending}
-                >
-                  Annuler
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleBatchFeedbackSubmit}
-                  disabled={isBatchPending}
-                >
-                  {isBatchPending ? 'Enregistrement...' : 'Enregistrer mon retour'}
-                </Button>
-              </div>
+                return (
+                  <RecommendationPreviewCard
+                    key={`${batch.persistence.batchId}-${recId || idx}`}
+                    recommendation={recommendation}
+                    recommendationId={recId}
+                    hasExistingDraft={hasDraft}
+                    mediaAssets={strategicContext.mediaAssets}
+                    cardIndex={idx}
+                  />
+                )
+              })}
             </div>
-          ) : (
-            !batchSuccessNotice && (
-              <div className="flex justify-center pt-1">
-                <button
-                  type="button"
-                  onClick={() => setBatchFeedbackOpen(true)}
-                  className="text-xs text-ink-muted hover:text-terracotta font-medium transition-colors inline-flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-ivory-subtle"
-                >
-                  <span>✦ Rien ne me convient dans ces idées</span>
-                </button>
+
+            {/* Batch Dissatisfaction Confirmation Notice */}
+            {batchSuccessNotice && (
+              <div className="bg-ivory-subtle border border-terracotta-border/40 p-3 rounded-xl flex items-center justify-between gap-2 text-xs text-ink-muted animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <span className="text-terracotta font-serif font-bold text-sm">✦</span>
+                  <span className="text-ink">{batchSuccessNotice}</span>
+                </div>
+                <span className="text-[10px] uppercase font-semibold text-terracotta">Enregistré</span>
               </div>
-            )
-          )}
-        </div>
+            )}
+
+            {/* Action D: "Rien ne me convient" Batch Dissatisfaction Panel */}
+            {batchFeedbackOpen ? (
+              <div className="flex flex-col gap-3 p-4 bg-ivory-subtle/90 border border-terracotta-border/50 rounded-2xl animate-fadeIn shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-serif font-bold text-ink flex items-center gap-1.5">
+                    <MuzaSymbol size="sm" />
+                    Rien ne vous convient dans ce lot ?
+                  </span>
+                  <button
+                    onClick={() => setBatchFeedbackOpen(false)}
+                    className="text-xs text-ink-muted hover:text-ink transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-ink-muted leading-relaxed">
+                  Indiquez pourquoi ce lot ne vous convient pas. Mūza mémorise votre préférence pour orienter ses prochaines idées sans relancer de génération automatique.
+                </p>
+
+                {/* 6 Concise Batch Dissatisfaction Options */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                  {BATCH_FEEDBACK_OPTIONS.map((opt) => {
+                    const isSelected = selectedBatchReason === opt.reason
+                    return (
+                      <button
+                        key={opt.reason}
+                        type="button"
+                        onClick={() => setSelectedBatchReason(opt.reason)}
+                        className={`text-left p-2.5 rounded-lg text-xs transition-all border ${
+                          isSelected
+                            ? 'bg-terracotta-light border-terracotta text-terracotta-dark font-semibold shadow-2xs'
+                            : 'bg-white/80 border-ivory-border text-ink hover:bg-white'
+                        }`}
+                      >
+                        <div className="font-medium">{opt.label}</div>
+                        <div className="text-[10px] text-ink-muted mt-0.5 line-clamp-1">
+                          {FEEDBACK_REASON_LABELS[opt.reason]?.description}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Optional Batch Free-text Note */}
+                <div className="flex flex-col gap-1 pt-1">
+                  <div className="flex items-center justify-between text-[11px] text-ink-muted">
+                    <span>Précision pour Mūza (facultatif)</span>
+                    <span>{batchNote.length}/300</span>
+                  </div>
+                  <textarea
+                    value={batchNote}
+                    onChange={(e) => setBatchNote(e.target.value.slice(0, 300))}
+                    placeholder="Ex: Je souhaite plutôt axer mes publications sur le calme et l'arrière-saison..."
+                    className="w-full text-xs p-2.5 rounded-lg border border-ivory-border bg-white focus:outline-none focus:ring-1 focus:ring-terracotta/40 resize-none min-h-[58px]"
+                    maxLength={300}
+                  />
+                </div>
+
+                {batchActionError && (
+                  <p className="text-xs text-terracotta font-medium">{batchActionError}</p>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBatchFeedbackOpen(false)}
+                    disabled={isBatchPending}
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleBatchFeedbackSubmit}
+                    disabled={isBatchPending}
+                  >
+                    {isBatchPending ? 'Enregistrement...' : 'Enregistrer mon retour'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              !batchSuccessNotice && (
+                <div className="flex justify-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setBatchFeedbackOpen(true)}
+                    className="text-xs text-ink-muted hover:text-terracotta font-medium transition-colors inline-flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-ivory-subtle cursor-pointer"
+                  >
+                    <span>✦ Rien ne me convient dans ces idées</span>
+                  </button>
+                </div>
+              )
+            )}
+          </div>
+        )}
 
         {/* 4. STUDIO VISUAL SHOWCASE */}
         <BrandVisualHero context={strategicContext} />
 
-        {/* 5. PRIMARY CREATION MOMENT CTA */}
-        <div className="flex flex-col items-center gap-2 pt-2 pb-4">
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            disabled
-            title="Fonctionnalité de création Magic Flow à venir"
-            className="min-h-[46px] text-base shadow-md font-medium"
-          >
-            <span>Créer avec Mūza</span>
-            <span className="ml-2 text-white text-lg">✦</span>
-          </Button>
-          <span className="text-[11px] text-ink-muted font-medium">
-            Transformez directement vos idées Mūza en contenus finalisés
-          </span>
-        </div>
+        {/* Creation Chooser Modal */}
+        <CreationChooserModal
+          isOpen={chooserOpen}
+          onClose={() => setChooserOpen(false)}
+        />
       </div>
     )
   }

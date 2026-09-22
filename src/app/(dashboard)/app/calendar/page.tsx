@@ -77,9 +77,14 @@ export default async function CalendarPage() {
       ? (variant.metadata.slides as Array<{ index: number; media_id?: string | null }>)
       : []
 
-    // Try to find cover slide media
+    // Try to find cover slide media or post primary media
+    const primaryMediaId =
+      (variant?.metadata as { primary_media_id?: string; media_id?: string } | null)?.primary_media_id ||
+      (variant?.metadata as { primary_media_id?: string; media_id?: string } | null)?.media_id ||
+      null
     const coverSlide = slides.find((s) => s.index === 1) || slides[0]
-    const coverAsset = coverSlide?.media_id ? mediaMap.get(coverSlide.media_id) : null
+    const coverMediaId = coverSlide?.media_id || primaryMediaId
+    const coverAsset = coverMediaId ? mediaMap.get(coverMediaId) : null
 
     return {
       id: c.id,

@@ -25,10 +25,11 @@ const actionsContent = fs.readFileSync(
   'utf8'
 )
 
-const studioComponentContent = fs.readFileSync(
-  path.resolve(process.cwd(), 'src/components/studio/content-studio.tsx'),
-  'utf8'
-)
+const studioComponentContent = [
+  fs.readFileSync(path.resolve(process.cwd(), 'src/components/studio/content-studio.tsx'), 'utf8'),
+  fs.readFileSync(path.resolve(process.cwd(), 'src/components/studio/carousel-editor.tsx'), 'utf8'),
+  fs.readFileSync(path.resolve(process.cwd(), 'src/components/studio/post-editor.tsx'), 'utf8')
+].join('\n')
 
 const pageContent = fs.readFileSync(
   path.resolve(process.cwd(), 'src/app/(dashboard)/app/content/[contentId]/page.tsx'),
