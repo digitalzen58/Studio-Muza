@@ -2,14 +2,19 @@
 
 import React, { useState, useEffect, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Sparkles, Check, AlertCircle, Image as ImageIcon, Sparkle } from 'lucide-react'
+import { ArrowLeft, Save, Sparkles, Check, AlertCircle, Image as ImageIcon, Sparkle, Calendar as CalendarIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { saveContentDraftAction, type CarouselSlideData } from '@/actions/content'
 import { MediaPickerModal } from './media-picker-modal'
 import { StockMediaModal } from './stock-media-modal'
 import { WritingAssistancePanel } from './writing-assistance-panel'
+import { ContentReadinessModal } from './content-readiness-modal'
+import { ScheduleContentModal } from './schedule-content-modal'
 import { requestWritingAssistanceAction } from '@/actions/ai-assistance'
+import { validateCarouselReadiness } from '@/services/content-readiness/carousel-readiness'
+import { scheduleContentAction, cancelScheduledContentAction } from '@/actions/scheduling'
+import type { ReadinessIssue } from '@/services/content-readiness/types'
 import type { WritingOperation, WritingTargetType } from '@/services/ai-assistance/types'
 import type { BrandMediaAsset } from '@/services/media'
 
@@ -26,6 +31,8 @@ export interface ContentStudioProps {
     script: string | null
     cta: string | null
     status: string
+    scheduled_at?: string | null
+    published_at?: string | null
     title?: string | null
     created_at: string
     updated_at: string | null
@@ -109,6 +116,17 @@ export function ContentStudio({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
+
+  // Scheduling state
+  const [currentStatus, setCurrentStatus] = useState(content.status)
+  const [currentScheduledAt, setCurrentScheduledAt] = useState<string | null>(content.scheduled_at || null)
+  const [readinessModalOpen, setReadinessModalOpen] = useState(false)
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+  const [blockingIssues, setBlockingIssues] = useState<ReadinessIssue[]>([])
+  const [readinessWarnings, setReadinessWarnings] = useState<ReadinessIssue[]>([])
+  const [isScheduling, setIsScheduling] = useState(false)
+  const [schedulingFeedback, setSchedulingFeedback] = useState<string | null>(null)
 
 
   // Warn on accidental tab close / reload if unsaved changes exist
@@ -312,15 +330,106 @@ export function ContentStudio({
     }
   }
 
+  const handlePlanifierClick = async () => {
+    if (isDirty) {
+      await executeSave()
+    }
+
+    const readiness = validateCarouselReadiness({
+      workingTitle,
+      hook,
+      slides,
+      caption,
+      cta,
+    })
+
+    setBlockingIssues(readiness.blockingIssues)
+    setReadinessWarnings(readiness.warnings)
+
+    if (!readiness.ready) {
+      setReadinessModalOpen(true)
+    } else {
+      setScheduleModalOpen(true)
+    }
+  }
+
+  const handleConfirmSchedule = async (payload: {
+    localDate: string
+    localTime: string
+    timeZone: string
+  }) => {
+    setIsScheduling(true)
+    try {
+      const res = await scheduleContentAction({
+        contentId: content.id,
+        localDate: payload.localDate,
+        localTime: payload.localTime,
+        timeZone: payload.timeZone,
+      })
+
+      if (res.success) {
+        setCurrentStatus('SCHEDULED')
+        setCurrentScheduledAt(res.scheduledAt)
+        setScheduleModalOpen(false)
+        setSchedulingFeedback('Contenu planifié avec succès dans le calendrier.')
+        setTimeout(() => setSchedulingFeedback(null), 5000)
+      } else {
+        throw new Error(res.message)
+      }
+    } finally {
+      setIsScheduling(false)
+    }
+  }
+
+  const handleConfirmCancelSchedule = async () => {
+    setIsScheduling(true)
+    try {
+      const res = await cancelScheduledContentAction({ contentId: content.id })
+      if (res.success) {
+        setCurrentStatus('READY')
+        setCurrentScheduledAt(null)
+        setCancelConfirmOpen(false)
+        setSchedulingFeedback('La programmation a été annulée. Votre contenu reste intact.')
+        setTimeout(() => setSchedulingFeedback(null), 5000)
+      } else {
+        setErrorMessage(res.message)
+      }
+    } finally {
+      setIsScheduling(false)
+    }
+  }
+
+  const handleSelectIssue = (issue: ReadinessIssue) => {
+    if (issue.targetType === 'SLIDES' && typeof issue.targetIndex === 'number') {
+      setActiveSlideIndex(issue.targetIndex)
+    }
+  }
+
+  const formatScheduledDateString = (isoString: string): string => {
+    try {
+      const d = new Date(isoString)
+      const formatted = new Intl.DateTimeFormat('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(d)
+      return `Prévu ${formatted}`
+    } catch {
+      return 'Planifié'
+    }
+  }
+
   return (
     <div className="space-y-6 pb-12">
       {/* 1. Studio Header */}
-      <header className="flex items-center justify-between gap-3 border-b border-ivory-border/60 pb-4">
+      <header className="flex items-center justify-between gap-3 border-b border-ivory-border/60 pb-4 flex-wrap">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleBack}
-            disabled={isPending}
+            disabled={isPending || isScheduling}
             className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-ivory-card border border-ivory-border text-ink hover:text-terracotta hover:border-terracotta/30 transition-colors shadow-xs disabled:opacity-50"
             title={isDirty ? 'Enregistrer et retourner aux idées' : 'Retour aux idées'}
           >
@@ -329,40 +438,96 @@ export function ContentStudio({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-serif font-bold text-ink">Studio Mūza</h1>
-              <Badge variant="ivory" className="text-[11px] font-normal tracking-wide">
-                Brouillon
-              </Badge>
+              {currentStatus === 'SCHEDULED' ? (
+                <Badge variant="ivory" className="text-[11px] font-semibold tracking-wide bg-emerald-50 text-emerald-800 border-emerald-200">
+                  Planifié
+                </Badge>
+              ) : (
+                <Badge variant="ivory" className="text-[11px] font-normal tracking-wide">
+                  Brouillon
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-ink-muted">
-              {isDirty ? 'Modifications en cours' : 'Édition manuelle guidée'}
+              {currentStatus === 'SCHEDULED' && currentScheduledAt
+                ? formatScheduledDateString(currentScheduledAt)
+                : isDirty
+                ? 'Modifications en cours'
+                : 'Édition manuelle guidée'}
             </p>
           </div>
         </div>
 
-        <Button
-          onClick={handleSave}
-          disabled={isPending}
-          size="sm"
-          className="gap-1.5 shadow-sm"
-        >
-          {isPending ? (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isPending || isScheduling}
+            variant="outline"
+            size="sm"
+            className="gap-1.5 shadow-2xs"
+          >
+            {isPending ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-terracotta/30 border-t-terracotta rounded-full animate-spin" />
+                <span>Enregistrement...</span>
+              </>
+            ) : saveStatus === 'saved' ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Enregistré</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-3.5 h-3.5" />
+                <span>Enregistrer</span>
+              </>
+            )}
+          </Button>
+
+          {currentStatus === 'SCHEDULED' ? (
             <>
-              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Enregistrement...</span>
-            </>
-          ) : saveStatus === 'saved' ? (
-            <>
-              <Check className="w-3.5 h-3.5 text-white" />
-              <span>Enregistré</span>
+              <Button
+                type="button"
+                onClick={handlePlanifierClick}
+                disabled={isPending || isScheduling}
+                size="sm"
+                className="gap-1.5 bg-terracotta-light/60 hover:bg-terracotta-light text-terracotta-dark border border-terracotta/30 shadow-2xs font-medium"
+              >
+                <CalendarIcon className="w-3.5 h-3.5 text-terracotta" />
+                <span>Changer</span>
+              </Button>
+              <button
+                type="button"
+                onClick={() => setCancelConfirmOpen(true)}
+                disabled={isPending || isScheduling}
+                className="text-xs text-red-600 hover:text-red-700 hover:underline px-2 py-1 transition-colors disabled:opacity-50 font-medium"
+              >
+                Annuler
+              </button>
             </>
           ) : (
-            <>
-              <Save className="w-3.5 h-3.5" />
-              <span>Enregistrer</span>
-            </>
+            <Button
+              type="button"
+              onClick={handlePlanifierClick}
+              disabled={isPending || isScheduling}
+              size="sm"
+              className="gap-1.5 bg-terracotta hover:bg-terracotta-dark text-white font-semibold shadow-xs"
+            >
+              <CalendarIcon className="w-3.5 h-3.5 text-white" />
+              <span>Planifier</span>
+            </Button>
           )}
-        </Button>
+        </div>
       </header>
+
+      {/* Scheduling Feedback Banner */}
+      {schedulingFeedback && (
+        <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs">
+          <Check className="w-4 h-4 shrink-0 text-emerald-600" />
+          <span>{schedulingFeedback}</span>
+        </div>
+      )}
 
       {/* Save Status Banner */}
       {saveStatus === 'error' && (
@@ -425,9 +590,9 @@ export function ContentStudio({
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider">
-              Structure du carrousel ({slides.length} slides)
+              Pages du carrousel ({slides.length} pages)
             </label>
-            <span className="text-[11px] text-ink-muted">Cliquez pour éditer</span>
+            <span className="text-[11px] text-ink-muted">Cliquez pour modifier</span>
           </div>
 
           {/* Slide Navigation Tabs */}
@@ -448,7 +613,7 @@ export function ContentStudio({
                       : 'bg-white text-ink-muted border-ivory-border hover:bg-ivory-subtle'
                   }`}
                 >
-                  <span className="text-[10px] font-bold opacity-80">#{slide.index}</span>
+                  <span className="text-[10px] font-bold opacity-80">Page {slide.index}</span>
                   <span>{slide.label}</span>
                   {slide.media_id && (
                     <ImageIcon className={`w-3 h-3 ${isActive ? 'text-white/90' : 'text-terracotta'} shrink-0`} />
@@ -462,14 +627,14 @@ export function ContentStudio({
           <div className="bg-ivory-card/60 border border-ivory-border rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-ink">
-                Slide #{activeSlide.index} — {activeSlide.label}
+                Page {activeSlide.index} sur {slides.length} — {activeSlide.label}
               </span>
               <span className="text-[11px] text-ink-muted">
                 {activeSlide.type === 'COVER'
                   ? 'Accroche visuelle'
                   : activeSlide.type === 'CTA'
                   ? 'Appel à l’action final'
-                  : 'Contenu étape'}
+                  : 'Contenu'}
               </span>
             </div>
 
@@ -480,14 +645,14 @@ export function ContentStudio({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={activeSlideMedia.url}
-                    alt={activeSlideMedia.alt || activeSlideMedia.original_filename || 'Visuel de la slide'}
+                    alt={activeSlideMedia.alt || activeSlideMedia.original_filename || 'Visuel'}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="text-xs font-medium text-ink truncate max-w-[200px]">
-                      {activeSlideMedia.original_filename || 'Photo assignée'}
+                      {activeSlideMedia.original_filename || 'Photo choisie'}
                     </p>
                     {activeSlideMedia.source?.startsWith('STOCK') && (
                       <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/80 border border-amber-200/80 px-2 py-0.2 rounded-full">
@@ -552,7 +717,7 @@ export function ContentStudio({
               ref={slideTextareaRef}
               value={activeSlide.text}
               onChange={(e) => handleSlideTextChange(e.target.value)}
-              placeholder={`Écrivez le texte pour la slide "${activeSlide.label}"...`}
+              placeholder={`Écrivez le texte pour la page "${activeSlide.label}"...`}
               style={{ minHeight: '160px', maxHeight: '260px' }}
               className="w-full px-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all resize-none min-h-[160px] max-h-[260px] leading-relaxed"
             />
@@ -591,7 +756,6 @@ export function ContentStudio({
                       disabled={Boolean(assistanceState?.isPending)}
                       className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
                     >
-                      <Sparkles className="w-3 h-3" />
                       <span>Raccourcir ✦</span>
                     </button>
                   </>
@@ -599,32 +763,40 @@ export function ContentStudio({
               </div>
             </div>
 
-            {assistanceState?.targetType === 'CAROUSEL_SLIDE' && assistanceState?.targetIndex === activeSlide.index && (
-              <WritingAssistancePanel
-                operation={assistanceState.operation}
-                targetType={assistanceState.targetType}
-                targetIndex={assistanceState.targetIndex}
-                options={assistanceState.options}
-                isPending={assistanceState.isPending}
-                error={assistanceState.error}
-                originalTextHash={assistanceState.originalTextHash}
-                currentEditorText={activeSlide.text}
-                onApply={(text) => {
-                  handleSlideTextChange(text)
-                  setAssistanceState(null)
-                }}
-                onRetry={() => handleRequestAssistance('CAROUSEL_SLIDE', assistanceState.operation, activeSlide.index)}
-                onDismiss={() => setAssistanceState(null)}
-              />
-            )}
+            {/* Assistance Panel for Carousel Slide */}
+            {assistanceState?.targetType === 'CAROUSEL_SLIDE' &&
+              assistanceState.targetIndex === activeSlide.index && (
+                <WritingAssistancePanel
+                  operation={assistanceState.operation}
+                  targetType={assistanceState.targetType}
+                  targetIndex={assistanceState.targetIndex}
+                  options={assistanceState.options}
+                  isPending={assistanceState.isPending}
+                  error={assistanceState.error}
+                  originalTextHash={assistanceState.originalTextHash}
+                  currentEditorText={activeSlide.text}
+                  onApply={(text) => {
+                    handleSlideTextChange(text)
+                    setAssistanceState(null)
+                  }}
+                  onRetry={() =>
+                    handleRequestAssistance(
+                      'CAROUSEL_SLIDE',
+                      assistanceState.operation,
+                      activeSlide.index
+                    )
+                  }
+                  onDismiss={() => setAssistanceState(null)}
+                />
+              )}
           </div>
         </div>
 
         {/* Hook / Accroche */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 pt-2">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider">
-              Accroche / Hook (première ligne)
+              Accroche principale
             </label>
             <button
               type="button"
@@ -886,6 +1058,61 @@ export function ContentStudio({
         onMediaImported={handleStockMediaImported}
         slideIndex={activeSlide.index}
       />
+
+      {/* 8. Content Readiness Modal */}
+      <ContentReadinessModal
+        isOpen={readinessModalOpen}
+        onClose={() => setReadinessModalOpen(false)}
+        blockingIssues={blockingIssues}
+        warnings={readinessWarnings}
+        onSelectIssue={handleSelectIssue}
+      />
+
+      {/* 9. Schedule Content Modal */}
+      <ScheduleContentModal
+        isOpen={scheduleModalOpen}
+        onClose={() => setScheduleModalOpen(false)}
+        onConfirm={handleConfirmSchedule}
+        contentTitle={workingTitle || content.topic || 'Contenu sans titre'}
+        slideCount={slides.length}
+        platform={variant?.platform || 'Instagram'}
+        initialScheduledAt={currentScheduledAt}
+        isPending={isScheduling}
+      />
+
+      {/* 10. Cancel Schedule Confirmation Dialog */}
+      {cancelConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
+          <div className="bg-ivory-card border border-ivory-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl">
+            <div className="space-y-1">
+              <h3 className="text-sm font-serif font-bold text-ink">
+                Annuler la programmation ?
+              </h3>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                Ce contenu ne sera plus diffusé à la date prévue. Vos textes, photos et slides restent intacts dans Studio Mūza.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCancelConfirmOpen(false)}
+                disabled={isScheduling}
+                className="px-3 py-1.5 text-xs text-ink-muted hover:text-ink font-medium"
+              >
+                Garder la planification
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancelSchedule}
+                disabled={isScheduling}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs disabled:opacity-50"
+              >
+                {isScheduling ? 'Annulation…' : 'Confirmer l’annulation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
