@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { logout } from '@/app/auth/actions'
-import { LogOut } from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 
 interface HeaderProps {
   userEmail?: string | null
@@ -24,16 +24,23 @@ export function Header({ userEmail, userName }: HeaderProps) {
           <MuzaSymbol size="md" />
         </Link>
 
-        {/* User menu & logout */}
-        <div className="flex items-center gap-3">
+        {/* User menu & settings/logout */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <span className="text-xs text-ink-muted hidden sm:inline-block max-w-[120px] truncate">
             {displayName}
           </span>
+          <Link
+            href="/app/settings"
+            title="Paramètres"
+            className="p-2 text-ink-muted hover:text-terracotta hover:bg-terracotta-light rounded-full transition-colors flex items-center justify-center text-xs"
+          >
+            <Settings className="w-4 h-4" />
+          </Link>
           <form action={logout}>
             <button
               type="submit"
               title="Se déconnecter"
-              className="p-2 text-ink-muted hover:text-terracotta hover:bg-terracotta-light rounded-full transition-colors flex items-center justify-center text-xs"
+              className="p-2 text-ink-muted hover:text-terracotta hover:bg-terracotta-light rounded-full transition-colors flex items-center justify-center text-xs cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>

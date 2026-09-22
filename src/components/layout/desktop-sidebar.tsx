@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Lightbulb, PlusCircle, Calendar, LogOut } from 'lucide-react'
+import { Home, Lightbulb, PlusCircle, Calendar, Settings, LogOut } from 'lucide-react'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { logout } from '@/app/auth/actions'
 import { CreationChooserModal } from '@/components/studio/creation-chooser-modal'
@@ -18,6 +18,7 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
   const [chooserOpen, setChooserOpen] = useState(false)
 
   const displayName = userName || userEmail?.split('@')[0] || 'Entrepreneur'
+  const isSettingsActive = pathname === '/app/settings' || pathname.startsWith('/app/settings/')
 
   const navItems: Array<{
     label: string
@@ -55,7 +56,7 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
             <span>Créer un contenu</span>
           </button>
 
-          {/* Navigation Links */}
+          {/* Primary 5 Destinations Navigation */}
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = item.href ? pathname === item.href : false
@@ -104,26 +105,42 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
           </nav>
         </div>
 
-        {/* Bottom: User Info & Logout */}
-        <div className="pt-4 border-t border-ivory-border/80 flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <span className="text-xs font-medium text-ink block truncate" title={displayName}>
-              {displayName}
-            </span>
-            <span className="text-[11px] text-ink-muted block truncate" title={userEmail || ''}>
-              {userEmail || ''}
-            </span>
-          </div>
+        {/* Bottom Area: Settings Utility Navigation & User Info */}
+        <div className="space-y-3">
+          {/* Settings Utility Link (Visually separated from primary navigation) */}
+          <Link
+            href="/app/settings"
+            className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+              isSettingsActive
+                ? 'bg-terracotta-light/70 text-terracotta font-semibold'
+                : 'text-ink-muted hover:text-ink hover:bg-white/60'
+            }`}
+          >
+            <Settings className={`w-4 h-4 ${isSettingsActive ? 'text-terracotta' : 'text-ink-muted'}`} />
+            <span>Paramètres</span>
+          </Link>
 
-          <form action={logout}>
-            <button
-              type="submit"
-              title="Se déconnecter"
-              className="p-2 text-ink-muted hover:text-terracotta hover:bg-terracotta-light rounded-xl transition-colors flex items-center justify-center text-xs"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </form>
+          {/* User Info & Logout */}
+          <div className="pt-3 border-t border-ivory-border/80 flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-xs font-medium text-ink block truncate" title={displayName}>
+                {displayName}
+              </span>
+              <span className="text-[11px] text-ink-muted block truncate" title={userEmail || ''}>
+                {userEmail || ''}
+              </span>
+            </div>
+
+            <form action={logout}>
+              <button
+                type="submit"
+                title="Se déconnecter"
+                className="p-2 text-ink-muted hover:text-terracotta hover:bg-terracotta-light rounded-xl transition-colors flex items-center justify-center text-xs cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
         </div>
       </aside>
 
