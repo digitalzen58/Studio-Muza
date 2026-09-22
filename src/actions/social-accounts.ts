@@ -41,8 +41,8 @@ export async function disconnectSocialAccountAction(
 
     const res = await disconnectSocialAccount(business.id, accountId)
     if (res.success) {
-      revalidatePath('/app/muza/networks')
-      revalidatePath('/app/muza')
+      revalidatePath('/app/settings/networks')
+      revalidatePath('/app/settings')
     }
 
     return res
@@ -81,8 +81,8 @@ export async function verifySocialAccountAction(
     }
 
     const res = await verifySocialAccount(business.id, accountId)
-    revalidatePath('/app/muza/networks')
-    revalidatePath('/app/muza')
+    revalidatePath('/app/settings/networks')
+    revalidatePath('/app/settings')
 
     return {
       success: res.isValid,

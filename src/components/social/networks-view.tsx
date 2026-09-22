@@ -65,13 +65,17 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Find active accounts by platform
-  const instagramAccount = accounts.find(
-    (a) => a.platform === 'INSTAGRAM' && a.status === 'CONNECTED'
-  )
-  const facebookAccount = accounts.find(
-    (a) => a.platform === 'FACEBOOK' && a.status === 'CONNECTED'
-  )
+  // Find accounts by platform
+  const instagramAccount = accounts.find((a) => a.platform === 'INSTAGRAM')
+  const facebookAccount = accounts.find((a) => a.platform === 'FACEBOOK')
+
+  const isInstagramConnected = instagramAccount?.status === 'CONNECTED'
+  const isInstagramReauth =
+    instagramAccount?.status === 'REAUTH_REQUIRED' || instagramAccount?.status === 'ERROR'
+
+  const isFacebookConnected = facebookAccount?.status === 'CONNECTED'
+  const isFacebookReauth =
+    facebookAccount?.status === 'REAUTH_REQUIRED' || facebookAccount?.status === 'ERROR'
 
   const handleConnect = async (platform: SocialPlatform) => {
     setLoadingAction(`connect-${platform}`)
@@ -82,12 +86,15 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
       const res = await getSocialAuthUrlAction(platform)
       if (res.error) {
         setErrorMessage(res.error)
+        setLoadingAction(null)
       } else if (res.url) {
         window.location.href = res.url
+      } else {
+        setErrorMessage('Impossible de générer le lien d’autorisation.')
+        setLoadingAction(null)
       }
     } catch {
       setErrorMessage('Une erreur est survenue lors de la tentative de connexion.')
-    } finally {
       setLoadingAction(null)
     }
   }
@@ -191,10 +198,15 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-sm sm:text-base text-ink">Instagram</h3>
-                  {instagramAccount ? (
+                  {isInstagramConnected ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
                       <CheckCircle2 className="w-3 h-3" />
                       Connecté
+                    </span>
+                  ) : isInstagramReauth ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                      <AlertCircle className="w-3 h-3" />
+                      À reconnecter
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-ivory-border/60 text-ink-muted">
@@ -203,8 +215,10 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
                   )}
                 </div>
                 <p className="text-xs text-ink-muted">
-                  {instagramAccount
+                  {isInstagramConnected && instagramAccount
                     ? `Compte associé : ${instagramAccount.accountName || instagramAccount.externalAccountId}`
+                    : isInstagramReauth
+                    ? 'L’autorisation a expiré. Veuillez reconnecter votre compte Instagram Professionnel.'
                     : 'Pour publier vos posts et carrousels directement sur votre compte Instagram Professionnel.'}
                 </p>
               </div>
@@ -212,7 +226,7 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
 
             {/* Actions */}
             <div className="flex items-center gap-2 pt-2 sm:pt-0 self-end sm:self-center">
-              {instagramAccount ? (
+              {isInstagramConnected && instagramAccount ? (
                 <>
                   <button
                     type="button"
@@ -233,15 +247,54 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
                     <span>Déconnecter</span>
                   </button>
                 </>
+              ) : isInstagramReauth && instagramAccount ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleConnect('INSTAGRAM')}
+                    disabled={loadingAction === 'connect-INSTAGRAM'}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                  >
+                    {loadingAction === 'connect-INSTAGRAM' ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Connexion…</span>
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Reconnecter</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDisconnect(instagramAccount.id, 'Instagram')}
+                    disabled={loadingAction === `disconnect-${instagramAccount.id}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Déconnecter</span>
+                  </button>
+                </>
               ) : metaConfig.isConfigured ? (
                 <button
                   type="button"
                   onClick={() => handleConnect('INSTAGRAM')}
                   disabled={loadingAction === 'connect-INSTAGRAM'}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-70"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Connecter Instagram ✦</span>
+                  {loadingAction === 'connect-INSTAGRAM' ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Connexion…</span>
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Connecter Instagram</span>
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
@@ -256,7 +309,7 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
             </div>
           </div>
 
-          {!instagramAccount && !metaConfig.isConfigured && (
+          {!isInstagramConnected && !isInstagramReauth && !metaConfig.isConfigured && (
             <div className="p-3 rounded-xl bg-ivory-bg/80 border border-ivory-border/60 text-[11px] text-ink-muted flex items-center gap-2">
               <Info className="w-4 h-4 text-terracotta shrink-0" />
               <span>La connexion à Instagram sera activée dès la configuration des identifiants d’application Meta.</span>
@@ -274,10 +327,15 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-sm sm:text-base text-ink">Facebook</h3>
-                  {facebookAccount ? (
+                  {isFacebookConnected ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
                       <CheckCircle2 className="w-3 h-3" />
                       Connecté
+                    </span>
+                  ) : isFacebookReauth ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                      <AlertCircle className="w-3 h-3" />
+                      À reconnecter
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-ivory-border/60 text-ink-muted">
@@ -286,8 +344,10 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
                   )}
                 </div>
                 <p className="text-xs text-ink-muted">
-                  {facebookAccount
+                  {isFacebookConnected && facebookAccount
                     ? `Page associée : ${facebookAccount.accountName || facebookAccount.externalAccountId}`
+                    : isFacebookReauth
+                    ? 'L’autorisation a expiré. Veuillez reconnecter votre Page Facebook.'
                     : 'Pour publier vos actualités et visuels directement sur votre Page Facebook professionnelle.'}
                 </p>
               </div>
@@ -295,7 +355,7 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
 
             {/* Actions */}
             <div className="flex items-center gap-2 pt-2 sm:pt-0 self-end sm:self-center">
-              {facebookAccount ? (
+              {isFacebookConnected && facebookAccount ? (
                 <>
                   <button
                     type="button"
@@ -316,15 +376,54 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
                     <span>Déconnecter</span>
                   </button>
                 </>
+              ) : isFacebookReauth && facebookAccount ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleConnect('FACEBOOK')}
+                    disabled={loadingAction === 'connect-FACEBOOK'}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                  >
+                    {loadingAction === 'connect-FACEBOOK' ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Connexion…</span>
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Reconnecter</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDisconnect(facebookAccount.id, 'Facebook')}
+                    disabled={loadingAction === `disconnect-${facebookAccount.id}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Déconnecter</span>
+                  </button>
+                </>
               ) : metaConfig.isConfigured ? (
                 <button
                   type="button"
                   onClick={() => handleConnect('FACEBOOK')}
                   disabled={loadingAction === 'connect-FACEBOOK'}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-70"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Connecter Facebook ✦</span>
+                  {loadingAction === 'connect-FACEBOOK' ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Connexion…</span>
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Connecter Facebook</span>
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
@@ -339,7 +438,7 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
             </div>
           </div>
 
-          {!facebookAccount && !metaConfig.isConfigured && (
+          {!isFacebookConnected && !isFacebookReauth && !metaConfig.isConfigured && (
             <div className="p-3 rounded-xl bg-ivory-bg/80 border border-ivory-border/60 text-[11px] text-ink-muted flex items-center gap-2">
               <Info className="w-4 h-4 text-terracotta shrink-0" />
               <span>La connexion à Facebook sera activée dès la configuration des identifiants d’application Meta.</span>

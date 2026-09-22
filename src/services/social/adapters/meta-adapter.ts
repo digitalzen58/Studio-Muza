@@ -37,12 +37,20 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
   getAuthConfig(): ProviderAuthConfig {
     const appId = process.env.META_APP_ID || process.env.FACEBOOK_APP_ID
     const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET
-    const redirectUri = process.env.META_REDIRECT_URI
+    const configId =
+      process.env.META_CONFIG_ID ||
+      process.env.META_BUSINESS_CONFIG_ID ||
+      process.env.FACEBOOK_CONFIG_ID
+    const redirectUri =
+      process.env.META_REDIRECT_URI ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL
 
     return {
       isConfigured: Boolean(appId && appSecret),
       appIdPresent: Boolean(appId),
       appSecretPresent: Boolean(appSecret),
+      configIdPresent: Boolean(configId),
       redirectUriPresent: Boolean(redirectUri),
     }
   }
@@ -85,10 +93,18 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
     }
 
     const appId = process.env.META_APP_ID || process.env.FACEBOOK_APP_ID
+    const configId =
+      process.env.META_CONFIG_ID ||
+      process.env.META_BUSINESS_CONFIG_ID ||
+      process.env.FACEBOOK_CONFIG_ID
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'http://localhost:3000'
     const baseRedirect =
       params.redirectUriOverride ||
       process.env.META_REDIRECT_URI ||
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/social/meta/callback`
+      `${siteUrl.replace(/\/$/, '')}/api/auth/social/meta/callback`
 
     // Generate tamper-proof OAuth state
     const now = Date.now()
@@ -109,8 +125,13 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       redirect_uri: baseRedirect,
       state: signedState,
       response_type: 'code',
-      scope: this.defaultScopes.join(','),
     })
+
+    if (configId) {
+      urlParams.set('config_id', configId)
+    } else {
+      urlParams.set('scope', this.defaultScopes.join(','))
+    }
 
     const authUrl = `https://www.facebook.com/${this.graphApiVersion}/dialog/oauth?${urlParams.toString()}`
 
@@ -141,9 +162,13 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
 
     const appId = process.env.META_APP_ID || process.env.FACEBOOK_APP_ID
     const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'http://localhost:3000'
     const redirectUri =
       process.env.META_REDIRECT_URI ||
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/social/meta/callback`
+      `${siteUrl.replace(/\/$/, '')}/api/auth/social/meta/callback`
 
     try {
       // 3. Exchange code for short-lived user access token

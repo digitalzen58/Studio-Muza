@@ -244,4 +244,56 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
     assert.ok(migrationFiles.includes('016_stock_media_provenance.sql'), 'Migration 016 must be stock media provenance')
     assert.ok(!migrationFiles.some((f) => f.startsWith('017_')), 'No migration 017 allowed')
   })
+
+  // 11. Step 162 — Real Meta OAuth URL & Facebook Login for Business config_id
+  await t.test('11. Meta Login for Business config_id support, OAuth URL generation & zero publishing calls', async () => {
+    // Test with mock env variables
+    const originalEnv = { ...process.env }
+    try {
+      process.env.META_APP_ID = 'test-meta-app-id-123'
+      process.env.META_APP_SECRET = 'test-meta-secret-456'
+      process.env.META_CONFIG_ID = 'test-meta-business-config-789'
+      process.env.NEXT_PUBLIC_SITE_URL = 'https://studio-muza.vercel.app'
+
+      const adapter = new MetaSocialProviderAdapter()
+      const config = adapter.getAuthConfig()
+
+      assert.strictEqual(config.isConfigured, true)
+      assert.strictEqual(config.appIdPresent, true)
+      assert.strictEqual(config.appSecretPresent, true)
+      assert.strictEqual(config.configIdPresent, true)
+
+      const authRes = await adapter.getAuthorizationUrl({
+        userId: 'u1',
+        businessId: 'b1',
+        platform: 'INSTAGRAM',
+      })
+
+      assert.ok(authRes !== null, 'authRes must not be null')
+      assert.ok(authRes.url.startsWith('https://www.facebook.com/v21.0/dialog/oauth'), 'Must use Graph API v21.0 OAuth dialog')
+
+      const parsed = new URL(authRes.url)
+      assert.strictEqual(parsed.searchParams.get('client_id'), 'test-meta-app-id-123')
+      assert.strictEqual(parsed.searchParams.get('config_id'), 'test-meta-business-config-789')
+      assert.strictEqual(parsed.searchParams.get('redirect_uri'), 'https://studio-muza.vercel.app/api/auth/social/meta/callback')
+      assert.strictEqual(parsed.searchParams.get('state'), authRes.state)
+      assert.strictEqual(parsed.searchParams.get('response_type'), 'code')
+
+      // Verify the generated state contains our userId and businessId securely
+      const verifiedState = verifyOAuthState<OAuthStatePayload>(authRes.state)
+      assert.ok(verifiedState !== null, 'Generated state must be cryptographically valid')
+      assert.strictEqual(verifiedState.userId, 'u1')
+      assert.strictEqual(verifiedState.businessId, 'b1')
+      assert.strictEqual(verifiedState.provider, 'META')
+      assert.strictEqual(verifiedState.platform, 'INSTAGRAM')
+
+      // Ensure no publishing calls exist in the adapter
+      const adapterCode = fs.readFileSync(path.join(rootDir, 'src/services/social/adapters/meta-adapter.ts'), 'utf8')
+      assert.ok(!adapterCode.includes('media_publish'), 'Adapter must NOT contain media publish endpoints in Step 162')
+      assert.ok(!adapterCode.includes('/media_publish'), 'Adapter must NOT contain /media_publish calls')
+    } finally {
+      process.env = originalEnv
+    }
+  })
 })
+

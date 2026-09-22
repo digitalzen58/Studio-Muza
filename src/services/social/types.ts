@@ -50,6 +50,7 @@ export interface ProviderAuthConfig {
   isConfigured: boolean
   appIdPresent: boolean
   appSecretPresent: boolean
+  configIdPresent?: boolean
   redirectUriPresent: boolean
 }
 
