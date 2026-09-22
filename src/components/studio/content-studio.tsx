@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useTransition } from 'react'
+import React, { useState, useEffect, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Sparkles, Check, AlertCircle, Image as ImageIcon, Sparkle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button'
 import { saveContentDraftAction, type CarouselSlideData } from '@/actions/content'
 import { MediaPickerModal } from './media-picker-modal'
 import { StockMediaModal } from './stock-media-modal'
+import { WritingAssistancePanel } from './writing-assistance-panel'
+import { requestWritingAssistanceAction } from '@/actions/ai-assistance'
+import type { WritingOperation, WritingTargetType } from '@/services/ai-assistance/types'
 import type { BrandMediaAsset } from '@/services/media'
 
 export interface ContentStudioProps {
@@ -23,12 +26,16 @@ export interface ContentStudioProps {
     script: string | null
     cta: string | null
     status: string
+    title?: string | null
+    created_at: string
+    updated_at: string | null
   }
   variant?: {
     id: string
     format: string | null
     platform: string
     title: string | null
+    hook: string | null
     caption: string | null
     cta: string | null
     hashtags: unknown
@@ -48,6 +55,16 @@ export interface ContentStudioProps {
   initialMediaAssets?: BrandMediaAsset[]
 }
 
+interface ActiveAssistanceState {
+  targetType: WritingTargetType
+  targetIndex?: number
+  operation: WritingOperation
+  isPending: boolean
+  options: string[]
+  error: string | null
+  originalTextHash?: string
+}
+
 export function ContentStudio({
   content,
   variant,
@@ -55,11 +72,15 @@ export function ContentStudio({
   initialMediaAssets = [],
 }: ContentStudioProps) {
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   // Media state
   const [mediaAssets, setMediaAssets] = useState<BrandMediaAsset[]>(initialMediaAssets)
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
   const [stockModalOpen, setStockModalOpen] = useState(false)
+
+  // AI Writing Assistance state
+  const [assistanceState, setAssistanceState] = useState<ActiveAssistanceState | null>(null)
 
   // Form states
   const [workingTitle, setWorkingTitle] = useState(
@@ -72,7 +93,7 @@ export function ContentStudio({
   // Carousel slide state
   const initialSlides: CarouselSlideData[] =
     variant?.metadata?.slides && Array.isArray(variant.metadata.slides) && variant.metadata.slides.length > 0
-      ? variant.metadata.slides
+      ? (variant.metadata.slides as CarouselSlideData[])
       : [
           { index: 1, type: 'COVER', label: 'Couverture', text: '', media_id: null },
           { index: 2, type: 'SLIDE', label: 'Balade 1', text: '', media_id: null },
@@ -84,8 +105,7 @@ export function ContentStudio({
   const [slides, setSlides] = useState<CarouselSlideData[]>(initialSlides)
   const [activeSlideIndex, setActiveSlideIndex] = useState(1)
 
-  // Save transition & status
-  const [isPending, startTransition] = useTransition()
+  // Save status
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
@@ -102,6 +122,34 @@ export function ContentStudio({
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
+
+  // Textarea comfort: auto-growing with minimum visible lines and max height
+  const slideTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const captionTextareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const el = slideTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const minH = 160
+    const maxH = 260
+    const scrollH = el.scrollHeight
+    const targetH = Math.min(Math.max(scrollH, minH), maxH)
+    el.style.height = `${targetH}px`
+    el.style.overflowY = scrollH > maxH ? 'auto' : 'hidden'
+  }, [activeSlideIndex, slides])
+
+  useEffect(() => {
+    const el = captionTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const minH = 160
+    const maxH = 280
+    const scrollH = el.scrollHeight
+    const targetH = Math.min(Math.max(scrollH, minH), maxH)
+    el.style.height = `${targetH}px`
+    el.style.overflowY = scrollH > maxH ? 'auto' : 'hidden'
+  }, [caption])
 
   const activeSlide = slides.find((s) => s.index === activeSlideIndex) || slides[0]
   const activeSlideMedia = activeSlide.media_id
@@ -135,6 +183,87 @@ export function ContentStudio({
 
   const handleStockMediaImported = (newAsset: BrandMediaAsset) => {
     setMediaAssets((prev) => [newAsset, ...prev.filter((a) => a.id !== newAsset.id)])
+  }
+
+  const handleRequestAssistance = async (
+    targetType: WritingTargetType,
+    operation: WritingOperation,
+    targetIndex?: number
+  ) => {
+    // Prevent double-click concurrent requests
+    if (assistanceState?.isPending) return
+
+    let currentText = ''
+    let slideLabel: string | undefined
+    let hasStockMedia = false
+
+    if (targetType === 'HOOK') {
+      currentText = hook
+    } else if (targetType === 'CAPTION') {
+      currentText = caption
+    } else if (targetType === 'CAROUSEL_SLIDE') {
+      const slide = slides.find((s) => s.index === (targetIndex ?? activeSlideIndex))
+      currentText = slide?.text || ''
+      slideLabel = slide?.label
+      if (slide?.media_id) {
+        const media = mediaAssets.find((m) => m.id === slide.media_id)
+        hasStockMedia = Boolean(media?.source === 'STOCK_PEXELS')
+      }
+    }
+
+    setAssistanceState({
+      targetType,
+      targetIndex,
+      operation,
+      isPending: true,
+      options: [],
+      error: null,
+    })
+
+    try {
+      const result = await requestWritingAssistanceAction({
+        contentId: content.id,
+        operation,
+        targetType,
+        targetIndex,
+        currentText,
+        slideContext: {
+          label: slideLabel,
+          hasStockMedia,
+        },
+      })
+
+      if (result.success) {
+        setAssistanceState({
+          targetType,
+          targetIndex,
+          operation,
+          isPending: false,
+          options: result.options,
+          originalTextHash: result.originalTextHash,
+          error: null,
+        })
+      } else {
+        setAssistanceState({
+          targetType,
+          targetIndex,
+          operation,
+          isPending: false,
+          options: [],
+          originalTextHash: result.originalTextHash,
+          error: result.message,
+        })
+      }
+    } catch {
+      setAssistanceState({
+        targetType,
+        targetIndex,
+        operation,
+        isPending: false,
+        options: [],
+        error: 'Une erreur imprévue est survenue lors de la préparation de la suggestion.',
+      })
+    }
   }
 
   const executeSave = async (andNavigateTo?: string): Promise<boolean> => {
@@ -420,20 +549,93 @@ export function ContentStudio({
             )}
 
             <textarea
-              rows={3}
+              ref={slideTextareaRef}
               value={activeSlide.text}
               onChange={(e) => handleSlideTextChange(e.target.value)}
               placeholder={`Écrivez le texte pour la slide "${activeSlide.label}"...`}
-              className="w-full px-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all resize-none"
+              style={{ minHeight: '160px', maxHeight: '260px' }}
+              className="w-full px-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all resize-none min-h-[160px] max-h-[260px] leading-relaxed"
             />
+
+            {/* Slide contextual AI buttons */}
+            <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+              <span className="text-[11px] text-ink-muted">
+                {activeSlide.text.length} caractères
+              </span>
+              <div className="flex items-center gap-2">
+                {!activeSlide.text.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => handleRequestAssistance('CAROUSEL_SLIDE', 'HELP_WRITE', activeSlide.index)}
+                    disabled={Boolean(assistanceState?.isPending)}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>M’aider à écrire ✦</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleRequestAssistance('CAROUSEL_SLIDE', 'IMPROVE_TEXT', activeSlide.index)}
+                      disabled={Boolean(assistanceState?.isPending)}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Améliorer ✦</span>
+                    </button>
+                    <span className="text-ink-muted/40 text-xs">•</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRequestAssistance('CAROUSEL_SLIDE', 'SHORTEN_TEXT', activeSlide.index)}
+                      disabled={Boolean(assistanceState?.isPending)}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Raccourcir ✦</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {assistanceState?.targetType === 'CAROUSEL_SLIDE' && assistanceState?.targetIndex === activeSlide.index && (
+              <WritingAssistancePanel
+                operation={assistanceState.operation}
+                targetType={assistanceState.targetType}
+                targetIndex={assistanceState.targetIndex}
+                options={assistanceState.options}
+                isPending={assistanceState.isPending}
+                error={assistanceState.error}
+                originalTextHash={assistanceState.originalTextHash}
+                currentEditorText={activeSlide.text}
+                onApply={(text) => {
+                  handleSlideTextChange(text)
+                  setAssistanceState(null)
+                }}
+                onRetry={() => handleRequestAssistance('CAROUSEL_SLIDE', assistanceState.operation, activeSlide.index)}
+                onDismiss={() => setAssistanceState(null)}
+              />
+            )}
           </div>
         </div>
 
         {/* Hook / Accroche */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider">
-            Accroche / Hook (première ligne)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider">
+              Accroche / Hook (première ligne)
+            </label>
+            <button
+              type="button"
+              onClick={() => handleRequestAssistance('HOOK', 'SUGGEST_HOOKS')}
+              disabled={Boolean(assistanceState?.isPending)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Proposer des accroches ✦</span>
+            </button>
+          </div>
           <input
             type="text"
             value={hook}
@@ -444,6 +646,25 @@ export function ContentStudio({
             placeholder="Ex: Et si votre chien avait lui aussi besoin d'un week-end ?"
             className="w-full px-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all"
           />
+
+          {assistanceState?.targetType === 'HOOK' && (
+            <WritingAssistancePanel
+              operation={assistanceState.operation}
+              targetType={assistanceState.targetType}
+              options={assistanceState.options}
+              isPending={assistanceState.isPending}
+              error={assistanceState.error}
+              originalTextHash={assistanceState.originalTextHash}
+              currentEditorText={hook}
+              onApply={(text) => {
+                setHook(text)
+                setIsDirty(true)
+                setAssistanceState(null)
+              }}
+              onRetry={() => handleRequestAssistance('HOOK', 'SUGGEST_HOOKS')}
+              onDismiss={() => setAssistanceState(null)}
+            />
+          )}
         </div>
 
         {/* Caption */}
@@ -452,20 +673,76 @@ export function ContentStudio({
             <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider">
               Légende du post (Caption)
             </label>
-            <span className="text-[11px] text-ink-muted">
-              {caption.length} caractères
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-ink-muted">
+                {caption.length} caractères
+              </span>
+              <span className="text-ink-muted/40 text-xs">•</span>
+              {!caption.trim() ? (
+                <button
+                  type="button"
+                  onClick={() => handleRequestAssistance('CAPTION', 'HELP_WRITE')}
+                  disabled={Boolean(assistanceState?.isPending)}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>M’aider à écrire ✦</span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleRequestAssistance('CAPTION', 'IMPROVE_TEXT')}
+                    disabled={Boolean(assistanceState?.isPending)}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Améliorer ✦</span>
+                  </button>
+                  <span className="text-ink-muted/40 text-xs">•</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRequestAssistance('CAPTION', 'SHORTEN_TEXT')}
+                    disabled={Boolean(assistanceState?.isPending)}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Raccourcir ✦</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           <textarea
-            rows={5}
+            ref={captionTextareaRef}
             value={caption}
             onChange={(e) => {
               setCaption(e.target.value)
               setIsDirty(true)
             }}
             placeholder="Rédigez le texte qui accompagnera votre carrousel..."
-            className="w-full px-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all resize-y"
+            style={{ minHeight: '160px', maxHeight: '280px' }}
+            className="w-full px-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all resize-none min-h-[160px] max-h-[280px] leading-relaxed"
           />
+
+          {assistanceState?.targetType === 'CAPTION' && (
+            <WritingAssistancePanel
+              operation={assistanceState.operation}
+              targetType={assistanceState.targetType}
+              options={assistanceState.options}
+              isPending={assistanceState.isPending}
+              error={assistanceState.error}
+              originalTextHash={assistanceState.originalTextHash}
+              currentEditorText={caption}
+              onApply={(text) => {
+                setCaption(text)
+                setIsDirty(true)
+                setAssistanceState(null)
+              }}
+              onRetry={() => handleRequestAssistance('CAPTION', assistanceState.operation)}
+              onDismiss={() => setAssistanceState(null)}
+            />
+          )}
         </div>
 
         {/* Call to Action */}
@@ -544,34 +821,45 @@ export function ContentStudio({
           </h3>
         </div>
         <p className="text-xs text-ink-muted leading-relaxed">
-          L&apos;assistance IA ponctuelle sera disponible prochainement pour suggérer des accroches ou peaufiner vos phrases, à votre demande uniquement.
+          L&apos;assistance IA ponctuelle est disponible pour suggérer des accroches ou peaufiner vos phrases, à votre demande uniquement.
         </p>
 
         <div className="flex flex-wrap gap-2 pt-1">
           <button
             type="button"
-            disabled
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-ivory-card border border-ivory-border text-ink-muted/60 cursor-not-allowed"
+            onClick={() => handleRequestAssistance('HOOK', 'SUGGEST_HOOKS')}
+            disabled={Boolean(assistanceState?.isPending)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-ivory-card border border-ivory-border hover:border-terracotta/40 hover:bg-terracotta-light/10 text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
           >
-            <Sparkle className="w-3 h-3 text-terracotta/40" />
+            <Sparkle className="w-3 h-3 text-terracotta" />
             <span>Proposer des accroches ✦</span>
           </button>
 
           <button
             type="button"
-            disabled
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-ivory-card border border-ivory-border text-ink-muted/60 cursor-not-allowed"
+            onClick={() =>
+              handleRequestAssistance(
+                'CAROUSEL_SLIDE',
+                activeSlide.text.trim() ? 'IMPROVE_TEXT' : 'HELP_WRITE',
+                activeSlide.index
+              )
+            }
+            disabled={Boolean(assistanceState?.isPending)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-ivory-card border border-ivory-border hover:border-terracotta/40 hover:bg-terracotta-light/10 text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
           >
-            <Sparkle className="w-3 h-3 text-terracotta/40" />
+            <Sparkle className="w-3 h-3 text-terracotta" />
             <span>Améliorer ce texte ✦</span>
           </button>
 
           <button
             type="button"
-            disabled
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-ivory-card border border-ivory-border text-ink-muted/60 cursor-not-allowed"
+            onClick={() =>
+              handleRequestAssistance('CAROUSEL_SLIDE', 'HELP_WRITE', activeSlide.index)
+            }
+            disabled={Boolean(assistanceState?.isPending)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-ivory-card border border-ivory-border hover:border-terracotta/40 hover:bg-terracotta-light/10 text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
           >
-            <Sparkle className="w-3 h-3 text-terracotta/40" />
+            <Sparkle className="w-3 h-3 text-terracotta" />
             <span>Aide pour cette slide ✦</span>
           </button>
         </div>
