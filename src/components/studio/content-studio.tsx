@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { saveContentDraftAction, type CarouselSlideData } from '@/actions/content'
 import { MediaPickerModal } from './media-picker-modal'
+import { StockMediaModal } from './stock-media-modal'
 import type { BrandMediaAsset } from '@/services/media'
 
 export interface ContentStudioProps {
@@ -58,6 +59,7 @@ export function ContentStudio({
   // Media state
   const [mediaAssets, setMediaAssets] = useState<BrandMediaAsset[]>(initialMediaAssets)
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
+  const [stockModalOpen, setStockModalOpen] = useState(false)
 
   // Form states
   const [workingTitle, setWorkingTitle] = useState(
@@ -129,6 +131,10 @@ export function ContentStudio({
 
   const handleMediaUploaded = (newAsset: BrandMediaAsset) => {
     setMediaAssets((prev) => [newAsset, ...prev])
+  }
+
+  const handleStockMediaImported = (newAsset: BrandMediaAsset) => {
+    setMediaAssets((prev) => [newAsset, ...prev.filter((a) => a.id !== newAsset.id)])
   }
 
   const executeSave = async (andNavigateTo?: string): Promise<boolean> => {
@@ -345,21 +351,41 @@ export function ContentStudio({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={activeSlideMedia.url}
-                    alt={activeSlideMedia.original_filename || 'Visuel de la slide'}
+                    alt={activeSlideMedia.alt || activeSlideMedia.original_filename || 'Visuel de la slide'}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
-                  <p className="text-xs font-medium text-ink truncate">
-                    {activeSlideMedia.original_filename || 'Photo assignée'}
-                  </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-xs font-medium text-ink truncate max-w-[200px]">
+                      {activeSlideMedia.original_filename || 'Photo assignée'}
+                    </p>
+                    {activeSlideMedia.source?.startsWith('STOCK') && (
+                      <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/80 border border-amber-200/80 px-2 py-0.2 rounded-full">
+                        Photo d’illustration
+                      </span>
+                    )}
+                  </div>
+                  {activeSlideMedia.creator_name && (
+                    <p className="text-[10px] text-ink-muted truncate">
+                      Photo par {activeSlideMedia.creator_name} sur Pexels
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 pt-0.5">
                     <button
                       type="button"
                       onClick={() => setMediaPickerOpen(true)}
                       className="text-[11px] text-terracotta hover:underline font-medium"
                     >
-                      Changer la photo
+                      Mes médias
+                    </button>
+                    <span className="text-ink-muted/40 text-xs">•</span>
+                    <button
+                      type="button"
+                      onClick={() => setStockModalOpen(true)}
+                      className="text-[11px] text-terracotta hover:underline font-medium"
+                    >
+                      Photos gratuites
                     </button>
                     <span className="text-ink-muted/40 text-xs">•</span>
                     <button
@@ -373,14 +399,24 @@ export function ContentStudio({
                 </div>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setMediaPickerOpen(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-dashed border-terracotta/40 hover:border-terracotta bg-terracotta-light/10 hover:bg-terracotta-light/20 rounded-xl text-xs font-medium text-terracotta transition-colors"
-              >
-                <ImageIcon className="w-4 h-4" />
-                <span>Ajouter une photo à cette slide</span>
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMediaPickerOpen(true)}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 border border-dashed border-terracotta/40 hover:border-terracotta bg-terracotta-light/10 hover:bg-terracotta-light/20 rounded-xl text-xs font-medium text-terracotta transition-colors"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Mes médias</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStockModalOpen(true)}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 border border-dashed border-terracotta/40 hover:border-terracotta bg-terracotta-light/10 hover:bg-terracotta-light/20 rounded-xl text-xs font-medium text-terracotta transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Photos gratuites</span>
+                </button>
+              </div>
             )}
 
             <textarea
@@ -480,12 +516,12 @@ export function ContentStudio({
           {/* Photos gratuites */}
           <button
             type="button"
-            disabled
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-ivory-border bg-ivory-subtle/50 text-ink-muted cursor-not-allowed opacity-60 text-center gap-1"
+            onClick={() => setStockModalOpen(true)}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-ivory-border bg-white hover:bg-terracotta-light/15 hover:border-terracotta/40 text-ink text-center gap-1 transition-all group shadow-xs"
           >
-            <span className="text-xs font-medium">Photos gratuites</span>
-            <span className="text-[10px] text-terracotta bg-terracotta-light/60 px-2 py-0.5 rounded-full font-semibold">
-              À venir
+            <span className="text-xs font-medium group-hover:text-terracotta transition-colors">Photos gratuites</span>
+            <span className="text-[10px] text-ink-muted">
+              Banque Pexels
             </span>
           </button>
 
@@ -551,6 +587,16 @@ export function ContentStudio({
         slideIndex={activeSlide.index}
         onSelectMedia={handleAssignSlideMedia}
         onMediaUploaded={handleMediaUploaded}
+      />
+
+      {/* 7. Stock Media Modal */}
+      <StockMediaModal
+        isOpen={stockModalOpen}
+        onClose={() => setStockModalOpen(false)}
+        businessId={content.business_id}
+        onSelectMedia={handleAssignSlideMedia}
+        onMediaImported={handleStockMediaImported}
+        slideIndex={activeSlide.index}
       />
     </div>
   )

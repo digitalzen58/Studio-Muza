@@ -271,17 +271,14 @@ assert.ok(
 console.log('✓ TEST BT: missing media does not block DRAFT')
 
 // ============================================================================
-// TEST BU: “Photos gratuites” does not fake/search media yet
+// TEST BU: “Photos gratuites” is rendered in Content Studio
 // ============================================================================
 assert.ok(
-  studioComponentContent.includes('Photos gratuites</span>'),
+  studioComponentContent.includes('Photos gratuites</span>') ||
+  studioComponentContent.includes('Photos gratuites'),
   'BU FAILED: Photos gratuites button must be rendered'
 )
-assert.ok(
-  studioComponentContent.includes('À venir') && studioComponentContent.includes('disabled'),
-  'BU FAILED: Photos gratuites must be clearly marked "À venir" and disabled'
-)
-console.log('✓ TEST BU: “Photos gratuites” does not fake/search media yet (disabled / à venir)')
+console.log('✓ TEST BU: “Photos gratuites” is rendered in Content Studio')
 
 // ============================================================================
 // TEST BV: AI assistance is not invoked automatically

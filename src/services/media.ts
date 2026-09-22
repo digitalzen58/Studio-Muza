@@ -9,6 +9,14 @@ export interface BrandMediaAsset {
   width?: number | null
   height?: number | null
   orientation?: string | null
+  source?: string | null
+  creator_name?: string | null
+  source_url?: string | null
+  creator_url?: string | null
+  attribution_required?: boolean | null
+  attribution_text?: string | null
+  license_label?: string | null
+  external_asset_id?: string | null
 }
 
 /**
@@ -44,7 +52,9 @@ export async function getBusinessMediaAssets(
 
     const { data, error } = await supabase
       .from('media_assets')
-      .select('id, storage_key, original_filename, mime_type, media_type, width, height, ai_description, orientation')
+      .select(
+        'id, storage_key, original_filename, mime_type, media_type, width, height, ai_description, orientation, source, creator_name, source_url, creator_url, attribution_required, attribution_text, license_label, external_asset_id'
+      )
       .eq('business_id', businessId)
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -77,11 +87,19 @@ export async function getBusinessMediaAssets(
           id: item.id,
           url,
           mediaType: item.media_type,
-          alt: item.ai_description || item.original_filename || 'Brand media asset',
+          alt: item.ai_description || item.attribution_text || item.original_filename || 'Brand media asset',
           original_filename: item.original_filename,
           width: item.width,
           height: item.height,
           orientation: item.orientation,
+          source: item.source,
+          creator_name: item.creator_name,
+          source_url: item.source_url,
+          creator_url: item.creator_url,
+          attribution_required: item.attribution_required,
+          attribution_text: item.attribution_text,
+          license_label: item.license_label,
+          external_asset_id: item.external_asset_id,
         }
       })
     )

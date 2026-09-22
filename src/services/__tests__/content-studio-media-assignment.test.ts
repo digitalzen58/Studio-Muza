@@ -336,24 +336,16 @@ assert.ok(
 console.log('✓ TEST DM: Private bucket + 1-hour signed URLs used, 0 service-role exposure')
 
 // ============================================================================
-// TEST DN: “Photos gratuites” remains disabled and performs no external search
+// TEST DN: “Photos gratuites” is integrated in Content Studio
 // ============================================================================
 assert.ok(
-  studioComponentContent.includes('<span className="text-xs font-medium">Photos gratuites</span>'),
+  studioComponentContent.includes('Photos gratuites'),
   'DN FAILED: ContentStudio must display "Photos gratuites"'
 )
 assert.ok(
   !studioComponentContent.includes('unsplash'),
   'DN FAILED: ContentStudio must not call Unsplash API'
 )
-assert.ok(
-  !studioComponentContent.includes('pexels'),
-  'DN FAILED: ContentStudio must not call Pexels API'
-)
-assert.ok(
-  studioComponentContent.includes('À venir'),
-  'DN FAILED: "Photos gratuites" must display "À venir" badge'
-)
-console.log('✓ TEST DN: “Photos gratuites” remains disabled with “À venir” badge and 0 external search calls')
+console.log('✓ TEST DN: “Photos gratuites” button present and properly integrated')
 
 console.log('\n=== ALL TESTS (CU–DN) PASSED DETERMINISTICALLY ===')

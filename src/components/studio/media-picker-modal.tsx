@@ -214,14 +214,21 @@ export function MediaPickerModal({
 
                     {/* Selected Checkmark Badge */}
                     {isSelected && (
-                      <div className="absolute top-2 right-2 bg-terracotta text-white rounded-full p-1 shadow-xs">
+                      <div className="absolute top-2 right-2 bg-terracotta text-white rounded-full p-1 shadow-xs z-10">
                         <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      </div>
+                    )}
+
+                    {/* Stock Media Illustration Badge */}
+                    {media.source?.startsWith('STOCK') && (
+                      <div className="absolute top-2 left-2 bg-amber-950/80 text-amber-200 text-[9px] font-medium px-2 py-0.5 rounded-full backdrop-blur-xs">
+                        Photo gratuite
                       </div>
                     )}
 
                     {/* Filename / Alt caption at bottom */}
                     <div className="absolute bottom-2 left-2 right-2 text-[10px] text-white font-medium truncate drop-shadow-xs">
-                      {media.alt}
+                      {media.creator_name ? `Pexels • ${media.creator_name}` : media.alt}
                     </div>
                   </button>
                 )
