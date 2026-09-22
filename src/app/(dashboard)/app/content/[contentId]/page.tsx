@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getBusinessMediaAssets } from '@/services/media'
 import { ContentStudio } from '@/components/studio/content-studio'
 
 interface ContentStudioPageProps {
@@ -59,12 +60,16 @@ export default async function ContentStudioPage({ params }: ContentStudioPagePro
     recommendation = recData
   }
 
+  // 5. Fetch authenticated business media assets with signed URLs
+  const { mediaAssets } = await getBusinessMediaAssets(content.business_id)
+
   return (
     <ContentStudio
       key={`${content.id}-${content.updated_at || ''}`}
       content={content}
       variant={variant}
       recommendation={recommendation}
+      initialMediaAssets={mediaAssets}
     />
   )
 }

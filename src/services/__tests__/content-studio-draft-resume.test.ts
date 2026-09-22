@@ -417,13 +417,13 @@ assert.ok(
 console.log('✓ TEST CP: Database-level uniqueness guarantee verified on (business_id, recommendation_id)')
 
 // ============================================================================
-// TEST CQ: Migration 015 was NOT created (no schema change in Step 144B)
+// TEST CQ: Migration 015 was NOT created for Step 144B (only Step 146 storage migration allowed)
 // ============================================================================
 const migrationsDir = path.resolve(process.cwd(), 'supabase/migrations')
 const files = fs.readdirSync(migrationsDir)
-const has015 = files.some((f) => f.startsWith('015_'))
-assert.ok(!has015, 'CQ FAILED: Migration 015 must NOT exist for Step 144B')
-console.log('✓ TEST CQ: No unneeded migration 015 created (clean schema preservation)')
+const hasUnneeded015 = files.some((f) => f.startsWith('015_') && !f.includes('media_storage'))
+assert.ok(!hasUnneeded015, 'CQ FAILED: Unneeded migration 015 must NOT exist')
+console.log('✓ TEST CQ: No unneeded draft migration created (clean schema preservation)')
 
 // ============================================================================
 // TEST CR: Server action revalidates both /app/content/[contentId] and /app

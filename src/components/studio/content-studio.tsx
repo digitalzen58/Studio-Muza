@@ -6,6 +6,8 @@ import { ArrowLeft, Save, Sparkles, Check, AlertCircle, Image as ImageIcon, Spar
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { saveContentDraftAction, type CarouselSlideData } from '@/actions/content'
+import { MediaPickerModal } from './media-picker-modal'
+import type { BrandMediaAsset } from '@/services/media'
 
 export interface ContentStudioProps {
   content: {
@@ -42,14 +44,20 @@ export interface ContentStudioProps {
     cta: string | null
     suggested_formats: string[] | null
   } | null
+  initialMediaAssets?: BrandMediaAsset[]
 }
 
 export function ContentStudio({
   content,
   variant,
   recommendation,
+  initialMediaAssets = [],
 }: ContentStudioProps) {
   const router = useRouter()
+
+  // Media state
+  const [mediaAssets, setMediaAssets] = useState<BrandMediaAsset[]>(initialMediaAssets)
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
 
   // Form states
   const [workingTitle, setWorkingTitle] = useState(
@@ -94,12 +102,33 @@ export function ContentStudio({
   }, [isDirty])
 
   const activeSlide = slides.find((s) => s.index === activeSlideIndex) || slides[0]
+  const activeSlideMedia = activeSlide.media_id
+    ? mediaAssets.find((m) => m.id === activeSlide.media_id)
+    : null
 
   const handleSlideTextChange = (text: string) => {
     setSlides((prev) =>
       prev.map((s) => (s.index === activeSlideIndex ? { ...s, text } : s))
     )
     setIsDirty(true)
+  }
+
+  const handleAssignSlideMedia = (asset: BrandMediaAsset) => {
+    setSlides((prev) =>
+      prev.map((s) => (s.index === activeSlideIndex ? { ...s, media_id: asset.id } : s))
+    )
+    setIsDirty(true)
+  }
+
+  const handleRemoveSlideMedia = () => {
+    setSlides((prev) =>
+      prev.map((s) => (s.index === activeSlideIndex ? { ...s, media_id: null } : s))
+    )
+    setIsDirty(true)
+  }
+
+  const handleMediaUploaded = (newAsset: BrandMediaAsset) => {
+    setMediaAssets((prev) => [newAsset, ...prev])
   }
 
   const executeSave = async (andNavigateTo?: string): Promise<boolean> => {
@@ -279,13 +308,16 @@ export function ContentStudio({
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all shrink-0 border ${
                     isActive
                       ? 'bg-terracotta text-white border-terracotta shadow-xs'
-                      : hasText
+                      : hasText || slide.media_id
                       ? 'bg-ivory-card text-ink border-terracotta/40'
                       : 'bg-white text-ink-muted border-ivory-border hover:bg-ivory-subtle'
                   }`}
                 >
                   <span className="text-[10px] font-bold opacity-80">#{slide.index}</span>
                   <span>{slide.label}</span>
+                  {slide.media_id && (
+                    <ImageIcon className={`w-3 h-3 ${isActive ? 'text-white/90' : 'text-terracotta'} shrink-0`} />
+                  )}
                 </button>
               )
             })}
@@ -305,6 +337,51 @@ export function ContentStudio({
                   : 'Contenu étape'}
               </span>
             </div>
+
+            {/* Slide Visual / Media Assignment */}
+            {activeSlideMedia ? (
+              <div className="flex items-center gap-3 p-3 bg-white border border-ivory-border rounded-xl">
+                <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-ivory-border bg-ivory-subtle shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={activeSlideMedia.url}
+                    alt={activeSlideMedia.original_filename || 'Visuel de la slide'}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <p className="text-xs font-medium text-ink truncate">
+                    {activeSlideMedia.original_filename || 'Photo assignée'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMediaPickerOpen(true)}
+                      className="text-[11px] text-terracotta hover:underline font-medium"
+                    >
+                      Changer la photo
+                    </button>
+                    <span className="text-ink-muted/40 text-xs">•</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveSlideMedia}
+                      className="text-[11px] text-red-600 hover:underline font-medium"
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setMediaPickerOpen(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-dashed border-terracotta/40 hover:border-terracotta bg-terracotta-light/10 hover:bg-terracotta-light/20 rounded-xl text-xs font-medium text-terracotta transition-colors"
+              >
+                <ImageIcon className="w-4 h-4" />
+                <span>Ajouter une photo à cette slide</span>
+              </button>
+            )}
 
             <textarea
               rows={3}
@@ -389,12 +466,14 @@ export function ContentStudio({
           {/* Mes médias */}
           <button
             type="button"
-            disabled
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-ivory-border bg-ivory-subtle/50 text-ink-muted cursor-not-allowed opacity-60 text-center gap-1"
+            onClick={() => setMediaPickerOpen(true)}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-ivory-border bg-white hover:bg-terracotta-light/15 hover:border-terracotta/40 text-ink text-center gap-1 transition-all group shadow-xs"
           >
-            <span className="text-xs font-medium">Mes médias</span>
-            <span className="text-[10px] text-terracotta bg-terracotta-light/60 px-2 py-0.5 rounded-full font-semibold">
-              À venir
+            <span className="text-xs font-medium group-hover:text-terracotta transition-colors">Mes médias</span>
+            <span className="text-[10px] text-ink-muted">
+              {mediaAssets.length > 0
+                ? `${mediaAssets.length} photo${mediaAssets.length > 1 ? 's' : ''}`
+                : 'Ajouter une photo'}
             </span>
           </button>
 
@@ -461,6 +540,18 @@ export function ContentStudio({
           </button>
         </div>
       </section>
+
+      {/* 6. Media Picker Modal */}
+      <MediaPickerModal
+        isOpen={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        businessId={content.business_id}
+        mediaList={mediaAssets}
+        currentSelectedMediaId={activeSlide.media_id}
+        slideIndex={activeSlide.index}
+        onSelectMedia={handleAssignSlideMedia}
+        onMediaUploaded={handleMediaUploaded}
+      />
     </div>
   )
 }

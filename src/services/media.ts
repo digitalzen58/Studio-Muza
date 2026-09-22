@@ -5,6 +5,7 @@ export interface BrandMediaAsset {
   url: string
   mediaType: string
   alt: string
+  original_filename?: string | null
   width?: number | null
   height?: number | null
   orientation?: string | null
@@ -31,7 +32,10 @@ export function resolveMediaStorageUrl(
  * Server-side helper to fetch authenticated media assets for a given Business.
  * Respects RLS and authenticated Supabase user scope.
  */
-export async function getBusinessMediaAssets(businessId: string): Promise<{
+export async function getBusinessMediaAssets(
+  businessId: string,
+  limit: number = 50
+): Promise<{
   mediaAssets: BrandMediaAsset[]
   error: string | null
 }> {
@@ -43,7 +47,7 @@ export async function getBusinessMediaAssets(businessId: string): Promise<{
       .select('id, storage_key, original_filename, mime_type, media_type, width, height, ai_description, orientation')
       .eq('business_id', businessId)
       .order('created_at', { ascending: false })
-      .limit(12)
+      .limit(limit)
 
     if (error) {
       console.error('Error fetching media_assets:', error.message)
@@ -54,24 +58,33 @@ export async function getBusinessMediaAssets(businessId: string): Promise<{
       return { mediaAssets: [], error: null }
     }
 
-    const mediaAssets: BrandMediaAsset[] = data.map((item) => {
-      const url = resolveMediaStorageUrl(item.storage_key, (bucket, key) => {
-        const { data: publicUrlData } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(key)
-        return publicUrlData.publicUrl
-      })
+    const mediaAssets: BrandMediaAsset[] = await Promise.all(
+      data.map(async (item) => {
+        let url = item.storage_key
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('media_assets')
+            .createSignedUrl(item.storage_key, 3600)
 
-      return {
-        id: item.id,
-        url,
-        mediaType: item.media_type,
-        alt: item.ai_description || item.original_filename || 'Brand media asset',
-        width: item.width,
-        height: item.height,
-        orientation: item.orientation,
-      }
-    })
+          if (signedData?.signedUrl) {
+            url = signedData.signedUrl
+          } else if (signedError) {
+            console.error('Error creating signed URL for asset:', item.id, signedError.message)
+          }
+        }
+
+        return {
+          id: item.id,
+          url,
+          mediaType: item.media_type,
+          alt: item.ai_description || item.original_filename || 'Brand media asset',
+          original_filename: item.original_filename,
+          width: item.width,
+          height: item.height,
+          orientation: item.orientation,
+        }
+      })
+    )
 
     return { mediaAssets, error: null }
   } catch (err) {

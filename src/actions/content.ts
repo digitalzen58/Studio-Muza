@@ -186,6 +186,37 @@ export async function saveContentDraftAction(
       }
     }
 
+    // 3. Synchronize canonical content_media assignments (RLS enforced)
+    await supabase
+      .from('content_media')
+      .delete()
+      .eq('content_id', payload.contentId)
+
+    if (payload.slides && Array.isArray(payload.slides)) {
+      const mediaAssignments = payload.slides
+        .filter((s) => Boolean(s.media_id))
+        .map((s) => ({
+          content_id: payload.contentId,
+          media_asset_id: s.media_id as string,
+          position: s.index,
+          usage_type: 'CAROUSEL_SLIDE',
+        }))
+
+      const uniqueAssignments = Array.from(
+        new Map(mediaAssignments.map((a) => [a.media_asset_id, a])).values()
+      )
+
+      if (uniqueAssignments.length > 0) {
+        const { error: mediaInsertError } = await supabase
+          .from('content_media')
+          .insert(uniqueAssignments)
+
+        if (mediaInsertError) {
+          console.error('Error inserting canonical content_media:', mediaInsertError.message)
+        }
+      }
+    }
+
     revalidatePath(`/app/content/${payload.contentId}`)
     revalidatePath('/app')
 
