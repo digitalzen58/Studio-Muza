@@ -14,6 +14,7 @@ import { RecommendationEmptyState } from './recommendation-empty-state'
 import { RecommendationLoading } from './recommendation-loading'
 import { RecommendationPreviewCard } from './recommendation-preview-card'
 import { BrandGreetingHero, BrandVisualHero } from './brand-visual-hero'
+import { DraftContentsSection, type DraftContentSummary } from '@/components/studio/draft-contents-section'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
@@ -36,6 +37,7 @@ export interface StrategicContext {
 interface RecommendationSectionProps {
   initialPersistedBatch: MuzaPersistedRecommendationBatch | null
   strategicContext: StrategicContext
+  draftContents?: DraftContentSummary[]
 }
 
 /**
@@ -47,6 +49,7 @@ interface RecommendationSectionProps {
 export function RecommendationSection({
   initialPersistedBatch,
   strategicContext,
+  draftContents = [],
 }: RecommendationSectionProps) {
   const [batch, setBatch] = useState<MuzaPersistedRecommendationBatch | null>(
     initialPersistedBatch
@@ -151,6 +154,11 @@ export function RecommendationSection({
           </div>
         </div>
 
+        {/* 2.5 ACTIVE DRAFTS AREA (VOS BROUILLONS EN COURS) */}
+        {draftContents && draftContents.length > 0 && (
+          <DraftContentsSection drafts={draftContents} />
+        )}
+
         {/* 3. VISUAL RECOMMENDATIONS AREA */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -209,15 +217,24 @@ export function RecommendationSection({
 
           {/* Recommendations Visual Preview Cards List */}
           <div className="flex flex-col gap-4">
-            {batch.batch.recommendations.map((recommendation, idx) => (
-              <RecommendationPreviewCard
-                key={`${batch.persistence.batchId}-${idx}`}
-                recommendation={recommendation}
-                recommendationId={batch.persistence.recommendationIds?.[idx]}
-                mediaAssets={strategicContext.mediaAssets}
-                cardIndex={idx}
-              />
-            ))}
+            {batch.batch.recommendations.map((recommendation, idx) => {
+              const recId = batch.persistence.recommendationIds?.[idx]
+              const hasDraft = Boolean(
+                recommendation.status === 'ACCEPTED' ||
+                  (recId && draftContents?.some((d) => d.recommendation_id === recId))
+              )
+
+              return (
+                <RecommendationPreviewCard
+                  key={`${batch.persistence.batchId}-${idx}`}
+                  recommendation={recommendation}
+                  recommendationId={recId}
+                  hasExistingDraft={hasDraft}
+                  mediaAssets={strategicContext.mediaAssets}
+                  cardIndex={idx}
+                />
+              )
+            })}
           </div>
 
           {/* Batch Dissatisfaction Confirmation Notice */}
@@ -358,6 +375,7 @@ export function RecommendationSection({
       onGenerate={handleGenerate}
       isPending={isPending}
       strategicContext={strategicContext}
+      draftContents={draftContents}
     />
   )
 }

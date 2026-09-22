@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { recordRecommendationFeedbackAction } from '@/app/(dashboard)/app/actions'
+import { createOrGetContentDraftAction } from '@/actions/content'
 import {
   FEEDBACK_REASON_LABELS,
   type RecommendationFeedbackReason,
@@ -40,10 +42,10 @@ const FORMAT_LABELS: Record<RecommendationFormat, string> = {
   OTHER: 'Autre',
 }
 
-function getCtaLabel(type: RecommendationType): string {
+function getCtaLabel(type: RecommendationType, hasExistingDraft?: boolean): string {
   switch (type) {
     case 'CONTENT':
-      return 'Créer ce contenu'
+      return hasExistingDraft ? 'Reprendre le brouillon' : 'Créer ce contenu'
     case 'SEO':
       return 'Travailler cette action'
     case 'OFFER':
@@ -58,6 +60,7 @@ function getCtaLabel(type: RecommendationType): string {
 interface RecommendationPreviewCardProps {
   recommendation: MuzaRecommendation
   recommendationId?: string
+  hasExistingDraft?: boolean
   mediaAssets?: BrandMediaAsset[]
   cardIndex?: number
   onFeedbackRecorded?: (recommendationId: string, reason: RecommendationFeedbackReason) => void
@@ -71,8 +74,8 @@ interface RecommendationPreviewCardProps {
 export function RecommendationPreviewCard({
   recommendation,
   recommendationId,
+  hasExistingDraft = false,
   mediaAssets = [],
-  cardIndex: _cardIndex = 0,
   onFeedbackRecorded,
 }: RecommendationPreviewCardProps) {
   const {
@@ -101,6 +104,26 @@ export function RecommendationPreviewCard({
   const [modifyNoticeOpen, setModifyNoticeOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const [isDraftPending, startDraftTransition] = useTransition()
+  const [draftError, setDraftError] = useState<string | null>(null)
+
+  const isContent = type === 'CONTENT'
+  const isDraftExisting =
+    recommendation.status === 'ACCEPTED' || Boolean(hasExistingDraft)
+
+  const handleCreateDraft = () => {
+    if (!recommendationId || isDraftPending) return
+    setDraftError(null)
+    startDraftTransition(async () => {
+      const result = await createOrGetContentDraftAction(recommendationId)
+      if (result.success) {
+        router.push(`/app/content/${result.contentId}`)
+      } else {
+        setDraftError(result.message)
+      }
+    })
+  }
 
   // Real media only: Look up the first suggested asset ID from deterministic media matching
   const suggestedAssetId = recommendation.assetGuidance?.suggestedAssetIds?.[0] || null
@@ -324,19 +347,54 @@ export function RecommendationPreviewCard({
       ) : (
         /* Action Buttons Area */
         <div className="flex flex-col gap-2 pt-1">
-          {/* Action A: Créer ce contenu */}
-          <Button
-            variant="primary"
-            size="md"
-            fullWidth
-            disabled
-            title="Fonctionnalité de création à venir"
-            aria-label={`${getCtaLabel(type)} - Fonctionnalité à venir`}
-            className="min-h-[44px]"
-          >
-            <span>{getCtaLabel(type)}</span>
-            <MuzaSymbol size="sm" className="ml-1 text-white opacity-90" />
-          </Button>
+          {/* Action A: Créer ce contenu (Enabled for CONTENT, safely disabled for others) */}
+          {isContent ? (
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              onClick={handleCreateDraft}
+              disabled={isDraftPending || !recommendationId}
+              title={
+                isDraftPending
+                  ? 'Initialisation du brouillon...'
+                  : isDraftExisting
+                  ? 'Reprendre le brouillon en cours'
+                  : 'Créer ce brouillon'
+              }
+              aria-label={getCtaLabel(type, isDraftExisting)}
+              className="min-h-[44px]"
+            >
+              {isDraftPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  <span>Ouverture en cours...</span>
+                </>
+              ) : (
+                <>
+                  <span>{getCtaLabel(type, isDraftExisting)}</span>
+                  <MuzaSymbol size="sm" className="ml-1 text-white opacity-90" />
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              disabled
+              title="Fonctionnalité de création à venir"
+              aria-label={`${getCtaLabel(type)} - Fonctionnalité à venir`}
+              className="min-h-[44px]"
+            >
+              <span>{getCtaLabel(type)}</span>
+              <MuzaSymbol size="sm" className="ml-1 text-white opacity-90" />
+            </Button>
+          )}
+
+          {draftError && (
+            <p className="text-xs text-terracotta font-medium pt-0.5">{draftError}</p>
+          )}
 
           {/* Secondary Action Row: Action B (Modifier l'idée) & Action C (Pas pour moi) */}
           <div className="flex items-center justify-between gap-2 pt-0.5">

@@ -116,12 +116,39 @@ export default async function DashboardPage() {
     mediaAssets: mediaAssets,
   }
 
+  // 17. Fetch active drafts for this business (ordered by updated_at DESC)
+  const { data: draftContents } = await supabase
+    .from('contents')
+    .select(`
+      id,
+      business_id,
+      recommendation_id,
+      content_type,
+      topic,
+      hook,
+      cta,
+      status,
+      created_at,
+      updated_at,
+      content_variants (
+        id,
+        format,
+        platform,
+        title,
+        caption
+      )
+    `)
+    .eq('business_id', business.id)
+    .eq('status', 'DRAFT')
+    .order('updated_at', { ascending: false })
+
   return (
     <div className="py-1 sm:py-2">
       {/* Primary Content: Interactive Mūza Recommendation Section */}
       <RecommendationSection
         initialPersistedBatch={initialBatch}
         strategicContext={strategicContext}
+        draftContents={draftContents || []}
       />
     </div>
   )

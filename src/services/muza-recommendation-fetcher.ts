@@ -54,7 +54,7 @@ export async function getLatestRecommendationBatchForActiveBusiness(): Promise<M
     const { data: recommendationRows, error: recError } = await supabase
       .from('recommendations')
       .select(
-        'id, recommendation_type, title, concept, priority, why_now, reasons, suggested_formats, estimated_effort_minutes, camera_required, requires_voiceover, angle, cta, editorial_topic, editorial_angle, concept_key, novelty_reason, created_at'
+        'id, recommendation_type, title, concept, priority, why_now, reasons, suggested_formats, estimated_effort_minutes, camera_required, requires_voiceover, angle, cta, editorial_topic, editorial_angle, concept_key, novelty_reason, status, created_at'
       )
       .eq('batch_id', batchRow.id)
       .order('created_at', { ascending: true })
@@ -89,6 +89,7 @@ export async function getLatestRecommendationBatchForActiveBusiness(): Promise<M
         editorialAngle: row.editorial_angle || row.angle || '',
         conceptKey: row.concept_key || '',
         noveltyReason: row.novelty_reason || null,
+        status: row.status || 'PROPOSED',
       })
     )
 

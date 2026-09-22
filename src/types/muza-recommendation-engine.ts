@@ -61,6 +61,8 @@ export type MuzaRecommendation = {
   conceptKey: string
   noveltyReason: string | null
 
+  status?: string
+
   assetGuidance?: MuzaRecommendationAssetGuidance
 }
 

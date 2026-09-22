@@ -4,12 +4,14 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { MuzaSymbol } from '@/components/ui/muza-symbol'
 import { BrandGreetingHero } from './brand-visual-hero'
+import { DraftContentsSection, type DraftContentSummary } from '@/components/studio/draft-contents-section'
 import type { StrategicContext } from './recommendation-section'
 
 interface RecommendationEmptyStateProps {
   onGenerate: () => void
   isPending: boolean
   strategicContext: StrategicContext
+  draftContents?: DraftContentSummary[]
 }
 
 /**
@@ -21,6 +23,7 @@ export function RecommendationEmptyState({
   onGenerate,
   isPending,
   strategicContext,
+  draftContents,
 }: RecommendationEmptyStateProps) {
   const goalContext = strategicContext.goalTitle
     ? strategicContext.goalTitle.toLowerCase()
@@ -43,6 +46,11 @@ export function RecommendationEmptyState({
           <span>Cette semaine, Mūza vous aide à {goalContext}.</span>
         </div>
       </div>
+
+      {/* 2.5 ACTIVE DRAFTS AREA (VOS BROUILLONS EN COURS) */}
+      {draftContents && draftContents.length > 0 && (
+        <DraftContentsSection drafts={draftContents} />
+      )}
 
       {/* 3. PRIMARY GENERATION CTA CARD (PROMINENT ABOVE-THE-FOLD) */}
       <div className="relative w-full rounded-2xl bg-ivory-card border border-ivory-border/80 p-5 text-center overflow-hidden shadow-xs flex flex-col items-center gap-3">
