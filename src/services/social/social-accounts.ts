@@ -230,19 +230,57 @@ export async function verifySocialAccount(
     }
 
     if (account.platform === 'INSTAGRAM' || account.platform === 'FACEBOOK') {
-      const res = await metaSocialAdapter.verifyConnection(decryptedToken, account.external_account_id)
-      const newStatus: SocialConnectionStatus = res.isValid ? 'CONNECTED' : 'REAUTH_REQUIRED'
+      const res = await metaSocialAdapter.verifyConnection(
+        decryptedToken,
+        account.external_account_id,
+        account.platform
+      )
 
+      if (res.isValid) {
+        await supabase
+          .from('social_accounts')
+          .update({
+            status: 'CONNECTED',
+            last_verified_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', accountId)
+
+        return { isValid: true, status: 'CONNECTED' }
+      }
+
+      if (res.isAuthError) {
+        await supabase
+          .from('social_accounts')
+          .update({
+            status: 'REAUTH_REQUIRED',
+            last_verified_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', accountId)
+
+        return {
+          isValid: false,
+          status: 'REAUTH_REQUIRED',
+          error: res.error || 'Autorisation à renouveler.',
+        }
+      }
+
+      // Technical or network error: preserve existing status without degrading to REAUTH_REQUIRED
+      const currentStatus = (account.status as SocialConnectionStatus) || 'CONNECTED'
       await supabase
         .from('social_accounts')
         .update({
-          status: newStatus,
           last_verified_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq('id', accountId)
 
-      return { isValid: res.isValid, status: newStatus, error: res.error }
+      return {
+        isValid: false,
+        status: currentStatus,
+        error: res.error || 'Impossible de vérifier la connexion pour le moment.',
+      }
     }
 
     return { isValid: true, status: 'CONNECTED' }

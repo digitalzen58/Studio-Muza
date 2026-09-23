@@ -254,34 +254,90 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
 
   async verifyConnection(
     accessTokenEncrypted: string,
-    externalAccountId: string
+    externalAccountId: string,
+    platform: SocialPlatform = 'FACEBOOK'
   ): Promise<{
     isValid: boolean
+    isAuthError?: boolean
     accountName?: string
     error?: string
   }> {
     if (!this.isConfigured()) {
-      return { isValid: false, error: 'Configuration Meta manquante.' }
+      return { isValid: false, isAuthError: false, error: 'Configuration Meta manquante.' }
     }
 
     try {
       const token = accessTokenEncrypted // decrypted in service layer
-      const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${externalAccountId}?fields=id,name,username&access_token=${token}`
+      // Tailored queries per platform: Instagram Business User does not accept 'name'
+      const fields = platform === 'INSTAGRAM' ? 'id,username' : 'id,name'
+      const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=${fields}&access_token=${encodeURIComponent(token)}`
       const res = await fetch(verifyUrl)
 
       if (!res.ok) {
-        return { isValid: false, error: 'Token expiré ou autorisations révoquées.' }
+        let isAuthError = false
+        try {
+          const errData = await res.json()
+          const errObj = errData?.error
+          if (errObj) {
+            const code = Number(errObj.code)
+            const subcode = Number(errObj.error_subcode)
+            const type = String(errObj.type || '')
+
+            // Known Meta OAuth token expiration/revocation indicators:
+            // 190: Invalid OAuth 2.0 Access Token
+            // 102: Session key invalid
+            // 458, 459, 460, 463, 467, 490, 491, 492: User revoked or token expired
+            if (
+              code === 190 ||
+              [102, 458, 463, 467].includes(code) ||
+              [458, 459, 460, 463, 467, 490, 491, 492].includes(subcode) ||
+              (type === 'OAuthException' && code !== 100 && code !== 1 && code !== 2 && (!code || code === 190))
+            ) {
+              isAuthError = true
+            }
+          }
+        } catch {
+          if (res.status === 401) {
+            isAuthError = true
+          }
+        }
+
+        if (isAuthError) {
+          return { isValid: false, isAuthError: true, error: 'Autorisation à renouveler.' }
+        }
+
+        return {
+          isValid: false,
+          isAuthError: false,
+          error: 'Impossible de vérifier la connexion pour le moment.',
+        }
       }
 
       const data = await res.json()
+
+      // Validate returned payload and matching ID
+      if (!data || typeof data !== 'object' || data.id !== externalAccountId) {
+        return {
+          isValid: false,
+          isAuthError: false,
+          error: 'Impossible de vérifier la connexion pour le moment.',
+        }
+      }
+
+      const accountName = platform === 'INSTAGRAM'
+        ? (data.username ? `@${data.username}` : undefined)
+        : data.name
+
       return {
         isValid: true,
-        accountName: data.username ? `@${data.username}` : data.name,
+        isAuthError: false,
+        accountName,
       }
-    } catch (err) {
+    } catch {
       return {
         isValid: false,
-        error: err instanceof Error ? err.message : 'Erreur de vérification réseau.',
+        isAuthError: false,
+        error: 'Impossible de vérifier la connexion pour le moment.',
       }
     }
   }

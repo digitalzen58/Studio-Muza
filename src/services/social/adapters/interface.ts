@@ -41,8 +41,13 @@ export interface SocialProviderAdapter {
     destinations: DiscoveredDestination[]
     error?: string
   }>
-  verifyConnection(accessTokenEncrypted: string, externalAccountId: string): Promise<{
+  verifyConnection(
+    accessTokenEncrypted: string,
+    externalAccountId: string,
+    platform?: SocialPlatform
+  ): Promise<{
     isValid: boolean
+    isAuthError?: boolean
     accountName?: string
     error?: string
   }>

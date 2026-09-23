@@ -355,5 +355,148 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       process.env = originalEnv
     }
   })
+
+  // 13. Step 164D — Platform-Aware Meta Verification & Error Classification
+  await t.test('13. Platform-aware Meta verification, Facebook (id,name) vs Instagram (id,username), and robust error classification', async () => {
+    const originalEnv = { ...process.env }
+    const originalFetch = globalThis.fetch
+    try {
+      process.env.META_APP_ID = 'test-meta-app-id-123'
+      process.env.META_APP_SECRET = 'test-meta-secret-456'
+      process.env.META_CONFIG_ID = 'test-meta-business-config-789'
+      process.env.CREDENTIAL_ENCRYPTION_KEY = 'test-key-32-bytes-for-unit-testing-vault'
+
+      const adapter = new MetaSocialProviderAdapter()
+      const interceptedUrls: string[] = []
+
+      // 1. Facebook verification uses fields=id,name
+      globalThis.fetch = async (input: RequestInfo | URL) => {
+        const urlStr = String(input)
+        interceptedUrls.push(urlStr)
+
+        if (urlStr.includes('/fb-page-123?')) {
+          return new Response(JSON.stringify({ id: 'fb-page-123', name: 'Digital Zen Page' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+        return new Response(JSON.stringify({ error: { message: 'Not found' } }), { status: 404 })
+      }
+
+      const fbResult = await adapter.verifyConnection('valid-fb-token', 'fb-page-123', 'FACEBOOK')
+      assert.strictEqual(fbResult.isValid, true)
+      assert.strictEqual(fbResult.accountName, 'Digital Zen Page')
+      assert.ok(interceptedUrls.some(u => u.includes('/fb-page-123?') && (u.includes('fields=id%2Cname') || u.includes('fields=id,name'))))
+
+      // 2. Instagram verification uses fields=id,username and does NOT request name or fields=id,name,username
+      interceptedUrls.length = 0
+      globalThis.fetch = async (input: RequestInfo | URL) => {
+        const urlStr = String(input)
+        interceptedUrls.push(urlStr)
+
+        if (urlStr.includes('/ig-user-456?')) {
+          return new Response(JSON.stringify({ id: 'ig-user-456', username: 'digital_zen_58' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+        return new Response(JSON.stringify({ error: { message: 'Not found' } }), { status: 404 })
+      }
+
+      const igResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM')
+      assert.strictEqual(igResult.isValid, true)
+      assert.strictEqual(igResult.accountName, '@digital_zen_58')
+      assert.ok(interceptedUrls.some(u => u.includes('/ig-user-456?') && (u.includes('fields=id%2Cusername') || u.includes('fields=id,username'))))
+      assert.ok(!interceptedUrls.some(u => u.includes('id,name,username') || u.includes('id%2Cname%2Cusername')))
+
+      // 3. ID mismatch returns controlled failure (isValid: false, isAuthError: false)
+      globalThis.fetch = async () => {
+        return new Response(JSON.stringify({ id: 'different-id-999', username: 'imposter' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      const mismatchResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
+      assert.strictEqual(mismatchResult.isValid, false)
+      assert.strictEqual(mismatchResult.isAuthError, false)
+      assert.strictEqual(mismatchResult.error, 'Impossible de vérifier la connexion pour le moment.')
+
+      // 4. True OAuth revocation / expiration (code 190) returns isAuthError: true
+      globalThis.fetch = async () => {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'Error validating access token: Session has expired on Monday, 10-Jul-23 01:00:00 PDT.',
+              type: 'OAuthException',
+              code: 190,
+              error_subcode: 463,
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      const oauthRevokedResult = await adapter.verifyConnection('expired-token', 'ig-user-456', 'INSTAGRAM')
+      assert.strictEqual(oauthRevokedResult.isValid, false)
+      assert.strictEqual(oauthRevokedResult.isAuthError, true)
+      assert.strictEqual(oauthRevokedResult.error, 'Autorisation à renouveler.')
+
+      // 5. HTTP 400 non-auth (code 100 Bad parameter / field) => isAuthError: false (NO automatic REAUTH_REQUIRED)
+      globalThis.fetch = async () => {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: '(#100) Tried accessing nonexisting field (name) on node type (IGUser)',
+              type: 'OAuthException',
+              code: 100,
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      const paramErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
+      assert.strictEqual(paramErrorResult.isValid, false)
+      assert.strictEqual(paramErrorResult.isAuthError, false)
+      assert.strictEqual(paramErrorResult.error, 'Impossible de vérifier la connexion pour le moment.')
+
+      // 6. HTTP 5xx Server Error => isAuthError: false (NO automatic REAUTH_REQUIRED)
+      globalThis.fetch = async () => {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'An unexpected error has occurred. Please retry your request later.',
+              type: 'OAuthException',
+              code: 2,
+            },
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      const serverErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
+      assert.strictEqual(serverErrorResult.isValid, false)
+      assert.strictEqual(serverErrorResult.isAuthError, false)
+      assert.strictEqual(serverErrorResult.error, 'Impossible de vérifier la connexion pour le moment.')
+
+      // 7. Network / fetch exception => isAuthError: false (NO automatic REAUTH_REQUIRED)
+      globalThis.fetch = async () => {
+        throw new Error('fetch failed: connect ECONNREFUSED')
+      }
+      const networkErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
+      assert.strictEqual(networkErrorResult.isValid, false)
+      assert.strictEqual(networkErrorResult.isAuthError, false)
+      assert.strictEqual(networkErrorResult.error, 'Impossible de vérifier la connexion pour le moment.')
+
+      // 8. Static source code verification: verifyConnection uses platform and never fields=id,name,username
+      const adapterSource = fs.readFileSync(path.join(rootDir, 'src/services/social/adapters/meta-adapter.ts'), 'utf8')
+      assert.ok(adapterSource.includes("platform === 'INSTAGRAM' ? 'id,username' : 'id,name'"))
+      assert.ok(!adapterSource.includes('fields=id,name,username'))
+
+      const socialSource = fs.readFileSync(path.join(rootDir, 'src/services/social/social-accounts.ts'), 'utf8')
+      assert.ok(socialSource.includes('account.platform'), 'social-accounts must pass account.platform to verifyConnection')
+      assert.ok(socialSource.includes('res.isAuthError'), 'social-accounts must check res.isAuthError before transitioning to REAUTH_REQUIRED')
+    } finally {
+      process.env = originalEnv
+      globalThis.fetch = originalFetch
+    }
+  })
 })
 
