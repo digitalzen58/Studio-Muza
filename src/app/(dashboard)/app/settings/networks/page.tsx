@@ -11,7 +11,12 @@ import { Card } from '@/components/ui/card'
 
 export const dynamic = 'force-dynamic'
 
-export default async function SettingsNetworksPage() {
+export default async function SettingsNetworksPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string; success?: string }>
+}) {
+  const resolvedParams = searchParams ? await searchParams : {}
   const supabase = await createClient()
 
   const {
@@ -54,6 +59,8 @@ export default async function SettingsNetworksPage() {
         businessName={business.name}
         accounts={accounts}
         metaConfig={metaConfig}
+        initialError={resolvedParams.error || null}
+        initialSuccess={resolvedParams.success === 'true' ? 'Réseau social connecté avec succès !' : null}
       />
     </div>
   )

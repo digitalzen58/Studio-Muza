@@ -14,8 +14,7 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  const redirectTarget = new URL('/app/settings/networks', baseUrl)
+  const redirectTarget = new URL('/app/settings/networks', request.url)
 
   // 1. Check provider error in callback
   if (error) {
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      const loginUrl = new URL('/login', baseUrl)
+      const loginUrl = new URL('/login', request.url)
       return NextResponse.redirect(loginUrl)
     }
 
@@ -73,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     // 5. Save/update discovered destinations idempotently
     for (const dest of exchangeResult.destinations) {
-      await saveSocialAccount({
+      const saveRes = await saveSocialAccount({
         businessId: business.id,
         provider: 'META',
         platform: dest.platform,
@@ -86,6 +85,12 @@ export async function GET(request: NextRequest) {
         capabilities: dest.capabilities,
         status: 'CONNECTED',
       })
+
+      if (saveRes.error) {
+        console.error('Error saving social account from callback:', saveRes.error)
+        redirectTarget.searchParams.set('error', 'Erreur lors de l’enregistrement du compte.')
+        return NextResponse.redirect(redirectTarget)
+      }
     }
 
     redirectTarget.searchParams.set('success', 'true')

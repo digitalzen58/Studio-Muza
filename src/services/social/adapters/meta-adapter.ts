@@ -258,13 +258,15 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
           }
         }
 
+        const cleanCode = params.code.trim().replace(/#_$/, '')
+
         // Step 1: Exchange authorization code on api.instagram.com
         const formBody = new URLSearchParams()
         formBody.set('client_id', igAppId)
         formBody.set('client_secret', igAppSecret)
         formBody.set('grant_type', 'authorization_code')
         formBody.set('redirect_uri', canonicalRedirectUri)
-        formBody.set('code', params.code)
+        formBody.set('code', cleanCode)
 
         const tokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
           method: 'POST',
@@ -301,19 +303,51 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         }
 
         // Step 3: Fetch Instagram User Profile via graph.instagram.com
+        // Note: Instagram User node supports id, user_id, username, account_type, profile_picture_url (NOT name)
+        let meData: {
+          id?: string | number
+          user_id?: string | number
+          username?: string
+          account_type?: string
+          profile_picture_url?: string
+        } | null = null
+
         const meRes = await fetch(
-          `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,username,name,account_type,profile_picture_url&access_token=${longLivedToken}`
+          `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,user_id,username,account_type,profile_picture_url&access_token=${encodeURIComponent(longLivedToken)}`
         )
 
-        if (!meRes.ok) {
+        if (meRes.ok) {
+          meData = await meRes.json()
+        } else {
+          // Fallback with minimal core fields (id, username, account_type)
+          const fallbackRes = await fetch(
+            `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,username,account_type&access_token=${encodeURIComponent(longLivedToken)}`
+          )
+          if (fallbackRes.ok) {
+            meData = await fallbackRes.json()
+          } else {
+            // Further fallback with basic id, username
+            const basicRes = await fetch(
+              `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,username&access_token=${encodeURIComponent(longLivedToken)}`
+            )
+            if (basicRes.ok) {
+              meData = await basicRes.json()
+            }
+          }
+        }
+
+        if (!meData || (!meData.id && !tokenData.user_id)) {
           return {
             destinations: [],
             error: 'Impossible de récupérer le profil Instagram Professionnel.',
           }
         }
 
-        const meData = await meRes.json()
-        const igId = String(meData.id)
+        const igId = String(meData.id || meData.user_id || tokenData.user_id)
+        const username = meData.username
+          ? (meData.username.startsWith('@') ? meData.username : `@${meData.username}`)
+          : 'Instagram'
+        const accountType = meData.account_type || 'BUSINESS'
         const encryptedToken = encryptCredential(longLivedToken)
         const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString()
 
@@ -322,10 +356,10 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
             {
               platform: 'INSTAGRAM',
               externalAccountId: igId,
-              accountName: meData.username ? `@${meData.username}` : meData.name || 'Instagram',
-              accountType: meData.account_type || 'BUSINESS',
+              accountName: username,
+              accountType,
               avatarUrl: meData.profile_picture_url,
-              capabilities: this.getCapabilities('INSTAGRAM', meData.account_type || 'BUSINESS'),
+              capabilities: this.getCapabilities('INSTAGRAM', accountType),
               rawTokenEncrypted: encryptedToken,
               tokenExpiresAt,
               scopes: this.instagramScopes,
@@ -425,7 +459,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       // VERIFY INSTAGRAM: Direct query to graph.instagram.com /me
       // ----------------------------------------------------------------------
       if (platform === 'INSTAGRAM') {
-        const verifyUrl = `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,username,name,account_type&access_token=${encodeURIComponent(token)}`
+        const verifyUrl = `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,username,account_type&access_token=${encodeURIComponent(token)}`
         const res = await fetch(verifyUrl)
 
         if (!res.ok) {
@@ -465,7 +499,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         }
 
         const data = await res.json()
-        if (!data || typeof data !== 'object' || String(data.id) !== externalAccountId) {
+        if (!data || typeof data !== 'object' || (String(data.id) !== externalAccountId && String(data.user_id) !== externalAccountId)) {
           return {
             isValid: false,
             isAuthError: false,
@@ -473,7 +507,9 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
           }
         }
 
-        const accountName = data.username ? `@${data.username}` : data.name
+        const accountName = data.username
+          ? (data.username.startsWith('@') ? data.username : `@${data.username}`)
+          : 'Instagram'
         return {
           isValid: true,
           isAuthError: false,

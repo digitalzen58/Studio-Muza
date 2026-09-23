@@ -521,7 +521,7 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       const igResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM')
       assert.strictEqual(igResult.isValid, true)
       assert.strictEqual(igResult.accountName, '@digital_zen_58')
-      assert.ok(interceptedUrls.some(u => u.includes('graph.instagram.com') && u.includes('/me?') && u.includes('fields=id,username,name,account_type')))
+      assert.ok(interceptedUrls.some(u => u.includes('graph.instagram.com') && u.includes('/me?') && u.includes('fields=id,username,account_type')))
       assert.ok(!interceptedUrls.some(u => u.includes('graph.facebook.com')), 'Instagram verification must NOT query Facebook Graph API')
 
       // 3. Instagram ID mismatch returns controlled failure

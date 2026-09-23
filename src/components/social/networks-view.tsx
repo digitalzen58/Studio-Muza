@@ -58,12 +58,20 @@ export interface NetworksViewProps {
   businessName: string
   accounts: SocialAccountSummary[]
   metaConfig: ProviderAuthConfig
+  initialError?: string | null
+  initialSuccess?: string | null
 }
 
-export function NetworksView({ businessName, accounts, metaConfig }: NetworksViewProps) {
+export function NetworksView({
+  businessName,
+  accounts,
+  metaConfig,
+  initialError,
+  initialSuccess,
+}: NetworksViewProps) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(initialError || null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(initialSuccess || null)
 
   // Find accounts by platform
   const instagramAccount = accounts.find((a) => a.platform === 'INSTAGRAM')
