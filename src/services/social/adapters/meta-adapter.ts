@@ -40,11 +40,35 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
     'pages_manage_posts',
   ]
 
-  getAuthConfig(platform?: SocialPlatform): ProviderAuthConfig {
-    const redirectUri =
-      process.env.META_REDIRECT_URI?.trim() ||
+  /**
+  * Returns the canonical Meta/Instagram OAuth redirect URI.
+  * Ensures exact match: https://studio-muza.vercel.app/api/auth/social/meta/callback
+  * with no trailing slash, no localhost fallback in production, and no host header drift.
+  */
+  getCanonicalRedirectUri(override?: string): string {
+    if (override?.trim()) {
+      return override.trim().replace(/\/+$/, '')
+    }
+
+    if (process.env.META_REDIRECT_URI?.trim()) {
+      return process.env.META_REDIRECT_URI.trim().replace(/\/+$/, '')
+    }
+
+    const envUrl =
       process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
       process.env.NEXT_PUBLIC_APP_URL?.trim()
+
+    if (envUrl && !envUrl.includes('localhost')) {
+      const cleanBase = envUrl.replace(/\/+$/, '')
+      return `${cleanBase}/api/auth/social/meta/callback`
+    }
+
+    // Default canonical production redirect URI for Studio Mūza
+    return 'https://studio-muza.vercel.app/api/auth/social/meta/callback'
+  }
+
+  getAuthConfig(platform?: SocialPlatform): ProviderAuthConfig {
+    const redirectUri = this.getCanonicalRedirectUri()
 
     if (platform === 'INSTAGRAM') {
       const appId = process.env.INSTAGRAM_APP_ID?.trim()
@@ -133,14 +157,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       return null
     }
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-      process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-      'http://localhost:3000'
-    const baseRedirect =
-      params.redirectUriOverride ||
-      process.env.META_REDIRECT_URI?.trim() ||
-      `${siteUrl.replace(/\/$/, '')}/api/auth/social/meta/callback`
+    const canonicalRedirectUri = this.getCanonicalRedirectUri(params.redirectUriOverride)
 
     // Generate tamper-proof OAuth state
     const now = Date.now()
@@ -165,7 +182,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         enable_fb_login: '0',
         force_authentication: '1',
         client_id: igAppId,
-        redirect_uri: baseRedirect,
+        redirect_uri: canonicalRedirectUri,
         response_type: 'code',
         scope: this.instagramScopes.join(','),
         state: signedState,
@@ -190,7 +207,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
 
     const urlParams = new URLSearchParams({
       client_id: fbAppId,
-      redirect_uri: baseRedirect,
+      redirect_uri: canonicalRedirectUri,
       state: signedState,
       response_type: 'code',
     })
@@ -224,13 +241,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       return { destinations: [], error: 'Violation d’isolation multi-tenant: état OAuth incohérent.' }
     }
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-      process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-      'http://localhost:3000'
-    const redirectUri =
-      process.env.META_REDIRECT_URI?.trim() ||
-      `${siteUrl.replace(/\/$/, '')}/api/auth/social/meta/callback`
+    const canonicalRedirectUri = this.getCanonicalRedirectUri()
 
     try {
       // ----------------------------------------------------------------------
@@ -252,7 +263,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         formBody.set('client_id', igAppId)
         formBody.set('client_secret', igAppSecret)
         formBody.set('grant_type', 'authorization_code')
-        formBody.set('redirect_uri', redirectUri)
+        formBody.set('redirect_uri', canonicalRedirectUri)
         formBody.set('code', params.code)
 
         const tokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
@@ -339,7 +350,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       const tokenUrl = new URL(`https://graph.facebook.com/${this.graphApiVersion}/oauth/access_token`)
       tokenUrl.searchParams.set('client_id', fbAppId)
       tokenUrl.searchParams.set('client_secret', fbAppSecret)
-      tokenUrl.searchParams.set('redirect_uri', redirectUri)
+      tokenUrl.searchParams.set('redirect_uri', canonicalRedirectUri)
       tokenUrl.searchParams.set('code', params.code)
 
       const tokenRes = await fetch(tokenUrl.toString())

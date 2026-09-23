@@ -279,7 +279,23 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       assert.strictEqual(adapter.isConfigured('FACEBOOK'), true)
       assert.strictEqual(adapter.isConfigured(), true)
 
-      // 1. Instagram OAuth URL uses INSTAGRAM_APP_ID
+      // Canonical redirect URI verification
+      assert.strictEqual(
+        adapter.getCanonicalRedirectUri(),
+        'https://studio-muza.vercel.app/api/auth/social/meta/callback',
+        'Canonical redirect URI must match production Meta config exactly'
+      )
+
+      // Test with trailing slash in env
+      process.env.META_REDIRECT_URI = 'https://studio-muza.vercel.app/api/auth/social/meta/callback/'
+      assert.strictEqual(
+        adapter.getCanonicalRedirectUri(),
+        'https://studio-muza.vercel.app/api/auth/social/meta/callback',
+        'Trailing slashes must be stripped from redirect URI'
+      )
+      delete process.env.META_REDIRECT_URI
+
+      // 1. Instagram OAuth URL uses INSTAGRAM_APP_ID and exact canonical redirect_uri
       const igAuthRes = await adapter.getAuthorizationUrl({
         userId: 'u1',
         businessId: 'b1',
@@ -307,10 +323,11 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
 
       const fbParsed = new URL(fbAuthRes.url)
       assert.strictEqual(fbParsed.searchParams.get('client_id'), 'test-fb-app-id-123', 'Facebook OAuth URL must use META_APP_ID')
+      assert.strictEqual(fbParsed.searchParams.get('redirect_uri'), 'https://studio-muza.vercel.app/api/auth/social/meta/callback')
       assert.strictEqual(fbParsed.searchParams.get('config_id'), 'test-fb-business-config-789')
       assert.strictEqual(fbParsed.searchParams.get('state'), fbAuthRes.state)
 
-      // 3. Instagram Callback Exchange uses INSTAGRAM_APP_ID & INSTAGRAM_APP_SECRET
+      // 3. Instagram Callback Exchange uses INSTAGRAM_APP_ID, INSTAGRAM_APP_SECRET, and identical redirect_uri
       const interceptedFetchCalls: { url: string; body?: string }[] = []
       globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
         const urlStr = String(input)
@@ -342,6 +359,11 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       const igTokenPost = interceptedFetchCalls.find(c => c.url.includes('api.instagram.com/oauth/access_token'))
       assert.ok(igTokenPost?.body?.includes('client_id=test-ig-app-id-777'), 'Instagram token exchange POST must use INSTAGRAM_APP_ID')
       assert.ok(igTokenPost?.body?.includes('client_secret=test-ig-app-secret-888'), 'Instagram token exchange POST must use INSTAGRAM_APP_SECRET')
+      assert.ok(
+        igTokenPost?.body?.includes('redirect_uri=https%3A%2F%2Fstudio-muza.vercel.app%2Fapi%2Fauth%2Fsocial%2Fmeta%2Fcallback') ||
+        igTokenPost?.body?.includes('redirect_uri=https://studio-muza.vercel.app/api/auth/social/meta/callback'),
+        'Instagram token exchange POST must use exact same redirect_uri as authorization URL'
+      )
 
       const igLongExchange = interceptedFetchCalls.find(c => c.url.includes('graph.instagram.com/access_token'))
       assert.ok(igLongExchange?.url.includes('client_secret=test-ig-app-secret-888'), 'Instagram long token exchange must use INSTAGRAM_APP_SECRET')
