@@ -86,11 +86,25 @@ export async function requestPasswordReset(formData: FormData) {
   const redirectTo = `${siteUrl.replace(/\/$/, '')}/auth/callback?next=/reset-password`
 
   try {
-    await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,
     })
-  } catch {
-    // Neutralized error handling to prevent account enumeration
+
+    if (error) {
+      console.error(
+        '[Auth Recovery Error]: Supabase password reset request failed:',
+        {
+          name: error.name,
+          message: error.message,
+          status: error.status,
+        }
+      )
+    }
+  } catch (err) {
+    console.error(
+      '[Auth Recovery Error]: Unexpected exception during password reset request:',
+      err instanceof Error ? err.message : 'Unknown error'
+    )
   }
 
   return {

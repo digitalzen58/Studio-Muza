@@ -131,12 +131,12 @@ export default function ForgotPasswordPage() {
         {/* Footer Info */}
         <p className="text-center text-xs text-ink-muted">
           Besoin d’aide supplémentaire ?{' '}
-          <Link
-            href="/"
+          <a
+            href="mailto:digital.zen.58@gmail.com"
             className="text-terracotta font-medium hover:underline"
           >
             Contacter le support
-          </Link>
+          </a>
         </p>
       </div>
     </div>

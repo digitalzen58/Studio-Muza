@@ -441,4 +441,50 @@ assert.ok(
 )
 console.log('✓ TEST Z: /app remains protected normally')
 
-console.log('=== ALL TESTS (A–Z) PASSED DETERMINISTICALLY ===')
+// --- TEST 163: Step 163 Reliability & Security ---
+const updatedActionsContent = fs.readFileSync(
+  path.resolve(process.cwd(), 'src/app/auth/actions.ts'),
+  'utf8'
+)
+const updatedForgotPageContent = fs.readFileSync(
+  path.resolve(process.cwd(), 'src/app/(auth)/forgot-password/page.tsx'),
+  'utf8'
+)
+
+// 1. Error capture from resetPasswordForEmail
+assert.ok(
+  updatedActionsContent.includes('const { error } = await supabase.auth.resetPasswordForEmail('),
+  'TEST 163 FAILED: requestPasswordReset must explicitly capture { error } from resetPasswordForEmail'
+)
+assert.ok(
+  updatedActionsContent.includes('[Auth Recovery Error]: Supabase password reset request failed:'),
+  'TEST 163 FAILED: requestPasswordReset must log server-side error'
+)
+
+// 2. Anti-enumeration: Zero email logging, zero credentials logging, neutral response
+const reqResetFn = updatedActionsContent.slice(
+  updatedActionsContent.indexOf('export async function requestPasswordReset('),
+  updatedActionsContent.indexOf('export async function updatePassword(')
+)
+assert.ok(
+  !reqResetFn.includes('console.error(email') && !reqResetFn.includes('console.log(email') && !reqResetFn.includes('email:'),
+  'TEST 163 FAILED: requestPasswordReset must NEVER log user email'
+)
+assert.ok(
+  reqResetFn.includes("message:\n      'Si un compte existe pour cette adresse, vous recevrez un e-mail dans quelques instants.'"),
+  'TEST 163 FAILED: requestPasswordReset must maintain anti-enumeration response'
+)
+
+// 3. Support link mailto:digital.zen.58@gmail.com
+assert.ok(
+  updatedForgotPageContent.includes('href="mailto:digital.zen.58@gmail.com"'),
+  'TEST 163 FAILED: Support link must target mailto:digital.zen.58@gmail.com'
+)
+assert.ok(
+  updatedForgotPageContent.includes('Contacter le support'),
+  'TEST 163 FAILED: Support link visible text must remain "Contacter le support"'
+)
+console.log('✓ TEST 163: Error capture, anti-enumeration safety, and real mailto support link verified')
+
+console.log('=== ALL TESTS (A–Z + 163) PASSED DETERMINISTICALLY ===')
+
