@@ -124,32 +124,6 @@ export async function getSocialAuthUrlAction(
 
     if (platform === 'INSTAGRAM' || platform === 'FACEBOOK') {
       if (!metaSocialAdapter.isConfigured()) {
-        console.warn('[MUZA_META_ENV_DIAGNOSTIC]', {
-          metaAppIdPresent: Boolean(process.env.META_APP_ID),
-          metaAppIdNonEmpty: Boolean(process.env.META_APP_ID?.trim()),
-
-          metaAppSecretPresent: Boolean(process.env.META_APP_SECRET),
-          metaAppSecretNonEmpty: Boolean(process.env.META_APP_SECRET?.trim()),
-
-          metaConfigIdPresent: Boolean(process.env.META_CONFIG_ID),
-          metaConfigIdNonEmpty: Boolean(process.env.META_CONFIG_ID?.trim()),
-
-          credentialEncryptionKeyPresent:
-            Boolean(process.env.CREDENTIAL_ENCRYPTION_KEY),
-
-          credentialEncryptionKeyNonEmpty:
-            Boolean(process.env.CREDENTIAL_ENCRYPTION_KEY?.trim()),
-
-          relevantEnvKeys:
-            Object.keys(process.env)
-              .filter(k =>
-                k.includes('META') ||
-                k.includes('FACEBOOK') ||
-                k.includes('ENCRYPTION')
-              )
-              .sort(),
-        })
-
         return {
           url: null,
           error:

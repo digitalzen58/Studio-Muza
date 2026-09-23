@@ -259,9 +259,8 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
     assert.ok(!migrationFiles.some((f) => f.startsWith('017_')), 'No migration 017 allowed')
   })
 
-  // 11. Step 162 — Real Meta OAuth URL & Facebook Login for Business config_id
-  await t.test('11. Meta Login for Business config_id support, OAuth URL generation & zero publishing calls', async () => {
-    // Test with mock env variables
+  // 11. Step 164I — Independent Meta OAuth URLs (Instagram Login vs Facebook Login)
+  await t.test('11. Independent OAuth URLs: Instagram Login (instagram.com) vs Facebook Login (facebook.com/dialog/oauth)', async () => {
     const originalEnv = { ...process.env }
     try {
       process.env.META_APP_ID = 'test-meta-app-id-123'
@@ -278,34 +277,40 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       assert.strictEqual(config.appSecretPresent, true)
       assert.strictEqual(config.configIdPresent, true)
 
-      const authRes = await adapter.getAuthorizationUrl({
+      // 1. Instagram OAuth URL uses direct Instagram Login dialog
+      const igAuthRes = await adapter.getAuthorizationUrl({
         userId: 'u1',
         businessId: 'b1',
         platform: 'INSTAGRAM',
       })
 
-      assert.ok(authRes !== null, 'authRes must not be null')
-      assert.ok(authRes.url.startsWith('https://www.facebook.com/v21.0/dialog/oauth'), 'Must use Graph API v21.0 OAuth dialog')
+      assert.ok(igAuthRes !== null, 'igAuthRes must not be null')
+      assert.ok(igAuthRes.url.startsWith('https://www.instagram.com/oauth/authorize'), 'Instagram must use direct Instagram Login')
 
-      const parsed = new URL(authRes.url)
-      assert.strictEqual(parsed.searchParams.get('client_id'), 'test-meta-app-id-123')
-      assert.strictEqual(parsed.searchParams.get('config_id'), 'test-meta-business-config-789')
-      assert.strictEqual(parsed.searchParams.get('redirect_uri'), 'https://studio-muza.vercel.app/api/auth/social/meta/callback')
-      assert.strictEqual(parsed.searchParams.get('state'), authRes.state)
-      assert.strictEqual(parsed.searchParams.get('response_type'), 'code')
+      const igParsed = new URL(igAuthRes.url)
+      assert.strictEqual(igParsed.searchParams.get('client_id'), 'test-meta-app-id-123')
+      assert.strictEqual(igParsed.searchParams.get('redirect_uri'), 'https://studio-muza.vercel.app/api/auth/social/meta/callback')
+      assert.ok(igParsed.searchParams.get('scope')?.includes('instagram_business_basic'))
+      assert.strictEqual(igParsed.searchParams.get('state'), igAuthRes.state)
 
-      // Verify the generated state contains our userId and businessId securely
-      const verifiedState = verifyOAuthState<OAuthStatePayload>(authRes.state)
-      assert.ok(verifiedState !== null, 'Generated state must be cryptographically valid')
-      assert.strictEqual(verifiedState.userId, 'u1')
-      assert.strictEqual(verifiedState.businessId, 'b1')
-      assert.strictEqual(verifiedState.provider, 'META')
-      assert.strictEqual(verifiedState.platform, 'INSTAGRAM')
+      // 2. Facebook OAuth URL uses Facebook Login dialog
+      const fbAuthRes = await adapter.getAuthorizationUrl({
+        userId: 'u1',
+        businessId: 'b1',
+        platform: 'FACEBOOK',
+      })
+
+      assert.ok(fbAuthRes !== null, 'fbAuthRes must not be null')
+      assert.ok(fbAuthRes.url.startsWith('https://www.facebook.com/v21.0/dialog/oauth'), 'Facebook must use Facebook Login dialog')
+
+      const fbParsed = new URL(fbAuthRes.url)
+      assert.strictEqual(fbParsed.searchParams.get('client_id'), 'test-meta-app-id-123')
+      assert.strictEqual(fbParsed.searchParams.get('config_id'), 'test-meta-business-config-789')
+      assert.strictEqual(fbParsed.searchParams.get('state'), fbAuthRes.state)
 
       // Ensure no publishing calls exist in the adapter
       const adapterCode = fs.readFileSync(path.join(rootDir, 'src/services/social/adapters/meta-adapter.ts'), 'utf8')
-      assert.ok(!adapterCode.includes('media_publish'), 'Adapter must NOT contain media publish endpoints in Step 162')
-      assert.ok(!adapterCode.includes('/media_publish'), 'Adapter must NOT contain /media_publish calls')
+      assert.ok(!adapterCode.includes('media_publish'), 'Adapter must NOT contain media publish endpoints in Step 164I')
     } finally {
       process.env = originalEnv
     }
@@ -356,8 +361,8 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
     }
   })
 
-  // 13. Step 164F — Platform-Aware Meta Verification & Instagram Linked-Page Model
-  await t.test('13. Platform-aware Meta verification, Facebook (id,name) vs Instagram linked page (id,instagram_business_account{id,username})', async () => {
+  // 13. Step 164I — Independent Meta Verification: Instagram (graph.instagram.com) vs Facebook (graph.facebook.com)
+  await t.test('13. Independent Meta verification: Instagram (graph.instagram.com/me) vs Facebook (graph.facebook.com/{page_id}) without Facebook dependency', async () => {
     const originalEnv = { ...process.env }
     const originalFetch = globalThis.fetch
     try {
@@ -369,12 +374,12 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       const adapter = new MetaSocialProviderAdapter()
       const interceptedUrls: string[] = []
 
-      // 1. Facebook verification uses fields=id,name on /{facebook_page_id}
+      // 1. Facebook verification uses graph.facebook.com/{facebook_page_id}?fields=id,name
       globalThis.fetch = async (input: RequestInfo | URL) => {
         const urlStr = String(input)
         interceptedUrls.push(urlStr)
 
-        if (urlStr.includes('/fb-page-123?')) {
+        if (urlStr.includes('graph.facebook.com') && urlStr.includes('/fb-page-123?')) {
           return new Response(JSON.stringify({ id: 'fb-page-123', name: 'Digital Zen Page' }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -386,22 +391,20 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       const fbResult = await adapter.verifyConnection('valid-fb-token', 'fb-page-123', 'FACEBOOK')
       assert.strictEqual(fbResult.isValid, true)
       assert.strictEqual(fbResult.accountName, 'Digital Zen Page')
-      assert.ok(interceptedUrls.some(u => u.includes('/fb-page-123?') && (u.includes('fields=id%2Cname') || u.includes('fields=id,name'))))
+      assert.ok(interceptedUrls.some(u => u.includes('graph.facebook.com') && u.includes('/fb-page-123?') && u.includes('fields=id,name')))
 
-      // 2. Instagram verification queries linked page node and matches instagram_business_account.id
+      // 2. Instagram verification uses graph.instagram.com/v21.0/me directly with Instagram User token
       interceptedUrls.length = 0
       globalThis.fetch = async (input: RequestInfo | URL) => {
         const urlStr = String(input)
         interceptedUrls.push(urlStr)
 
-        if (urlStr.includes('/fb-page-123?')) {
+        if (urlStr.includes('graph.instagram.com') && urlStr.includes('/me?')) {
           return new Response(
             JSON.stringify({
-              id: 'fb-page-123',
-              instagram_business_account: {
-                id: 'ig-user-456',
-                username: 'digital_zen_58',
-              },
+              id: 'ig-user-456',
+              username: 'digital_zen_58',
+              account_type: 'BUSINESS',
             }),
             {
               status: 200,
@@ -412,46 +415,28 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
         return new Response(JSON.stringify({ error: { message: 'Not found' } }), { status: 404 })
       }
 
-      const igResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
+      const igResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM')
       assert.strictEqual(igResult.isValid, true)
       assert.strictEqual(igResult.accountName, '@digital_zen_58')
-      assert.ok(interceptedUrls.some(u => u.includes('/fb-page-123?') && (u.includes('instagram_business_account') || u.includes('instagram_business_account%7Bid%2Cusername%7D'))))
-      assert.ok(!interceptedUrls.some(u => u.includes('/ig-user-456?')), 'Must NEVER query /{ig_user_id} directly with Page Access Token')
+      assert.ok(interceptedUrls.some(u => u.includes('graph.instagram.com') && u.includes('/me?') && u.includes('fields=id,username,name,account_type')))
+      assert.ok(!interceptedUrls.some(u => u.includes('graph.facebook.com')), 'Instagram verification must NOT query Facebook Graph API')
 
-      // 3. Instagram: instagram_business_account absent => controlled business failure (not auth failure)
+      // 3. Instagram ID mismatch returns controlled failure
       globalThis.fetch = async () => {
         return new Response(
           JSON.stringify({
-            id: 'fb-page-123',
-            // no instagram_business_account
+            id: 'different-ig-id-999',
+            username: 'other_user',
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      const igMissingResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
-      assert.strictEqual(igMissingResult.isValid, false)
-      assert.strictEqual(igMissingResult.isAuthError, false)
-      assert.strictEqual(igMissingResult.error, "Le compte Instagram n'est plus relié à cette Page Facebook.")
-
-      // 4. Instagram: instagram_business_account.id different from expected => controlled business failure
-      globalThis.fetch = async () => {
-        return new Response(
-          JSON.stringify({
-            id: 'fb-page-123',
-            instagram_business_account: {
-              id: 'different-ig-id-999',
-              username: 'other_user',
-            },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      const igDifferentResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
+      const igDifferentResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM')
       assert.strictEqual(igDifferentResult.isValid, false)
       assert.strictEqual(igDifferentResult.isAuthError, false)
-      assert.strictEqual(igDifferentResult.error, "Le compte Instagram n'est plus relié à cette Page Facebook.")
+      assert.strictEqual(igDifferentResult.error, 'Identifiant de compte Instagram incohérent.')
 
-      // 5. True OAuth revocation / expiration (code 190) returns isAuthError: true
+      // 4. True OAuth revocation / expiration (code 190) returns isAuthError: true
       globalThis.fetch = async () => {
         return new Response(
           JSON.stringify({
@@ -465,12 +450,12 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      const oauthRevokedResult = await adapter.verifyConnection('expired-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
+      const oauthRevokedResult = await adapter.verifyConnection('expired-token', 'ig-user-456', 'INSTAGRAM')
       assert.strictEqual(oauthRevokedResult.isValid, false)
       assert.strictEqual(oauthRevokedResult.isAuthError, true)
       assert.strictEqual(oauthRevokedResult.error, 'Autorisation à renouveler.')
 
-      // 6. HTTP 5xx Server Error => isAuthError: false (NO automatic REAUTH_REQUIRED)
+      // 5. HTTP 5xx Server Error => isAuthError: false (NO automatic REAUTH_REQUIRED)
       globalThis.fetch = async () => {
         return new Response(
           JSON.stringify({
@@ -483,29 +468,34 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      const serverErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
+      const serverErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
       assert.strictEqual(serverErrorResult.isValid, false)
       assert.strictEqual(serverErrorResult.isAuthError, false)
       assert.strictEqual(serverErrorResult.error, 'Impossible de vérifier la connexion pour le moment.')
 
-      // 7. Network / fetch exception => isAuthError: false (NO automatic REAUTH_REQUIRED)
+      // 6. Network / fetch exception => isAuthError: false (NO automatic REAUTH_REQUIRED)
       globalThis.fetch = async () => {
         throw new Error('fetch failed: connect ECONNREFUSED')
       }
-      const networkErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
+      const networkErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
       assert.strictEqual(networkErrorResult.isValid, false)
       assert.strictEqual(networkErrorResult.isAuthError, false)
       assert.strictEqual(networkErrorResult.error, 'Impossible de vérifier la connexion pour le moment.')
 
-      // 8. Static source code verification: verifyConnection uses platform and never fields=id,name,username
+      // 7. Static source code verification: verifyConnection uses platform and never parentPageId or fields=id,name,username
       const adapterSource = fs.readFileSync(path.join(rootDir, 'src/services/social/adapters/meta-adapter.ts'), 'utf8')
-      assert.ok(adapterSource.includes("instagram_business_account{id,username}"))
+      assert.ok(adapterSource.includes('graph.instagram.com'))
+      assert.ok(!adapterSource.includes('parentPageId'))
       assert.ok(!adapterSource.includes('fields=id,name,username'))
 
       const socialSource = fs.readFileSync(path.join(rootDir, 'src/services/social/social-accounts.ts'), 'utf8')
       assert.ok(socialSource.includes('account.platform'), 'social-accounts must pass account.platform to verifyConnection')
-      assert.ok(socialSource.includes('parentPageId'), 'social-accounts must resolve parentPageId')
+      assert.ok(!socialSource.includes('parentPageId'), 'social-accounts must NOT have parentPageId')
       assert.ok(socialSource.includes('res.isAuthError'), 'social-accounts must check res.isAuthError before transitioning to REAUTH_REQUIRED')
+
+      // 8. Confirm MUZA_META_ENV_DIAGNOSTIC is completely cleaned up
+      const actionsSource = fs.readFileSync(path.join(rootDir, 'src/actions/social-accounts.ts'), 'utf8')
+      assert.ok(!actionsSource.includes('MUZA_META_ENV_DIAGNOSTIC'), 'Temporary diagnostic must be completely removed')
     } finally {
       process.env = originalEnv
       globalThis.fetch = originalFetch

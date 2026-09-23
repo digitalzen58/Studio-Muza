@@ -44,8 +44,7 @@ export interface SocialProviderAdapter {
   verifyConnection(
     accessTokenEncrypted: string,
     externalAccountId: string,
-    platform?: SocialPlatform,
-    parentPageId?: string
+    platform?: SocialPlatform
   ): Promise<{
     isValid: boolean
     isAuthError?: boolean
