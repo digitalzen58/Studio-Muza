@@ -206,7 +206,7 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
                   ) : isInstagramReauth ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                       <AlertCircle className="w-3 h-3" />
-                      À reconnecter
+                      Autorisation à renouveler
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-ivory-border/60 text-ink-muted">
@@ -218,7 +218,7 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
                   {isInstagramConnected && instagramAccount
                     ? `Compte associé : ${instagramAccount.accountName || instagramAccount.externalAccountId}`
                     : isInstagramReauth
-                    ? 'L’autorisation a expiré. Veuillez reconnecter votre compte Instagram Professionnel.'
+                    ? 'L’autorisation a expiré ou doit être renouvelée. Veuillez reconnecter votre compte Instagram Professionnel.'
                     : 'Pour publier vos posts et carrousels directement sur votre compte Instagram Professionnel.'}
                 </p>
               </div>
@@ -335,7 +335,7 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
                   ) : isFacebookReauth ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                       <AlertCircle className="w-3 h-3" />
-                      À reconnecter
+                      Autorisation à renouveler
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-ivory-border/60 text-ink-muted">
@@ -347,7 +347,7 @@ export function NetworksView({ businessName, accounts, metaConfig }: NetworksVie
                   {isFacebookConnected && facebookAccount
                     ? `Page associée : ${facebookAccount.accountName || facebookAccount.externalAccountId}`
                     : isFacebookReauth
-                    ? 'L’autorisation a expiré. Veuillez reconnecter votre Page Facebook.'
+                    ? 'L’autorisation a expiré ou doit être renouvelée. Veuillez reconnecter votre Page Facebook.'
                     : 'Pour publier vos actualités et visuels directement sur votre Page Facebook professionnelle.'}
                 </p>
               </div>

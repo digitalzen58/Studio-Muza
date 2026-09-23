@@ -1,17 +1,16 @@
 import crypto from 'node:crypto'
 
 /**
- * Derives a consistent 32-byte key from environment secret.
- * Falls back to a deterministic SHA-256 hash of available server secrets.
+ * Derives a consistent 32-byte key from CREDENTIAL_ENCRYPTION_KEY.
+ * Strictly requires CREDENTIAL_ENCRYPTION_KEY to be set in environment (fail-closed, no fallbacks).
  */
 function getEncryptionKey(): Buffer {
-  const masterKey =
-    process.env.CREDENTIAL_ENCRYPTION_KEY ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXTAUTH_SECRET ||
-    'studio-muza-secure-token-vault-fallback-key'
+  const masterKey = process.env.CREDENTIAL_ENCRYPTION_KEY
+  if (!masterKey || masterKey.trim() === '') {
+    throw new Error('CREDENTIAL_ENCRYPTION_KEY is required for credential encryption/decryption.')
+  }
 
-  return crypto.createHash('sha256').update(masterKey).digest()
+  return crypto.createHash('sha256').update(masterKey.trim()).digest()
 }
 
 /**

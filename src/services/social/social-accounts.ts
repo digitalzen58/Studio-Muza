@@ -213,7 +213,20 @@ export async function verifySocialAccount(
 
     const decryptedToken = decryptCredential(account.access_token_encrypted)
     if (!decryptedToken) {
-      return { isValid: false, status: 'ERROR', error: 'Échec de déchiffrement du jeton.' }
+      await supabase
+        .from('social_accounts')
+        .update({
+          status: 'REAUTH_REQUIRED',
+          last_verified_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', accountId)
+
+      return {
+        isValid: false,
+        status: 'REAUTH_REQUIRED',
+        error: 'Autorisation à renouveler.',
+      }
     }
 
     if (account.platform === 'INSTAGRAM' || account.platform === 'FACEBOOK') {

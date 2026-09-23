@@ -120,61 +120,75 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
 
   // 5. AES-256-GCM Credential Vault & Provider Adapter Boundary
   await t.test('5. AES-256-GCM encryption, adapter abstraction, and zero secret exposure to client', () => {
-    const adapter = new MetaSocialProviderAdapter()
-    assert.strictEqual(adapter.provider, 'META')
-    assert.strictEqual(typeof adapter.isConfigured(), 'boolean')
-    assert.strictEqual(typeof adapter.getCapabilities('INSTAGRAM', 'BUSINESS').canPublishPosts, 'boolean')
+    const originalEnv = { ...process.env }
+    try {
+      process.env.CREDENTIAL_ENCRYPTION_KEY = 'test-key-32-bytes-for-unit-testing-vault'
 
-    const metaConfig = adapter.getAuthConfig()
-    assert.ok('isConfigured' in metaConfig)
-    assert.ok('appIdPresent' in metaConfig)
-    assert.ok('appSecretPresent' in metaConfig)
-    assert.ok(!('appSecret' in (metaConfig as unknown as Record<string, unknown>)), 'Must NEVER expose plaintext appSecret in config DTO')
+      const adapter = new MetaSocialProviderAdapter()
+      assert.strictEqual(adapter.provider, 'META')
+      assert.strictEqual(typeof adapter.isConfigured(), 'boolean')
+      assert.strictEqual(typeof adapter.getCapabilities('INSTAGRAM', 'BUSINESS').canPublishPosts, 'boolean')
 
-    // AES-256-GCM encryption & decryption
-    const secretToken = 'EAABsbCS1...sample_meta_long_lived_user_access_token_12345'
-    const encrypted = encryptCredential(secretToken)
-    assert.ok(encrypted.includes(':'), 'Encrypted string must contain IV:Tag:Data delimiters')
-    const decrypted = decryptCredential(encrypted)
-    assert.strictEqual(decrypted, secretToken)
+      const metaConfig = adapter.getAuthConfig()
+      assert.ok('isConfigured' in metaConfig)
+      assert.ok('appIdPresent' in metaConfig)
+      assert.ok('appSecretPresent' in metaConfig)
+      assert.ok(!('appSecret' in (metaConfig as unknown as Record<string, unknown>)), 'Must NEVER expose plaintext appSecret in config DTO')
 
-    // Tampered ciphertext fails safely
-    const tampered = `${encrypted.slice(0, -4)}ffff`
-    assert.strictEqual(decryptCredential(tampered), null)
+      // AES-256-GCM encryption & decryption
+      const secretToken = 'EAABsbCS1...sample_meta_long_lived_user_access_token_12345'
+      const encrypted = encryptCredential(secretToken)
+      assert.ok(encrypted.includes(':'), 'Encrypted string must contain IV:Tag:Data delimiters')
+      const decrypted = decryptCredential(encrypted)
+      assert.strictEqual(decrypted, secretToken)
+
+      // Tampered ciphertext fails safely
+      const tampered = `${encrypted.slice(0, -4)}ffff`
+      assert.strictEqual(decryptCredential(tampered), null)
+    } finally {
+      process.env = originalEnv
+    }
   })
 
   // 6. OAuth State Security, Expiration, and Tamper Resistance
   await t.test('6. OAuth state signature verification, expiration, and tampering rejection', () => {
-    const validStatePayload: OAuthStatePayload = {
-      userId: 'usr-123',
-      businessId: 'biz-456',
-      provider: 'META',
-      platform: 'INSTAGRAM',
-      nonce: 'random-nonce-abc',
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 600000,
+    const originalEnv = { ...process.env }
+    try {
+      process.env.CREDENTIAL_ENCRYPTION_KEY = 'test-key-32-bytes-for-unit-testing-vault'
+
+      const validStatePayload: OAuthStatePayload = {
+        userId: 'usr-123',
+        businessId: 'biz-456',
+        provider: 'META',
+        platform: 'INSTAGRAM',
+        nonce: 'random-nonce-abc',
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 600000,
+      }
+
+      const signedState = signOAuthState(validStatePayload as unknown as Record<string, unknown>)
+      assert.ok(signedState.includes('.'), 'Signed state must contain payload.signature')
+
+      // Valid state verifies
+      const verified = verifyOAuthState<OAuthStatePayload>(signedState)
+      assert.ok(verified !== null)
+      assert.strictEqual(verified.userId, 'usr-123')
+      assert.strictEqual(verified.businessId, 'biz-456')
+
+      // Tampered state rejected
+      const tamperedState = `${signedState.slice(0, -6)}tamper`
+      assert.strictEqual(verifyOAuthState(tamperedState), null)
+
+      // Expired state rejected
+      const expiredPayload: OAuthStatePayload = {
+        ...validStatePayload,
+        expiresAt: Date.now() - 1000,
+      }
+      const expiredSigned = signOAuthState(expiredPayload as unknown as Record<string, unknown>)
+      assert.strictEqual(verifyOAuthState(expiredSigned), null)
+    } finally {
+      process.env = originalEnv
     }
-
-    const signedState = signOAuthState(validStatePayload as unknown as Record<string, unknown>)
-    assert.ok(signedState.includes('.'), 'Signed state must contain payload.signature')
-
-    // Valid state verifies
-    const verified = verifyOAuthState<OAuthStatePayload>(signedState)
-    assert.ok(verified !== null)
-    assert.strictEqual(verified.userId, 'usr-123')
-    assert.strictEqual(verified.businessId, 'biz-456')
-
-    // Tampered state rejected
-    const tamperedState = `${signedState.slice(0, -6)}tamper`
-    assert.strictEqual(verifyOAuthState(tamperedState), null)
-
-    // Expired state rejected
-    const expiredPayload: OAuthStatePayload = {
-      ...validStatePayload,
-      expiresAt: Date.now() - 1000,
-    }
-    const expiredSigned = signOAuthState(expiredPayload as unknown as Record<string, unknown>)
-    assert.strictEqual(verifyOAuthState(expiredSigned), null)
   })
 
   // 7. Multi-Tenant Isolation & Callback User/Business Binding
@@ -253,6 +267,7 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       process.env.META_APP_ID = 'test-meta-app-id-123'
       process.env.META_APP_SECRET = 'test-meta-secret-456'
       process.env.META_CONFIG_ID = 'test-meta-business-config-789'
+      process.env.CREDENTIAL_ENCRYPTION_KEY = 'test-key-32-bytes-for-unit-testing-vault'
       process.env.NEXT_PUBLIC_SITE_URL = 'https://studio-muza.vercel.app'
 
       const adapter = new MetaSocialProviderAdapter()
@@ -291,6 +306,51 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       const adapterCode = fs.readFileSync(path.join(rootDir, 'src/services/social/adapters/meta-adapter.ts'), 'utf8')
       assert.ok(!adapterCode.includes('media_publish'), 'Adapter must NOT contain media publish endpoints in Step 162')
       assert.ok(!adapterCode.includes('/media_publish'), 'Adapter must NOT contain /media_publish calls')
+    } finally {
+      process.env = originalEnv
+    }
+  })
+
+  // 12. Step 164B — Hardened Credential Encryption & Reauth Transition
+  await t.test('12. CREDENTIAL_ENCRYPTION_KEY required, zero fallbacks, and safe REAUTH_REQUIRED UX', async () => {
+    const originalEnv = { ...process.env }
+    try {
+      // 1. Missing key fails closed
+      delete process.env.CREDENTIAL_ENCRYPTION_KEY
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-service-key'
+      process.env.NEXTAUTH_SECRET = 'fake-nextauth-key'
+
+      assert.throws(() => {
+        encryptCredential('sample-token')
+      }, /CREDENTIAL_ENCRYPTION_KEY is required/)
+
+      assert.strictEqual(decryptCredential('1234:5678:9abc'), null)
+
+      // 2. Setting stable key enables encryption & decryption
+      process.env.CREDENTIAL_ENCRYPTION_KEY = 'stable-secret-key-32-bytes-test-xyz'
+      const token = 'EAAtest_token_12345'
+      const encrypted = encryptCredential(token)
+      assert.ok(encrypted.includes(':'))
+      assert.strictEqual(decryptCredential(encrypted), token)
+
+      // 3. Different key fails to decrypt (returns null safely without leaking)
+      process.env.CREDENTIAL_ENCRYPTION_KEY = 'different-rotated-key-abc'
+      assert.strictEqual(decryptCredential(encrypted), null)
+
+      // 4. Source code checks: verify fallback removal and REAUTH_REQUIRED handling
+      const cryptoSource = fs.readFileSync(path.join(rootDir, 'src/services/social/crypto.ts'), 'utf8')
+      assert.ok(!cryptoSource.includes('SUPABASE_SERVICE_ROLE_KEY'), 'Must NOT have fallback to SUPABASE_SERVICE_ROLE_KEY')
+      assert.ok(!cryptoSource.includes('NEXTAUTH_SECRET'), 'Must NOT have fallback to NEXTAUTH_SECRET')
+      assert.ok(!cryptoSource.includes('fallback-key'), 'Must NOT have hardcoded fallback key')
+
+      const socialSource = fs.readFileSync(path.join(rootDir, 'src/services/social/social-accounts.ts'), 'utf8')
+      assert.ok(socialSource.includes("status: 'REAUTH_REQUIRED'"), 'Decryption failure must transition to REAUTH_REQUIRED')
+      assert.ok(socialSource.includes('Autorisation à renouveler.'), 'Decryption failure must return friendly copy')
+      assert.ok(!socialSource.includes('Échec de déchiffrement du jeton.'), 'Must NOT return raw technical error Échec de déchiffrement')
+
+      const networksViewSource = fs.readFileSync(path.join(rootDir, 'src/components/social/networks-view.tsx'), 'utf8')
+      assert.ok(networksViewSource.includes('Autorisation à renouveler'), 'Networks view must render "Autorisation à renouveler" badge')
+      assert.ok(networksViewSource.includes('Reconnecter'), 'Networks view must provide "Reconnecter" CTA')
     } finally {
       process.env = originalEnv
     }
