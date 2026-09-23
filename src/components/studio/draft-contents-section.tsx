@@ -1,8 +1,11 @@
-import React from 'react'
+'use client'
+
+import React, { useState } from 'react'
 import Link from 'next/link'
-import { FileEdit, ArrowRight, Clock } from 'lucide-react'
+import { FileEdit, ArrowRight, Clock, Trash2, Check } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { deleteContentDraftAction } from '@/actions/content'
 
 export interface DraftContentSummary {
   id: string
@@ -55,8 +58,35 @@ function getFormatBadgeLabel(format?: string | null): string {
 }
 
 export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
-  if (!drafts || drafts.length === 0) {
+  const [deletedIds, setDeletedIds] = useState<string[]>([])
+  const [draftToDelete, setDraftToDelete] = useState<DraftContentSummary | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
+
+  const items = (drafts || []).filter((d) => !deletedIds.includes(d.id))
+
+  if (!items || items.length === 0) {
     return null
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!draftToDelete) return
+    setIsDeleting(true)
+    const deletedId = draftToDelete.id
+
+    try {
+      const res = await deleteContentDraftAction(deletedId)
+      if (res.success) {
+        setDeletedIds((prev) => [...prev, deletedId])
+        setDraftToDelete(null)
+        setFeedbackMessage('Brouillon supprimé.')
+        setTimeout(() => setFeedbackMessage(null), 4000)
+      }
+    } catch (err) {
+      console.error('Failed to delete draft:', err)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -70,7 +100,7 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
           </h2>
         </div>
         <Badge variant="ivory" className="text-xs font-normal">
-          {drafts.length} {drafts.length > 1 ? 'brouillons' : 'brouillon'}
+          {items.length} {items.length > 1 ? 'brouillons' : 'brouillon'}
         </Badge>
       </div>
 
@@ -78,9 +108,17 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
         Reprenez vos créations là où vous les avez laissées avant d’explorer de nouvelles idées.
       </p>
 
+      {/* Discrete Feedback Banner */}
+      {feedbackMessage && (
+        <div className="flex items-center gap-2 p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs animate-in fade-in duration-200">
+          <Check className="w-4 h-4 shrink-0 text-emerald-600" />
+          <span>{feedbackMessage}</span>
+        </div>
+      )}
+
       {/* Draft Cards Responsive Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        {drafts.map((draft) => {
+        {items.map((draft) => {
           const primaryVariant = draft.content_variants?.[0]
           const formatBadge = getFormatBadgeLabel(primaryVariant?.format)
           const displayTitle =
@@ -89,18 +127,29 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
           return (
             <div
               key={draft.id}
-              className="bg-white border border-ivory-border/80 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between gap-3 h-full"
+              className="bg-white border border-ivory-border/80 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between gap-3 h-full group"
             >
               <div className="flex flex-col gap-2.5">
-                {/* Top Row: Format & Status */}
+                {/* Top Row: Format & Status & Quick Delete */}
                 <div className="flex items-center justify-between gap-2">
                   <Badge variant="terracotta" className="text-[10px]">
                     {formatBadge}
                   </Badge>
 
-                  <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-                    <Clock className="w-3 h-3" />
-                    <span>{formatRelativeTime(draft.updated_at)}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+                      <Clock className="w-3 h-3" />
+                      <span>{formatRelativeTime(draft.updated_at)}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setDraftToDelete(draft)}
+                      className="text-ink-muted/60 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50 opacity-80 group-hover:opacity-100"
+                      title="Supprimer le brouillon"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
 
@@ -131,6 +180,40 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
           )
         })}
       </div>
+
+      {/* Delete Draft Confirmation Modal */}
+      {draftToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
+          <div className="bg-ivory-card border border-ivory-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl animate-in zoom-in-95 duration-150">
+            <div className="space-y-1">
+              <h3 className="text-sm font-serif font-bold text-ink">
+                Supprimer ce brouillon ?
+              </h3>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                Cette action est définitive.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDraftToDelete(null)}
+                disabled={isDeleting}
+                className="px-3.5 py-1.5 text-xs text-ink-muted hover:text-ink font-medium transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs disabled:opacity-50 transition-colors"
+              >
+                {isDeleting ? 'Suppression…' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

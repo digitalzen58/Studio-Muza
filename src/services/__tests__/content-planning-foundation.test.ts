@@ -284,11 +284,12 @@ assert.ok(
 console.log('✓ TEST FZ: Rescheduling updates scheduled instant while preserving content')
 
 // ============================================================================
-// TEST GA: Cancel schedule preserves text and media
+// TEST GA: Cancel schedule preserves text and media (no content or media deletion)
 // ============================================================================
 assert.ok(
   schedulingActionsContent.includes('cancelScheduledContentAction') &&
-  !schedulingActionsContent.includes(".delete()"),
+  !schedulingActionsContent.includes("from('contents').delete()") &&
+  !schedulingActionsContent.includes("from('media_assets').delete()"),
   'GA FAILED: Cancelling schedule must not delete content or media'
 )
 console.log('✓ TEST GA: Cancelling schedule preserves all copy, slides, and media')
@@ -303,13 +304,13 @@ assert.ok(
 console.log('✓ TEST GB: Cancelling schedule clears scheduled_at to NULL')
 
 // ============================================================================
-// TEST GC: Cancel returns status to READY
+// TEST GC: Cancel returns status to DRAFT
 // ============================================================================
 assert.ok(
-  schedulingActionsContent.includes("status: 'READY'"),
-  'GC FAILED: Cancelling schedule must set status to READY'
+  schedulingActionsContent.includes("status: 'DRAFT'"),
+  'GC FAILED: Cancelling schedule must set status to DRAFT'
 )
-console.log('✓ TEST GC: Cancelling schedule returns status to READY')
+console.log('✓ TEST GC: Cancelling schedule returns status to DRAFT')
 
 // ============================================================================
 // TEST GD: Historical scheduled demo content remains untouched

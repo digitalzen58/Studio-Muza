@@ -38,6 +38,7 @@ interface VisualCanvasProps {
 export function VisualCanvas({
   composition,
   onChange,
+  mediaAssets = [],
   onOpenMediaPicker,
   onOpenStockModal,
   readOnly = false,
@@ -363,7 +364,11 @@ export function VisualCanvas({
     })
   }
 
-  const isImageBg = composition.background.type === 'IMAGE' && Boolean(composition.background.mediaUrl)
+  const matchingAsset = composition.background.mediaAssetId
+    ? mediaAssets?.find((m) => m.id === composition.background.mediaAssetId)
+    : null
+  const effectiveMediaUrl = matchingAsset?.url || composition.background.mediaUrl || null
+  const isImageBg = composition.background.type === 'IMAGE' && Boolean(effectiveMediaUrl)
 
   return (
     <div className="flex flex-col gap-3 w-full">
@@ -392,7 +397,7 @@ export function VisualCanvas({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={composition.background.mediaUrl as string}
+              src={effectiveMediaUrl as string}
               alt="Arrière-plan"
               className="w-full h-full object-cover"
               draggable={false}

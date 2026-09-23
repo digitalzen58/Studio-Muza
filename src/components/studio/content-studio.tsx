@@ -9,10 +9,16 @@ import {
   AlertCircle,
   Calendar as CalendarIcon,
   Eye,
+  Trash2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { saveContentDraftAction, type CarouselSlideData, type SaveContentDraftPayload } from '@/actions/content'
+import {
+  saveContentDraftAction,
+  deleteContentDraftAction,
+  type CarouselSlideData,
+  type SaveContentDraftPayload,
+} from '@/actions/content'
 import { MediaPickerModal } from './media-picker-modal'
 import { StockMediaModal } from './stock-media-modal'
 import { ContentReadinessModal } from './content-readiness-modal'
@@ -152,21 +158,58 @@ export function ContentStudio({
   const [stockModalOpen, setStockModalOpen] = useState(false)
 
   // Primary media & Visual Composition for POST format
+  const rawVisualComp = variant?.metadata?.visual_composition as VisualComposition | undefined
   const initialPrimaryMediaId =
-    variant?.metadata?.primary_media_id ||
-    variant?.metadata?.media_id ||
-    null
+    rawVisualComp?.background?.type === 'IMAGE' && rawVisualComp.background.mediaAssetId
+      ? rawVisualComp.background.mediaAssetId
+      : variant?.metadata?.primary_media_id ||
+        variant?.metadata?.media_id ||
+        null
   const [primaryMediaId, setPrimaryMediaId] = useState<string | null>(initialPrimaryMediaId)
 
   const initialPrimaryMediaUrl = initialPrimaryMediaId
     ? initialMediaAssets.find((m) => m.id === initialPrimaryMediaId)?.url || null
     : null
 
-  const initialComposition: VisualComposition =
-    (variant?.metadata?.visual_composition as VisualComposition) ||
-    createDefaultVisualComposition(initialPrimaryMediaId, initialPrimaryMediaUrl)
+  const initialComposition: VisualComposition = React.useMemo(() => {
+    if (rawVisualComp) {
+      if (rawVisualComp.background?.type === 'IMAGE') {
+        const bgAssetId = rawVisualComp.background.mediaAssetId || initialPrimaryMediaId
+        const freshUrl = bgAssetId
+          ? initialMediaAssets.find((m) => m.id === bgAssetId)?.url || null
+          : null
+        return {
+          ...rawVisualComp,
+          background: {
+            ...rawVisualComp.background,
+            mediaAssetId: bgAssetId,
+            mediaUrl: freshUrl || rawVisualComp.background.mediaUrl || null,
+          },
+        }
+      }
+      return rawVisualComp
+    }
+
+    return createDefaultVisualComposition(initialPrimaryMediaId, initialPrimaryMediaUrl)
+  }, [rawVisualComp, initialPrimaryMediaId, initialPrimaryMediaUrl, initialMediaAssets])
 
   const [visualComposition, setVisualComposition] = useState<VisualComposition>(initialComposition)
+
+  // Synchronize visualComposition background mediaUrl when mediaAssets list updates
+  useEffect(() => {
+    if (visualComposition.background.type === 'IMAGE' && visualComposition.background.mediaAssetId) {
+      const currentAsset = mediaAssets.find((m) => m.id === visualComposition.background.mediaAssetId)
+      if (currentAsset?.url && currentAsset.url !== visualComposition.background.mediaUrl) {
+        setVisualComposition((prev) => ({
+          ...prev,
+          background: {
+            ...prev.background,
+            mediaUrl: currentAsset.url,
+          },
+        }))
+      }
+    }
+  }, [mediaAssets, visualComposition.background.type, visualComposition.background.mediaAssetId, visualComposition.background.mediaUrl])
 
   // AI Writing Assistance state
   const [assistanceState, setAssistanceState] = useState<ActiveAssistanceState | null>(null)
@@ -206,6 +249,8 @@ export function ContentStudio({
   const [readinessModalOpen, setReadinessModalOpen] = useState(false)
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [blockingIssues, setBlockingIssues] = useState<ReadinessIssue[]>([])
   const [readinessWarnings, setReadinessWarnings] = useState<ReadinessIssue[]>([])
   const [isScheduling, setIsScheduling] = useState(false)
@@ -491,16 +536,33 @@ export function ContentStudio({
     try {
       const res = await cancelScheduledContentAction({ contentId: content.id })
       if (res.success) {
-        setCurrentStatus('READY')
+        setCurrentStatus('DRAFT')
         setCurrentScheduledAt(null)
         setCancelConfirmOpen(false)
-        setSchedulingFeedback('La programmation a été annulée. Votre contenu reste intact.')
+        setSchedulingFeedback('La programmation a été annulée. Votre contenu est de retour dans vos brouillons.')
         setTimeout(() => setSchedulingFeedback(null), 5000)
       } else {
         setErrorMessage(res.message)
       }
     } finally {
       setIsScheduling(false)
+    }
+  }
+
+  const handleConfirmDeleteDraft = async () => {
+    setIsDeleting(true)
+    try {
+      const res = await deleteContentDraftAction(content.id)
+      if (res.success) {
+        setDeleteConfirmOpen(false)
+        router.push('/app')
+      } else {
+        setErrorMessage(res.message)
+      }
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Erreur lors de la suppression du brouillon.')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -538,7 +600,7 @@ export function ContentStudio({
           <button
             type="button"
             onClick={handleBack}
-            disabled={isPending || isScheduling}
+            disabled={isPending || isScheduling || isDeleting}
             className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-ivory-card border border-ivory-border text-ink hover:text-terracotta hover:border-terracotta/30 transition-colors shadow-xs disabled:opacity-50"
             title={isDirty ? 'Enregistrer et retourner aux idées' : 'Retour aux idées'}
           >
@@ -568,10 +630,25 @@ export function ContentStudio({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {currentStatus !== 'SCHEDULED' && (
+            <Button
+              type="button"
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={isPending || isScheduling || isDeleting}
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-ink-muted hover:text-red-600 hover:bg-red-50 text-xs px-2.5"
+              title="Supprimer le brouillon"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Supprimer</span>
+            </Button>
+          )}
+
           <Button
             type="button"
             onClick={handleSave}
-            disabled={isPending || isScheduling}
+            disabled={isPending || isScheduling || isDeleting}
             variant="outline"
             size="sm"
             className="gap-1.5 shadow-2xs"
@@ -597,7 +674,7 @@ export function ContentStudio({
           <Button
             type="button"
             onClick={() => setPreviewModalOpen(true)}
-            disabled={isPending || isScheduling}
+            disabled={isPending || isScheduling || isDeleting}
             variant="outline"
             size="sm"
             className="gap-1.5 shadow-2xs text-ink hover:text-terracotta"
@@ -611,7 +688,7 @@ export function ContentStudio({
               <Button
                 type="button"
                 onClick={handlePlanifierClick}
-                disabled={isPending || isScheduling}
+                disabled={isPending || isScheduling || isDeleting}
                 size="sm"
                 className="gap-1.5 bg-terracotta-light/60 hover:bg-terracotta-light text-terracotta-dark border border-terracotta/30 shadow-2xs font-medium"
               >
@@ -621,7 +698,7 @@ export function ContentStudio({
               <button
                 type="button"
                 onClick={() => setCancelConfirmOpen(true)}
-                disabled={isPending || isScheduling}
+                disabled={isPending || isScheduling || isDeleting}
                 className="text-xs text-red-600 hover:text-red-700 hover:underline px-2 py-1 transition-colors disabled:opacity-50 font-medium"
               >
                 Annuler
@@ -631,7 +708,7 @@ export function ContentStudio({
             <Button
               type="button"
               onClick={handlePlanifierClick}
-              disabled={isPending || isScheduling}
+              disabled={isPending || isScheduling || isDeleting}
               size="sm"
               className="gap-1.5 bg-terracotta hover:bg-terracotta-dark text-white font-semibold shadow-xs"
             >
@@ -853,6 +930,40 @@ export function ContentStudio({
                 className="px-3.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs disabled:opacity-50"
               >
                 {isScheduling ? 'Annulation…' : 'Confirmer l’annulation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 10. Delete Draft Confirmation Dialog */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
+          <div className="bg-ivory-card border border-ivory-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl">
+            <div className="space-y-1">
+              <h3 className="text-sm font-serif font-bold text-ink">
+                Supprimer ce brouillon ?
+              </h3>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                Cette action est définitive.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={isDeleting}
+                className="px-3.5 py-1.5 text-xs text-ink-muted hover:text-ink font-medium transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteDraft}
+                disabled={isDeleting}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs disabled:opacity-50 transition-colors"
+              >
+                {isDeleting ? 'Suppression…' : 'Supprimer'}
               </button>
             </div>
           </div>

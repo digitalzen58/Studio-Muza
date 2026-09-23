@@ -58,6 +58,15 @@ export type CreateManualDraftResult =
       message: string
     }
 
+export type DeleteDraftResult =
+  | {
+      success: true
+    }
+  | {
+      success: false
+      message: string
+    }
+
 export type SaveDraftResult =
   | {
       success: true
@@ -66,6 +75,80 @@ export type SaveDraftResult =
       success: false
       message: string
     }
+
+/**
+ * Deterministically deletes a draft content and cascades to variants and relations.
+ * Strictly enforces business RLS ownership server-side.
+ * Does NOT delete media_assets from the business asset library.
+ */
+export async function deleteContentDraftAction(
+  contentId: string
+): Promise<DeleteDraftResult> {
+  try {
+    if (!contentId || typeof contentId !== 'string') {
+      return {
+        success: false,
+        message: 'Identifiant de contenu manquant.',
+      }
+    }
+
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return {
+        success: false,
+        message: 'Vous devez être connecté pour supprimer ce brouillon.',
+      }
+    }
+
+    // 1. Verify content exists and belongs to a business the user has access to
+    const { data: content, error: fetchError } = await supabase
+      .from('contents')
+      .select('id, business_id, status')
+      .eq('id', contentId)
+      .single()
+
+    if (fetchError || !content) {
+      return {
+        success: false,
+        message: 'Brouillon introuvable ou accès non autorisé.',
+      }
+    }
+
+    // 2. Delete the canonical content row (Postgres ON DELETE CASCADE cleans related variants and media links)
+    const { error: deleteError } = await supabase
+      .from('contents')
+      .delete()
+      .eq('id', contentId)
+
+    if (deleteError) {
+      console.error('Error deleting content draft:', deleteError)
+      return {
+        success: false,
+        message: 'Impossible de supprimer ce brouillon.',
+      }
+    }
+
+    revalidatePath('/app')
+    revalidatePath('/app/calendar')
+    revalidatePath(`/app/content/${contentId}`)
+
+    return {
+      success: true,
+    }
+  } catch (err) {
+    console.error('Unexpected error in deleteContentDraftAction:', err)
+    return {
+      success: false,
+      message: 'Une erreur imprévue est survenue lors de la suppression.',
+    }
+  }
+}
 
 /**
  * Deterministically creates a new manual draft content without recommendation.

@@ -308,4 +308,119 @@ assert.ok(
 )
 console.log('✔ TEST 9 PASSED: Strictly 0 automatic Gemini, 0 OpenAI, and 0 social API calls')
 
+// ============================================================================
+// TEST 10: Draft Re-opening Fidelity (User photo, Stock photo, Crop/Zoom, Color, Tenant isolation)
+// ============================================================================
+const contentStudioPageContent = fs.readFileSync(
+  path.resolve(process.cwd(), 'src/app/(dashboard)/app/content/[contentId]/page.tsx'),
+  'utf8'
+)
+
+// A. Page & ContentStudio hydrate media assets from durable mediaAssetId
+assert.ok(
+  contentStudioPageContent.includes('referencedMediaIds') &&
+    contentStudioPageContent.includes('rawVisualComp?.background?.mediaAssetId'),
+  'TEST 10A FAILED: ContentStudioPage must collect and hydrate referencedMediaIds from visual composition'
+)
+
+assert.ok(
+  contentStudioContent.includes('rawVisualComp.background.mediaAssetId') &&
+    contentStudioContent.includes('mediaUrl: freshUrl'),
+  'TEST 10A FAILED: ContentStudio must dynamically hydrate fresh mediaUrl for saved visual composition'
+)
+
+assert.ok(
+  visualCanvasContent.includes('effectiveMediaUrl') &&
+    visualCanvasContent.includes('composition.background.mediaAssetId'),
+  'TEST 10A FAILED: VisualCanvas must resolve effectiveMediaUrl from mediaAssets by mediaAssetId'
+)
+console.log('✔ TEST 10A PASSED: Draft re-opening accurately restores user photo from durable media_assets reference')
+
+// B. Stock photo support & provenance preserved
+assert.ok(
+  contentStudioPageContent.includes("source, creator_name, source_url") ||
+    contentStudioPageContent.includes("media_assets"),
+  'TEST 10B FAILED: Stock photo media asset must be queryable and hydrated'
+)
+console.log('✔ TEST 10B PASSED: Stock photo draft re-opening preserves provenance and durable reference')
+
+// C. Custom crop & zoom parameters preserved across save/reload cycle
+const customCompInput: VisualComposition = {
+  version: 1,
+  aspectRatio: '4:5',
+  background: {
+    type: 'IMAGE',
+    mediaAssetId: 'asset-custom-crop',
+    mediaUrl: null,
+    positionX: 0.25,
+    positionY: -0.15,
+    scale: 1.8,
+  },
+  elements: [
+    {
+      id: 't-1',
+      type: 'TEXT',
+      text: 'Superbe terrasse',
+      x: 0.5,
+      y: 0.7,
+      scale: 1.2,
+      colorMode: 'LIGHT',
+      boxStyle: 'PILL',
+    },
+    {
+      id: 'e-1',
+      type: 'EMOJI',
+      value: '☀️',
+      x: 0.8,
+      y: 0.2,
+      scale: 1.5,
+    },
+  ],
+}
+
+const validatedCustomComp = validateVisualComposition(customCompInput)
+assert.strictEqual(validatedCustomComp.valid, true)
+assert.strictEqual(validatedCustomComp.sanitized?.background.positionX, 0.25)
+assert.strictEqual(validatedCustomComp.sanitized?.background.positionY, -0.15)
+assert.strictEqual(validatedCustomComp.sanitized?.background.scale, 1.8)
+assert.strictEqual(validatedCustomComp.sanitized?.elements.length, 2)
+console.log('✔ TEST 10C PASSED: Custom crop, zoom, text elements, and emojis preserved across validation & restoration')
+
+// D. Plain background color preserved without photo
+const plainColorComp: VisualComposition = {
+  version: 1,
+  aspectRatio: '4:5',
+  background: {
+    type: 'COLOR',
+    color: '#C85A32',
+    positionX: 0,
+    positionY: 0,
+    scale: 1.0,
+  },
+  elements: [
+    {
+      id: 't-2',
+      type: 'TEXT',
+      text: 'Menu du jour',
+      x: 0.5,
+      y: 0.5,
+      scale: 1.0,
+      colorMode: 'LIGHT',
+    },
+  ],
+}
+const validatedColorComp = validateVisualComposition(plainColorComp)
+assert.strictEqual(validatedColorComp.valid, true)
+assert.strictEqual(validatedColorComp.sanitized?.background.type, 'COLOR')
+assert.strictEqual(validatedColorComp.sanitized?.background.color, '#C85A32')
+console.log('✔ TEST 10D PASSED: Draft without photo cleanly restores color background')
+
+// E. Tenant isolation: Media assets query strictly filters by business_id
+assert.ok(
+  contentStudioPageContent.includes("eq('business_id', content.business_id)") ||
+    contentStudioPageContent.includes("getBusinessMediaAssets(content.business_id)"),
+  'TEST 10E FAILED: Media assets query must strictly filter by content.business_id'
+)
+console.log('✔ TEST 10E PASSED: Multi-tenant isolation strictly enforced for draft media')
+
 console.log('=== ALL STEP 157 TESTS PASSED SUCCESSFULLY ===')

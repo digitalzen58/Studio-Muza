@@ -211,11 +211,12 @@ export async function scheduleContentAction(
 }
 
 /**
- * Server Action to cancel scheduling for a content.
- * - Returns content and variant to 'READY' status.
+ * Server Action to cancel scheduling for a content (Déplanification).
+ * - Transitions status from 'SCHEDULED' to 'DRAFT'.
  * - Clears scheduled_at to NULL.
+ * - Cancels/deletes pending publish_jobs if present.
  * - Preserves all user copy, slides, media, and recommendation relationships.
- * - Protects historical demo publish_job if present.
+ * - Re-enables content to appear in Drafts and removes it from Calendar.
  */
 export async function cancelScheduledContentAction(payload: {
   contentId: string
@@ -259,34 +260,30 @@ export async function cancelScheduledContentAction(payload: {
       }
     }
 
-    // 3. Historical demo protection: if content has an existing publish_job, fail closed
-    const { data: existingJobs } = await supabase
-      .from('publish_jobs')
+    // 3. Cancel/clean up pending publish jobs if present
+    const { data: variants } = await supabase
+      .from('content_variants')
       .select('id')
-      .in(
-        'content_variant_id',
-        (
-          await supabase
-            .from('content_variants')
-            .select('id')
-            .eq('content_id', contentId)
-        ).data?.map((v) => v.id) || []
-      )
+      .eq('content_id', contentId)
 
-    if (existingJobs && existingJobs.length > 0) {
-      return {
-        success: false,
-        message: 'Ce contenu est associé à une exécution système et ne peut pas être déplanifié.',
-      }
+    const variantIds = variants?.map((v) => v.id) || []
+
+    if (variantIds.length > 0) {
+      // Delete any pending or retrying publish jobs for these variants
+      await supabase
+        .from('publish_jobs')
+        .delete()
+        .in('content_variant_id', variantIds)
+        .in('status', ['PENDING', 'RETRYING', 'PREPARING'])
     }
 
     const now = new Date().toISOString()
 
-    // 4. Update canonical contents table: status -> READY, scheduled_at -> NULL
+    // 4. Update canonical contents table: status -> DRAFT, scheduled_at -> NULL
     const { error: contentUpdateError } = await supabase
       .from('contents')
       .update({
-        status: 'READY',
+        status: 'DRAFT',
         scheduled_at: null,
         updated_at: now,
       })
@@ -300,11 +297,11 @@ export async function cancelScheduledContentAction(payload: {
       }
     }
 
-    // 5. Update content_variants table: status -> READY
+    // 5. Update content_variants table: status -> DRAFT
     await supabase
       .from('content_variants')
       .update({
-        status: 'READY',
+        status: 'DRAFT',
         updated_at: now,
       })
       .eq('content_id', contentId)
