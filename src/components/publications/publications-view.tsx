@@ -44,14 +44,14 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
       </div>
 
       {/* Filter Tabs: [ Publiées ] [ À venir ] [ Échec ] */}
-      <div className="flex items-center gap-1.5 p-1 bg-ivory-card border border-ivory-border rounded-xl w-fit">
+      <div className="flex items-center gap-1.5 p-1 bg-white border border-cream-border rounded-xl w-fit">
         <button
           type="button"
           onClick={() => setActiveFilter('PUBLISHED')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             activeFilter === 'PUBLISHED'
-              ? 'bg-terracotta text-white shadow-xs font-semibold'
-              : 'text-ink-muted hover:text-ink hover:bg-white/60'
+              ? 'bg-primary text-white shadow-xs font-semibold'
+              : 'text-ink-muted hover:text-ink hover:bg-cream-subtle'
           }`}
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -61,7 +61,7 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
               className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                 activeFilter === 'PUBLISHED'
                   ? 'bg-white/20 text-white'
-                  : 'bg-ivory text-ink-muted'
+                  : 'bg-cream text-ink-muted'
               }`}
             >
               {publishedItems.length}
@@ -74,8 +74,8 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
           onClick={() => setActiveFilter('SCHEDULED')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             activeFilter === 'SCHEDULED'
-              ? 'bg-terracotta text-white shadow-xs font-semibold'
-              : 'text-ink-muted hover:text-ink hover:bg-white/60'
+              ? 'bg-primary text-white shadow-xs font-semibold'
+              : 'text-ink-muted hover:text-ink hover:bg-cream-subtle'
           }`}
         >
           <Calendar className="w-3.5 h-3.5" />
@@ -85,7 +85,7 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
               className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                 activeFilter === 'SCHEDULED'
                   ? 'bg-white/20 text-white'
-                  : 'bg-ivory text-ink-muted'
+                  : 'bg-cream text-ink-muted'
               }`}
             >
               {upcomingItems.length}
@@ -98,8 +98,8 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
           onClick={() => setActiveFilter('FAILED')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             activeFilter === 'FAILED'
-              ? 'bg-terracotta text-white shadow-xs font-semibold'
-              : 'text-ink-muted hover:text-ink hover:bg-white/60'
+              ? 'bg-primary text-white shadow-xs font-semibold'
+              : 'text-ink-muted hover:text-ink hover:bg-cream-subtle'
           }`}
         >
           <AlertCircle className="w-3.5 h-3.5" />
@@ -131,7 +131,7 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
         </div>
       ) : (
         /* Friendly Empty States */
-        <div className="bg-ivory-card border border-ivory-border rounded-2xl p-8 text-center space-y-4 shadow-2xs">
+        <div className="bg-white border border-cream-border rounded-2xl p-8 text-center space-y-4 shadow-2xs">
           {activeFilter === 'PUBLISHED' && (
             <>
               <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center mx-auto">
@@ -150,7 +150,7 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
 
           {activeFilter === 'SCHEDULED' && (
             <>
-              <div className="w-12 h-12 rounded-full bg-terracotta-light text-terracotta flex items-center justify-center mx-auto">
+              <div className="w-12 h-12 rounded-full bg-primary-light text-primary flex items-center justify-center mx-auto">
                 <Calendar className="w-6 h-6" />
               </div>
               <div className="space-y-1 max-w-sm mx-auto">
@@ -164,7 +164,7 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
               <div className="pt-2">
                 <Link
                   href="/app"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-terracotta text-white hover:bg-terracotta-dark transition-colors shadow-xs"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition-colors shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Planifier un contenu</span>
@@ -175,7 +175,7 @@ export function PublicationsView({ items, businessName }: PublicationsViewProps)
 
           {activeFilter === 'FAILED' && (
             <>
-              <div className="w-12 h-12 rounded-full bg-ivory text-ink-muted flex items-center justify-center mx-auto">
+              <div className="w-12 h-12 rounded-full bg-cream-subtle text-ink-muted flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6 text-emerald-600" />
               </div>
               <div className="space-y-1 max-w-sm mx-auto">

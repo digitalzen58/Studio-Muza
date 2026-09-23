@@ -1,28 +1,72 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ivory: #FAF7F2;
-  --color-ivory-card: #FFFDF9;
-  --color-ivory-subtle: #F4EFEA;
-  --color-ivory-border: #E8E0D5;
+  /* Digital Zen Backgrounds & Surfaces */
+  --color-cream: #FBF9F5;
+  --color-cream-card: #FFFFFF;
+  --color-cream-subtle: #F3F6FA;
+  --color-cream-border: #E2E8F0;
 
-  --color-terracotta: #C85A32;
-  --color-terracotta-hover: #B24E2A;
-  --color-terracotta-light: #FDF4F0;
-  --color-terracotta-border: #F5D3C4;
-  --color-terracotta-dark: #983C1A;
+  /* Aliases for Ivory system */
+  --color-ivory: #FBF9F5;
+  --color-ivory-card: #FFFFFF;
+  --color-ivory-subtle: #F3F6FA;
+  --color-ivory-border: #E2E8F0;
 
-  --color-ink: #1A1D1E;
-  --color-ink-muted: #5A6265;
-  --color-ink-light: #8C9498;
+  /* Digital Zen Primary Blue Hierarchy */
+  --color-primary: #1E4E8C;
+  --color-primary-hover: #163C6D;
+  --color-primary-light: #EDF4FC;
+  --color-primary-border: #C9DEF5;
+  --color-primary-dark: #102A4E;
+
+  --color-zen-blue: #1E4E8C;
+  --color-zen-blue-hover: #163C6D;
+  --color-zen-blue-light: #EDF4FC;
+  --color-zen-blue-border: #C9DEF5;
+  --color-zen-blue-dark: #102A4E;
+
+  /* Legacy brand token aliases mapped to Digital Zen Blue */
+  --color-terracotta: #1E4E8C;
+  --color-terracotta-hover: #163C6D;
+  --color-terracotta-light: #EDF4FC;
+  --color-terracotta-border: #C9DEF5;
+  --color-terracotta-dark: #102A4E;
+
+  /* Deep Blue Night Typography */
+  --color-ink: #0F1E36;
+  --color-ink-muted: #4B5E76;
+  --color-ink-light: #718298;
 
   --font-serif: var(--font-instrument-serif), Georgia, serif;
   --font-sans: var(--font-jakarta-sans), system-ui, -apple-system, sans-serif;
 }
 
 :root {
-  --background: #FAF7F2;
-  --foreground: #1A1D1E;
+  --background: #FBF9F5;
+  --surface: #FFFFFF;
+  --surface-soft: #F3F6FA;
+
+  --foreground: #0F1E36;
+  --foreground-muted: #4B5E76;
+  --foreground-light: #718298;
+
+  --primary: #1E4E8C;
+  --primary-hover: #163C6D;
+  --primary-soft: #EDF4FC;
+  --primary-border: #C9DEF5;
+  --primary-dark: #102A4E;
+
+  --accent: #1E4E8C;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+
+  --success: #059669;
+  --success-soft: #ECFDF5;
+  --warning: #D97706;
+  --warning-soft: #FFFBEB;
+  --danger: #DC2626;
+  --danger-soft: #FEF2F2;
 }
 
 body {

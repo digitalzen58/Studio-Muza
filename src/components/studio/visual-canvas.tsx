@@ -381,9 +381,9 @@ export function VisualCanvas({
         onPointerCancel={handlePointerUp}
         style={{
           touchAction: 'none',
-          backgroundColor: !isImageBg ? composition.background.color || '#FDFBF7' : '#1E1E24',
+          backgroundColor: !isImageBg ? composition.background.color || '#FBF9F5' : '#0F1E36',
         }}
-        className="relative aspect-4/5 w-full max-w-md mx-auto rounded-2xl overflow-hidden border border-ivory-border shadow-md select-none cursor-default"
+        className="relative aspect-4/5 w-full max-w-md mx-auto rounded-2xl overflow-hidden border border-cream-border shadow-md select-none cursor-default"
         aria-label="Surface de composition visuelle"
       >
         {/* Background Image Layer */}
@@ -437,7 +437,7 @@ export function VisualCanvas({
                 }}
                 className={`absolute cursor-move select-none p-2 max-w-[85%] text-center transition-shadow ${
                   isSelected && !readOnly
-                    ? 'ring-2 ring-terracotta ring-offset-2 ring-offset-black/20 rounded-xl shadow-lg'
+                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-black/20 rounded-xl shadow-lg'
                     : ''
                 }`}
               >
@@ -471,7 +471,7 @@ export function VisualCanvas({
                 }}
                 className={`absolute cursor-move select-none p-1 transition-shadow ${
                   isSelected && !readOnly
-                    ? 'ring-2 ring-terracotta ring-offset-2 ring-offset-black/20 rounded-full shadow-lg'
+                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-black/20 rounded-full shadow-lg'
                     : ''
                 }`}
               >
@@ -522,7 +522,7 @@ export function VisualCanvas({
                   type="button"
                   onClick={handleToggleBoxStyle}
                   className={`p-1.5 hover:bg-white/20 rounded-lg text-[10px] font-semibold px-2 ${
-                    selectedElement.boxStyle === 'PILL' ? 'bg-terracotta text-white' : ''
+                    selectedElement.boxStyle === 'PILL' ? 'bg-primary text-white' : ''
                   }`}
                   title="Fond contrasté"
                 >
@@ -570,7 +570,7 @@ export function VisualCanvas({
             className="absolute inset-0 bg-ink/70 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-30 animate-fadeIn"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <div className="bg-ivory-card border border-ivory-border p-4 rounded-2xl w-full max-w-xs space-y-3 shadow-xl">
+            <div className="bg-white border border-cream-border p-4 rounded-2xl w-full max-w-xs space-y-3 shadow-xl">
               <label className="block text-xs font-semibold text-ink">
                 Texte sur l’image
               </label>
@@ -580,7 +580,7 @@ export function VisualCanvas({
                 placeholder="Votre texte..."
                 rows={3}
                 autoFocus
-                className="w-full text-sm p-2.5 bg-white border border-ivory-border rounded-xl text-ink focus:outline-none focus:ring-2 focus:ring-terracotta/30 resize-none font-serif"
+                className="w-full text-sm p-2.5 bg-white border border-cream-border rounded-xl text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none font-serif"
               />
               <div className="flex items-center justify-end gap-2">
                 <button
@@ -593,7 +593,7 @@ export function VisualCanvas({
                 <button
                   type="button"
                   onClick={handleSaveTextEdit}
-                  className="px-3.5 py-1.5 bg-terracotta text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1"
+                  className="px-3.5 py-1.5 bg-primary text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1 hover:bg-primary-hover transition-colors"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>Valider</span>
@@ -608,7 +608,7 @@ export function VisualCanvas({
       {!readOnly && (
         <div className="flex flex-col gap-2 w-full max-w-md mx-auto">
           {/* Main Actions Row */}
-          <div className="flex items-center justify-between gap-1.5 p-2 bg-white border border-ivory-border rounded-2xl shadow-2xs">
+          <div className="flex items-center justify-between gap-1.5 p-2 bg-white border border-cream-border rounded-2xl shadow-2xs">
             {/* Photo Action */}
             <div className="relative">
               <button
@@ -620,24 +620,24 @@ export function VisualCanvas({
                 }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                   photoMenuOpen
-                    ? 'bg-terracotta-light text-terracotta-dark font-semibold'
-                    : 'text-ink hover:bg-ivory-subtle'
+                    ? 'bg-primary-light text-primary-dark font-semibold'
+                    : 'text-ink hover:bg-cream-subtle'
                 }`}
               >
-                <ImageIcon className="w-4 h-4 text-terracotta" />
+                <ImageIcon className="w-4 h-4 text-primary" />
                 <span>Photo</span>
               </button>
 
               {/* Photo Menu Popover */}
               {photoMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-2 bg-ivory-card border border-ivory-border rounded-2xl p-2 shadow-xl flex flex-col gap-1 w-44 z-30 animate-fadeIn">
+                <div className="absolute left-0 bottom-full mb-2 bg-white border border-cream-border rounded-2xl p-2 shadow-xl flex flex-col gap-1 w-44 z-30 animate-fadeIn">
                   <button
                     type="button"
                     onClick={() => {
                       setPhotoMenuOpen(false)
                       onOpenMediaPicker?.()
                     }}
-                    className="text-left px-3 py-2 text-xs font-medium text-ink hover:bg-white rounded-xl transition-colors"
+                    className="text-left px-3 py-2 text-xs font-medium text-ink hover:bg-cream-subtle rounded-xl transition-colors"
                   >
                     Mes médias
                   </button>
@@ -647,7 +647,7 @@ export function VisualCanvas({
                       setPhotoMenuOpen(false)
                       onOpenStockModal?.()
                     }}
-                    className="text-left px-3 py-2 text-xs font-medium text-ink hover:bg-white rounded-xl transition-colors"
+                    className="text-left px-3 py-2 text-xs font-medium text-ink hover:bg-cream-subtle rounded-xl transition-colors"
                   >
                     Photos gratuites
                   </button>
@@ -666,17 +666,17 @@ export function VisualCanvas({
                 }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                   paletteOpen
-                    ? 'bg-terracotta-light text-terracotta-dark font-semibold'
-                    : 'text-ink hover:bg-ivory-subtle'
+                    ? 'bg-primary-light text-primary-dark font-semibold'
+                    : 'text-ink hover:bg-cream-subtle'
                 }`}
               >
-                <Palette className="w-4 h-4 text-terracotta" />
+                <Palette className="w-4 h-4 text-primary" />
                 <span>Fond</span>
               </button>
 
               {/* Color Palette Popover */}
               {paletteOpen && (
-                <div className="absolute left-0 bottom-full mb-2 bg-ivory-card border border-ivory-border rounded-2xl p-3 shadow-xl flex flex-col gap-2 w-48 z-30 animate-fadeIn">
+                <div className="absolute left-0 bottom-full mb-2 bg-white border border-cream-border rounded-2xl p-3 shadow-xl flex flex-col gap-2 w-48 z-30 animate-fadeIn">
                   <span className="text-[11px] font-semibold text-ink-muted">
                     Couleur de fond
                   </span>
@@ -687,7 +687,7 @@ export function VisualCanvas({
                         type="button"
                         onClick={() => handleSelectColorBackground(bg.hex)}
                         style={{ backgroundColor: bg.hex }}
-                        className="w-10 h-10 rounded-xl border border-ivory-border/80 shadow-2xs hover:scale-105 transition-transform"
+                        className="w-10 h-10 rounded-xl border border-cream-border/80 shadow-2xs hover:scale-105 transition-transform"
                         title={bg.label}
                       />
                     ))}
@@ -700,9 +700,9 @@ export function VisualCanvas({
             <button
               type="button"
               onClick={handleAddText}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-ink hover:bg-ivory-subtle transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-ink hover:bg-cream-subtle transition-colors"
             >
-              <Type className="w-4 h-4 text-terracotta" />
+              <Type className="w-4 h-4 text-primary" />
               <span>Texte</span>
             </button>
 
@@ -717,17 +717,17 @@ export function VisualCanvas({
                 }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                   emojiPickerOpen
-                    ? 'bg-terracotta-light text-terracotta-dark font-semibold'
-                    : 'text-ink hover:bg-ivory-subtle'
+                    ? 'bg-primary-light text-primary-dark font-semibold'
+                    : 'text-ink hover:bg-cream-subtle'
                 }`}
               >
-                <Smile className="w-4 h-4 text-terracotta" />
+                <Smile className="w-4 h-4 text-primary" />
                 <span>😊</span>
               </button>
 
               {/* Emoji Picker Popover */}
               {emojiPickerOpen && (
-                <div className="absolute right-0 bottom-full mb-2 bg-ivory-card border border-ivory-border rounded-2xl p-3 shadow-xl flex flex-col gap-2 w-56 z-30 animate-fadeIn">
+                <div className="absolute right-0 bottom-full mb-2 bg-white border border-cream-border rounded-2xl p-3 shadow-xl flex flex-col gap-2 w-56 z-30 animate-fadeIn">
                   <span className="text-[11px] font-semibold text-ink-muted">
                     Ajouter un emoji
                   </span>
@@ -737,7 +737,7 @@ export function VisualCanvas({
                         key={emoji}
                         type="button"
                         onClick={() => handleAddEmoji(emoji)}
-                        className="p-1.5 text-xl hover:bg-white rounded-lg transition-transform hover:scale-110 text-center"
+                        className="p-1.5 text-xl hover:bg-cream-subtle rounded-lg transition-transform hover:scale-110 text-center"
                       >
                         {emoji}
                       </button>
@@ -752,7 +752,7 @@ export function VisualCanvas({
               type="button"
               onClick={handleUndo}
               disabled={history.length === 0}
-              className="p-2 text-ink-muted hover:text-ink disabled:opacity-30 rounded-xl hover:bg-ivory-subtle transition-colors ml-auto"
+              className="p-2 text-ink-muted hover:text-ink disabled:opacity-30 rounded-xl hover:bg-cream-subtle transition-colors ml-auto"
               title="Annuler la dernière action"
             >
               <Undo2 className="w-4 h-4" />
@@ -761,16 +761,16 @@ export function VisualCanvas({
 
           {/* Background Image Adjustments Bar (When image is background) */}
           {isImageBg && (
-            <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-ivory-card/80 border border-ivory-border/70 rounded-xl text-[11px] text-ink-muted">
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white border border-cream-border rounded-xl text-[11px] text-ink-muted shadow-2xs">
               <span className="flex items-center gap-1">
-                <Move className="w-3 h-3 text-terracotta" />
+                <Move className="w-3 h-3 text-primary" />
                 <span>Glissez pour cadrer la photo</span>
               </span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => handleZoomBackground(-0.15)}
-                  className="px-1.5 py-0.5 border border-ivory-border rounded-md bg-white hover:bg-ivory-subtle text-ink font-semibold"
+                  className="px-1.5 py-0.5 border border-cream-border rounded-md bg-white hover:bg-cream-subtle text-ink font-semibold"
                   title="Dézoomer photo"
                 >
                   −
@@ -778,7 +778,7 @@ export function VisualCanvas({
                 <button
                   type="button"
                   onClick={() => handleZoomBackground(0.15)}
-                  className="px-1.5 py-0.5 border border-ivory-border rounded-md bg-white hover:bg-ivory-subtle text-ink font-semibold"
+                  className="px-1.5 py-0.5 border border-cream-border rounded-md bg-white hover:bg-cream-subtle text-ink font-semibold"
                   title="Zoomer photo"
                 >
                   +

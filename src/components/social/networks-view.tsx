@@ -162,7 +162,7 @@ export function NetworksView({
       <div className="flex items-center gap-2">
         <Link
           href="/app/settings"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted hover:text-terracotta transition-colors py-1 px-2 rounded-lg hover:bg-terracotta-light/40"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted hover:text-primary transition-colors py-1 px-2 rounded-lg hover:bg-primary-light"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Retour aux paramètres</span>
@@ -170,8 +170,8 @@ export function NetworksView({
       </div>
 
       {/* 2. Header */}
-      <header className="space-y-2 border-b border-ivory-border/60 pb-5">
-        <div className="flex items-center gap-2 text-xs font-semibold text-terracotta tracking-wide uppercase">
+      <header className="space-y-2 border-b border-cream-border/60 pb-5">
+        <div className="flex items-center gap-2 text-xs font-semibold text-primary tracking-wide uppercase">
           <MuzaSymbol size="sm" />
           <span>Réseaux sociaux</span>
         </div>
@@ -204,7 +204,7 @@ export function NetworksView({
       {/* 3. Networks List */}
       <div className="space-y-4">
         {/* Instagram Card */}
-        <Card className="p-5 sm:p-6 rounded-2xl border border-ivory-border/80 bg-ivory-card shadow-xs space-y-4">
+        <Card className="p-5 sm:p-6 rounded-2xl border border-cream-border bg-white shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -224,7 +224,7 @@ export function NetworksView({
                       Autorisation à renouveler
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-ivory-border/60 text-ink-muted">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-cream-subtle text-ink-muted border border-cream-border">
                       Non connecté
                     </span>
                   )}
@@ -247,7 +247,7 @@ export function NetworksView({
                     type="button"
                     onClick={() => handleVerify(instagramAccount.id)}
                     disabled={loadingAction === `verify-${instagramAccount.id}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ivory-border text-xs font-medium text-ink-muted hover:text-ink hover:bg-white transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cream-border text-xs font-medium text-ink-muted hover:text-ink hover:bg-cream-subtle transition-colors cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${loadingAction === `verify-${instagramAccount.id}` ? 'animate-spin' : ''}`} />
                     <span>Vérifier</span>
@@ -268,7 +268,7 @@ export function NetworksView({
                     type="button"
                     onClick={() => handleConnect('INSTAGRAM')}
                     disabled={loadingAction === 'connect-INSTAGRAM'}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
                   >
                     {loadingAction === 'connect-INSTAGRAM' ? (
                       <>
@@ -297,7 +297,7 @@ export function NetworksView({
                   type="button"
                   onClick={() => handleConnect('INSTAGRAM')}
                   disabled={loadingAction === 'connect-INSTAGRAM'}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-70"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-70"
                 >
                   {loadingAction === 'connect-INSTAGRAM' ? (
                     <>
@@ -316,7 +316,7 @@ export function NetworksView({
                   type="button"
                   disabled
                   title="Configuration en attente"
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-ivory-border/50 text-ink-muted text-xs font-medium cursor-not-allowed opacity-80"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cream-subtle text-ink-muted border border-cream-border text-xs font-medium cursor-not-allowed opacity-80"
                 >
                   <span>Connexion bientôt disponible</span>
                 </button>
@@ -325,15 +325,15 @@ export function NetworksView({
           </div>
 
           {!isInstagramConnected && !isInstagramReauth && !metaConfig.isConfigured && (
-            <div className="p-3 rounded-xl bg-ivory-bg/80 border border-ivory-border/60 text-[11px] text-ink-muted flex items-center gap-2">
-              <Info className="w-4 h-4 text-terracotta shrink-0" />
+            <div className="p-3 rounded-xl bg-cream-subtle border border-cream-border/60 text-[11px] text-ink-muted flex items-center gap-2">
+              <Info className="w-4 h-4 text-primary shrink-0" />
               <span>La connexion à Instagram sera activée dès la configuration des identifiants d’application Meta.</span>
             </div>
           )}
         </Card>
 
         {/* Facebook Card */}
-        <Card className="p-5 sm:p-6 rounded-2xl border border-ivory-border/80 bg-ivory-card shadow-xs space-y-4">
+        <Card className="p-5 sm:p-6 rounded-2xl border border-cream-border bg-white shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -353,7 +353,7 @@ export function NetworksView({
                       Autorisation à renouveler
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-ivory-border/60 text-ink-muted">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-cream-subtle text-ink-muted border border-cream-border">
                       Non connecté
                     </span>
                   )}
@@ -376,7 +376,7 @@ export function NetworksView({
                     type="button"
                     onClick={() => handleVerify(facebookAccount.id)}
                     disabled={loadingAction === `verify-${facebookAccount.id}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ivory-border text-xs font-medium text-ink-muted hover:text-ink hover:bg-white transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cream-border text-xs font-medium text-ink-muted hover:text-ink hover:bg-cream-subtle transition-colors cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${loadingAction === `verify-${facebookAccount.id}` ? 'animate-spin' : ''}`} />
                     <span>Vérifier</span>
@@ -397,7 +397,7 @@ export function NetworksView({
                     type="button"
                     onClick={() => handleConnect('FACEBOOK')}
                     disabled={loadingAction === 'connect-FACEBOOK'}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
                   >
                     {loadingAction === 'connect-FACEBOOK' ? (
                       <>
@@ -426,7 +426,7 @@ export function NetworksView({
                   type="button"
                   onClick={() => handleConnect('FACEBOOK')}
                   disabled={loadingAction === 'connect-FACEBOOK'}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-70"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-70"
                 >
                   {loadingAction === 'connect-FACEBOOK' ? (
                     <>
@@ -445,7 +445,7 @@ export function NetworksView({
                   type="button"
                   disabled
                   title="Configuration en attente"
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-ivory-border/50 text-ink-muted text-xs font-medium cursor-not-allowed opacity-80"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cream-subtle text-ink-muted border border-cream-border text-xs font-medium cursor-not-allowed opacity-80"
                 >
                   <span>Connexion bientôt disponible</span>
                 </button>
@@ -454,8 +454,8 @@ export function NetworksView({
           </div>
 
           {!isFacebookConnected && !isFacebookReauth && !metaConfig.isConfigured && (
-            <div className="p-3 rounded-xl bg-ivory-bg/80 border border-ivory-border/60 text-[11px] text-ink-muted flex items-center gap-2">
-              <Info className="w-4 h-4 text-terracotta shrink-0" />
+            <div className="p-3 rounded-xl bg-cream-subtle border border-cream-border/60 text-[11px] text-ink-muted flex items-center gap-2">
+              <Info className="w-4 h-4 text-primary shrink-0" />
               <span>La connexion à Facebook sera activée dès la configuration des identifiants d’application Meta.</span>
             </div>
           )}
@@ -464,7 +464,7 @@ export function NetworksView({
         {/* Future Platforms (Clean, unobtrusive) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           {/* LinkedIn */}
-          <div className="p-4 rounded-xl border border-ivory-border/60 bg-ivory-card/50 flex items-center justify-between opacity-80">
+          <div className="p-4 rounded-xl border border-cream-border/60 bg-white/50 flex items-center justify-between opacity-80">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-sky-700 text-white flex items-center justify-center">
                 <LinkedinIcon className="w-4 h-4" />
@@ -474,13 +474,13 @@ export function NetworksView({
                 <span className="text-[10px] text-ink-muted block">Réseau professionnel</span>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-ivory-border/50 text-ink-muted">
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-cream-subtle border border-cream-border text-ink-muted">
               Bientôt
             </span>
           </div>
 
           {/* TikTok */}
-          <div className="p-4 rounded-xl border border-ivory-border/60 bg-ivory-card/50 flex items-center justify-between opacity-80">
+          <div className="p-4 rounded-xl border border-cream-border/60 bg-white/50 flex items-center justify-between opacity-80">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-neutral-900 text-white flex items-center justify-center">
                 <Video className="w-4 h-4" />
@@ -490,7 +490,7 @@ export function NetworksView({
                 <span className="text-[10px] text-ink-muted block">Vidéos courtes</span>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-ivory-border/50 text-ink-muted">
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-cream-subtle border border-cream-border text-ink-muted">
               Bientôt
             </span>
           </div>
@@ -498,7 +498,7 @@ export function NetworksView({
       </div>
 
       {/* 4. Security & Privacy Notice */}
-      <div className="p-4 rounded-2xl border border-ivory-border/60 bg-ivory-card/60 text-xs text-ink-muted leading-relaxed space-y-1.5">
+      <div className="p-4 rounded-2xl border border-cream-border bg-white text-xs text-ink-muted leading-relaxed space-y-1.5">
         <div className="flex items-center gap-1.5 font-medium text-ink">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
           <span>Sécurité et respect de vos données</span>

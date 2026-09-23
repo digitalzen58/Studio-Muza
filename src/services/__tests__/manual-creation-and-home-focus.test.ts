@@ -176,14 +176,14 @@ console.log('✔ TEST II PASSED: Home actionable feed excludes unsupported video
 // TEST IJ: Home prominently exposes “＋ Créer un contenu”
 // ============================================================================
 assert.ok(
-  recSectionContent.includes('Créer un contenu') && recSectionContent.includes('bg-terracotta'),
-  'IJ FAILED: recommendation-section.tsx must expose prominent terracotta Créer un contenu button'
+  recSectionContent.includes('Créer un contenu') && (recSectionContent.includes('bg-primary') || recSectionContent.includes('bg-terracotta')),
+  'IJ FAILED: recommendation-section.tsx must expose prominent Créer un contenu button'
 )
 assert.ok(
-  emptyStateContent.includes('Créer un contenu') && emptyStateContent.includes('bg-terracotta'),
-  'IJ FAILED: recommendation-empty-state.tsx must also expose prominent terracotta Créer un contenu button'
+  emptyStateContent.includes('Créer un contenu') && (emptyStateContent.includes('bg-primary') || emptyStateContent.includes('bg-terracotta')),
+  'IJ FAILED: recommendation-empty-state.tsx must also expose prominent Créer un contenu button'
 )
-console.log('✔ TEST IJ PASSED: Home prominently exposes centered terracotta “＋ Créer un contenu”')
+console.log('✔ TEST IJ PASSED: Home prominently exposes centered “＋ Créer un contenu”')
 
 // ============================================================================
 // TEST IK: Home CTA opens existing CreationChooserModal

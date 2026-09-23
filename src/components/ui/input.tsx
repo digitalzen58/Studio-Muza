@@ -28,8 +28,8 @@ export function Input({
       )}
       <input
         id={inputId}
-        className={`w-full px-4 py-3 bg-ivory-card border rounded-xl text-sm text-ink placeholder:text-ink-light transition-all focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta ${
-          error ? 'border-red-400 focus:ring-red-200' : 'border-ivory-border hover:border-ivory-border/80'
+        className={`w-full px-4 py-3 bg-white border rounded-xl text-sm text-ink placeholder:text-ink-light transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+          error ? 'border-red-400 focus:ring-red-200' : 'border-cream-border hover:border-cream-border/80'
         } ${className}`}
         {...props}
       />

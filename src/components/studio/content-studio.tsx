@@ -595,13 +595,13 @@ export function ContentStudio({
   return (
     <div className="space-y-6 pb-12">
       {/* 1. Studio Header */}
-      <header className="flex items-center justify-between gap-3 border-b border-ivory-border/60 pb-4 flex-wrap">
+      <header className="flex items-center justify-between gap-3 border-b border-cream-border/80 pb-4 flex-wrap">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleBack}
             disabled={isPending || isScheduling || isDeleting}
-            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-ivory-card border border-ivory-border text-ink hover:text-terracotta hover:border-terracotta/30 transition-colors shadow-xs disabled:opacity-50"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white border border-cream-border text-ink hover:text-primary hover:border-primary/30 transition-colors shadow-2xs disabled:opacity-50"
             title={isDirty ? 'Enregistrer et retourner aux idées' : 'Retour aux idées'}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -655,7 +655,7 @@ export function ContentStudio({
           >
             {isPending ? (
               <>
-                <div className="w-3.5 h-3.5 border-2 border-terracotta/30 border-t-terracotta rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 <span>Enregistrement...</span>
               </>
             ) : saveStatus === 'saved' ? (
@@ -677,7 +677,7 @@ export function ContentStudio({
             disabled={isPending || isScheduling || isDeleting}
             variant="outline"
             size="sm"
-            className="gap-1.5 shadow-2xs text-ink hover:text-terracotta"
+            className="gap-1.5 shadow-2xs text-ink hover:text-primary"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>Aperçu</span>
@@ -690,9 +690,9 @@ export function ContentStudio({
                 onClick={handlePlanifierClick}
                 disabled={isPending || isScheduling || isDeleting}
                 size="sm"
-                className="gap-1.5 bg-terracotta-light/60 hover:bg-terracotta-light text-terracotta-dark border border-terracotta/30 shadow-2xs font-medium"
+                className="gap-1.5 bg-primary-light hover:bg-primary-light/80 text-primary-dark border border-primary-border/60 shadow-2xs font-medium"
               >
-                <CalendarIcon className="w-3.5 h-3.5 text-terracotta" />
+                <CalendarIcon className="w-3.5 h-3.5 text-primary" />
                 <span>Changer</span>
               </Button>
               <button
@@ -710,7 +710,7 @@ export function ContentStudio({
               onClick={handlePlanifierClick}
               disabled={isPending || isScheduling || isDeleting}
               size="sm"
-              className="gap-1.5 bg-terracotta hover:bg-terracotta-dark text-white font-semibold shadow-xs"
+              className="gap-1.5 bg-primary hover:bg-primary-hover text-white font-semibold shadow-xs"
             >
               <CalendarIcon className="w-3.5 h-3.5 text-white" />
               <span>Planifier</span>
@@ -745,12 +745,12 @@ export function ContentStudio({
 
       {/* 2. Editorial Context Card (Clean presentation for both recommendation and manual drafts) */}
       {recommendation ? (
-        <section className="bg-ivory-card border border-ivory-border/70 rounded-2xl p-4 shadow-xs space-y-2">
+        <section className="bg-white border border-cream-border/80 rounded-2xl p-4 shadow-2xs space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold text-terracotta tracking-wider uppercase">
+            <span className="text-[11px] font-semibold text-primary tracking-wider uppercase">
               Contexte éditorial
             </span>
-            <Badge variant="terracotta" className="text-[10px]">
+            <Badge variant="primary" className="text-[10px]">
               {format === 'CAROUSEL' ? 'Carrousel' : 'Publication'}
             </Badge>
           </div>
@@ -767,7 +767,7 @@ export function ContentStudio({
         </section>
       ) : (
         <div className="flex items-center justify-between gap-2 pb-1">
-          <Badge variant="terracotta" className="text-[10px]">
+          <Badge variant="primary" className="text-[10px]">
             {format === 'CAROUSEL' ? 'Carrousel' : 'Publication'}
           </Badge>
           <span className="text-[11px] text-ink-muted font-medium">

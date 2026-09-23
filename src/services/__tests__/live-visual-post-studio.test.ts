@@ -65,11 +65,11 @@ assert.ok(
   'TEST 1 FAILED: Upper-right small Create button must be removed from BrandGreetingHero'
 )
 assert.ok(
-  recSectionContent.includes('Créer un contenu') && recSectionContent.includes('bg-terracotta'),
+  recSectionContent.includes('Créer un contenu') && (recSectionContent.includes('bg-primary') || recSectionContent.includes('bg-terracotta')),
   'TEST 1 FAILED: Primary centered large Créer un contenu button must remain on Home'
 )
 assert.ok(
-  emptyStateContent.includes('Créer un contenu') && emptyStateContent.includes('bg-terracotta'),
+  emptyStateContent.includes('Créer un contenu') && (emptyStateContent.includes('bg-primary') || emptyStateContent.includes('bg-terracotta')),
   'TEST 1 FAILED: Empty state must retain prominent Créer un contenu button'
 )
 assert.ok(
@@ -91,7 +91,7 @@ assert.deepStrictEqual(defaultComp.elements, [], 'Default elements must be empty
 
 const colorComp = createDefaultVisualComposition(null, null)
 assert.strictEqual(colorComp.background.type, 'COLOR', 'Default background without media must be COLOR')
-assert.strictEqual(colorComp.background.color, '#FDFBF7', 'Default background color must be warm ivory')
+assert.strictEqual(colorComp.background.color, '#FBF9F5', 'Default background color must be warm cream')
 console.log('✔ TEST 2 PASSED: POST initializes valid normalized visual composition')
 
 // ============================================================================

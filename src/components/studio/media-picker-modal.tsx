@@ -78,12 +78,12 @@ export function MediaPickerModal({
       aria-label="Médiathèque personnelle"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink/40 backdrop-blur-xs animate-fadeIn"
     >
-      <div className="bg-ivory w-full max-w-xl max-h-[85vh] rounded-3xl border border-ivory-border shadow-xl flex flex-col overflow-hidden">
+      <div className="bg-cream w-full max-w-xl max-h-[85vh] rounded-3xl border border-cream-border shadow-xl flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-ivory-border/80 bg-white">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-cream-border/80 bg-white">
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-terracotta" />
+              <ImageIcon className="w-5 h-5 text-primary" />
               <h2 className="font-serif text-lg sm:text-xl font-bold text-ink">
                 Mes médias
               </h2>
@@ -99,14 +99,14 @@ export function MediaPickerModal({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-subtle text-ink-muted hover:text-ink transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-cream-subtle text-ink-muted hover:text-ink transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Action Bar */}
-        <div className="p-3 sm:px-5 sm:py-3 bg-ivory-subtle/50 border-b border-ivory-border/60 flex items-center justify-between gap-3">
+        <div className="p-3 sm:px-5 sm:py-3 bg-cream-subtle/70 border-b border-cream-border/60 flex items-center justify-between gap-3">
           <input
             ref={fileInputRef}
             type="file"
@@ -143,12 +143,12 @@ export function MediaPickerModal({
 
         {/* Error Alert */}
         {uploadError && (
-          <div className="mx-4 mt-3 p-3 bg-terracotta-light/60 border border-terracotta/40 rounded-xl text-xs text-terracotta-dark flex items-center justify-between">
+          <div className="mx-4 mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center justify-between">
             <span>{uploadError}</span>
             <button
               type="button"
               onClick={() => setUploadError(null)}
-              className="text-terracotta-dark hover:text-ink text-xs px-1"
+              className="text-red-700 hover:text-red-900 text-xs px-1"
             >
               ✕
             </button>
@@ -158,8 +158,8 @@ export function MediaPickerModal({
         {/* Media Grid or Empty State */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
           {mediaList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-10 px-4 gap-3 bg-white/70 border border-dashed border-ivory-border rounded-2xl">
-              <div className="w-12 h-12 rounded-full bg-terracotta-light/60 flex items-center justify-center text-terracotta">
+            <div className="flex flex-col items-center justify-center text-center py-10 px-4 gap-3 bg-white/70 border border-dashed border-cream-border rounded-2xl">
+              <div className="w-12 h-12 rounded-full bg-primary-light flex items-center justify-center text-primary">
                 <UploadCloud className="w-6 h-6" />
               </div>
               <div className="flex flex-col gap-1 max-w-xs">
@@ -193,10 +193,10 @@ export function MediaPickerModal({
                       onSelectMedia(media)
                       onClose()
                     }}
-                    className={`group relative rounded-2xl overflow-hidden border-2 text-left transition-all aspect-square bg-ivory-card flex flex-col focus:outline-none focus:ring-2 focus:ring-terracotta/50 ${
+                    className={`group relative rounded-2xl overflow-hidden border-2 text-left transition-all aspect-square bg-white flex flex-col focus:outline-none focus:ring-2 focus:ring-primary/50 ${
                       isSelected
-                        ? 'border-terracotta ring-2 ring-terracotta/30 shadow-xs'
-                        : 'border-ivory-border hover:border-terracotta/40 hover:shadow-xs'
+                        ? 'border-primary ring-2 ring-primary/30 shadow-xs'
+                        : 'border-cream-border hover:border-primary/40 hover:shadow-xs'
                     }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -214,14 +214,14 @@ export function MediaPickerModal({
 
                     {/* Selected Checkmark Badge */}
                     {isSelected && (
-                      <div className="absolute top-2 right-2 bg-terracotta text-white rounded-full p-1 shadow-xs z-10">
+                      <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-xs z-10">
                         <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                       </div>
                     )}
 
                     {/* Stock Media Illustration Badge */}
                     {media.source?.startsWith('STOCK') && (
-                      <div className="absolute top-2 left-2 bg-amber-950/80 text-amber-200 text-[9px] font-medium px-2 py-0.5 rounded-full backdrop-blur-xs">
+                      <div className="absolute top-2 left-2 bg-slate-900/80 text-white text-[9px] font-medium px-2 py-0.5 rounded-full backdrop-blur-xs">
                         Photo gratuite
                       </div>
                     )}
@@ -238,7 +238,7 @@ export function MediaPickerModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 sm:px-5 border-t border-ivory-border/80 bg-white flex items-center justify-between text-xs text-ink-muted">
+        <div className="p-3 sm:px-5 border-t border-cream-border/80 bg-white flex items-center justify-between text-xs text-ink-muted">
           <span>Taille maximale par fichier : 10 Mo</span>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Fermer

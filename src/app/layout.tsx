@@ -37,7 +37,7 @@ export default function RootLayout({
       lang="fr"
       className={`${instrumentSerif.variable} ${plusJakartaSans.variable}`}
     >
-      <body className="bg-ivory text-ink font-sans antialiased min-h-screen selection:bg-terracotta-light selection:text-terracotta-dark">
+      <body className="bg-cream text-ink font-sans antialiased min-h-screen selection:bg-primary-light selection:text-primary-dark">
         {children}
       </body>
     </html>

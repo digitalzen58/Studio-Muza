@@ -62,9 +62,9 @@ export function ContentPreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink/40 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-ivory-card border border-ivory-border rounded-2xl max-w-md w-full p-4 sm:p-5 space-y-4 shadow-xl my-auto">
+      <div className="bg-white border border-cream-border rounded-2xl max-w-md w-full p-4 sm:p-5 space-y-4 shadow-xl my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-ivory-border">
+        <div className="flex items-center justify-between pb-2 border-b border-cream-border">
           <div>
             <h3 className="font-semibold text-sm text-ink">
               Aperçu de la publication
@@ -81,7 +81,7 @@ export function ContentPreviewModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-ink-muted hover:text-ink rounded-lg hover:bg-white transition-colors"
+            className="p-1.5 text-ink-muted hover:text-ink rounded-lg hover:bg-cream-subtle transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -89,7 +89,7 @@ export function ContentPreviewModal({
 
         {/* Working Title Reminder */}
         {workingTitle && (
-          <div className="text-xs text-ink-muted bg-white/60 px-3 py-1.5 rounded-lg border border-ivory-border/50">
+          <div className="text-xs text-ink-muted bg-cream-subtle/70 px-3 py-1.5 rounded-lg border border-cream-border/50">
             <span className="font-medium text-ink">Titre de travail : </span>
             <span>{workingTitle}</span>
           </div>
@@ -101,7 +101,7 @@ export function ContentPreviewModal({
             /* ================= POST PREVIEW ================= */
             <div className="space-y-3">
               {/* Composed Visual Canvas Preview */}
-              <div className="relative aspect-4/5 w-full bg-ivory-subtle rounded-xl overflow-hidden border border-ivory-border">
+              <div className="relative aspect-4/5 w-full bg-cream-subtle rounded-xl overflow-hidden border border-cream-border">
                 {visualComposition ? (
                   <VisualCanvas
                     composition={visualComposition}
@@ -124,7 +124,7 @@ export function ContentPreviewModal({
               </div>
 
               {/* Publication text / Caption */}
-              <div className="bg-white border border-ivory-border rounded-xl p-3.5 space-y-2">
+              <div className="bg-white border border-cream-border rounded-xl p-3.5 space-y-2">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted block">
                   Texte de la publication
                 </span>
@@ -141,7 +141,7 @@ export function ContentPreviewModal({
 
               {/* Conversion Action / Call to action (if present) */}
               {action?.type && action.type !== 'NONE' ? (
-                <div className="flex items-center gap-2 p-2.5 bg-terracotta-light/20 border border-terracotta/25 rounded-xl text-xs text-terracotta-dark font-medium">
+                <div className="flex items-center gap-2 p-2.5 bg-primary-light/40 border border-primary-border/60 rounded-xl text-xs text-primary-dark font-medium">
                   {action.type === 'PHONE' && (
                     <>
                       <span>📞</span>
@@ -162,7 +162,7 @@ export function ContentPreviewModal({
                   )}
                 </div>
               ) : cta?.trim() ? (
-                <div className="flex items-center gap-2 p-2.5 bg-terracotta-light/15 border border-terracotta/20 rounded-xl text-xs text-terracotta-dark">
+                <div className="flex items-center gap-2 p-2.5 bg-primary-light/30 border border-primary-border/50 rounded-xl text-xs text-primary-dark">
                   <span className="font-semibold">Action :</span>
                   <span>{cta.trim()}</span>
                 </div>
@@ -188,7 +188,7 @@ export function ContentPreviewModal({
                   </div>
 
                   {/* Slide visual card */}
-                  <div className="relative aspect-4/5 w-full bg-ivory-subtle rounded-xl overflow-hidden border border-ivory-border flex flex-col justify-between p-4">
+                  <div className="relative aspect-4/5 w-full bg-cream-subtle rounded-xl overflow-hidden border border-cream-border flex flex-col justify-between p-4">
                     {activeSlideMedia && (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img
@@ -207,7 +207,7 @@ export function ContentPreviewModal({
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         activeSlideMedia
                           ? 'bg-black/50 text-white backdrop-blur-xs'
-                          : 'bg-ivory-card text-ink border border-ivory-border'
+                          : 'bg-white text-ink border border-cream-border'
                       }`}>
                         Page {activeSlide.index}
                       </span>
@@ -235,7 +235,7 @@ export function ContentPreviewModal({
                     <button
                       type="button"
                       onClick={handlePrevPage}
-                      className="inline-flex items-center gap-1 text-xs text-ink hover:text-terracotta px-2 py-1 rounded-lg border border-ivory-border bg-white transition-colors"
+                      className="inline-flex items-center gap-1 text-xs text-ink hover:text-primary px-2 py-1 rounded-lg border border-cream-border bg-white transition-colors"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                       <span>Précédent</span>
@@ -249,8 +249,8 @@ export function ContentPreviewModal({
                           onClick={() => setCarouselPageIndex(s.index)}
                           className={`w-2 h-2 rounded-full transition-all ${
                             s.index === carouselPageIndex
-                              ? 'w-4 bg-terracotta'
-                              : 'bg-ivory-border hover:bg-terracotta/40'
+                              ? 'w-4 bg-primary'
+                              : 'bg-cream-border hover:bg-primary/40'
                           }`}
                           title={`Page ${s.index}`}
                         />
@@ -260,7 +260,7 @@ export function ContentPreviewModal({
                     <button
                       type="button"
                       onClick={handleNextPage}
-                      className="inline-flex items-center gap-1 text-xs text-ink hover:text-terracotta px-2 py-1 rounded-lg border border-ivory-border bg-white transition-colors"
+                      className="inline-flex items-center gap-1 text-xs text-ink hover:text-primary px-2 py-1 rounded-lg border border-cream-border bg-white transition-colors"
                     >
                       <span>Suivant</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -271,7 +271,7 @@ export function ContentPreviewModal({
 
               {/* Hook (if present) */}
               {hook?.trim() && (
-                <div className="bg-white border border-ivory-border rounded-xl p-3 space-y-1">
+                <div className="bg-white border border-cream-border rounded-xl p-3 space-y-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted block">
                     Accroche principale
                   </span>
@@ -282,7 +282,7 @@ export function ContentPreviewModal({
               )}
 
               {/* Caption / Publication text */}
-              <div className="bg-white border border-ivory-border rounded-xl p-3 space-y-1">
+              <div className="bg-white border border-cream-border rounded-xl p-3 space-y-1">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted block">
                   Légende du carrousel
                 </span>
@@ -299,7 +299,7 @@ export function ContentPreviewModal({
 
               {/* Call to action (if present) */}
               {cta?.trim() && (
-                <div className="flex items-center gap-2 p-2.5 bg-terracotta-light/15 border border-terracotta/20 rounded-xl text-xs text-terracotta-dark">
+                <div className="flex items-center gap-2 p-2.5 bg-primary-light/30 border border-primary-border/50 rounded-xl text-xs text-primary-dark">
                   <span className="font-semibold">Action :</span>
                   <span>{cta.trim()}</span>
                 </div>
@@ -309,7 +309,7 @@ export function ContentPreviewModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-2 border-t border-ivory-border/60 flex items-center justify-between gap-2">
+        <div className="pt-2 border-t border-cream-border/60 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={onClose}
@@ -324,7 +324,7 @@ export function ContentPreviewModal({
               onClose()
               onProceedToSchedule()
             }}
-            className="px-5 py-2 text-xs font-semibold rounded-xl bg-terracotta text-white hover:bg-terracotta-dark transition-colors shadow-xs inline-flex items-center gap-1.5"
+            className="px-5 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:bg-primary-hover transition-colors shadow-xs inline-flex items-center gap-1.5"
           >
             <Calendar className="w-3.5 h-3.5" />
             <span>{isScheduled ? 'Changer la date' : 'Planifier'}</span>

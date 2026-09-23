@@ -27,7 +27,7 @@ export function ContentReadinessModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="bg-ivory-card border border-ivory-border rounded-2xl max-w-md w-full p-5 space-y-4 shadow-xl">
+      <div className="bg-white border border-cream-border rounded-2xl max-w-md w-full p-5 space-y-4 shadow-xl">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="space-y-1">
@@ -94,7 +94,7 @@ export function ContentReadinessModal({
         )}
 
         {/* Footer Actions */}
-        <div className="pt-2 flex items-center justify-between gap-2">
+        <div className="pt-2 flex items-center justify-between gap-2 border-t border-cream-border/60">
           {hasBlocking ? (
             <>
               <button
@@ -107,7 +107,7 @@ export function ContentReadinessModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold rounded-xl bg-terracotta text-white hover:bg-terracotta-dark transition-colors shadow-xs"
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:bg-primary-hover transition-colors shadow-xs"
               >
                 Je complète
               </button>
@@ -128,7 +128,7 @@ export function ContentReadinessModal({
                     onClose()
                     onProceedAnyway()
                   }}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-terracotta text-white hover:bg-terracotta-dark transition-colors shadow-xs"
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:bg-primary-hover transition-colors shadow-xs"
                 >
                   Planifier quand même
                 </button>

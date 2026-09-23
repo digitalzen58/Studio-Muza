@@ -47,7 +47,7 @@ export function PublicationCard({ item, onView }: PublicationCardProps) {
   const formatLabel = mapFormatLabel(item.format)
 
   return (
-    <div className="w-full bg-white border border-ivory-border hover:border-terracotta/40 rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all flex gap-3.5 sm:gap-4 items-stretch">
+    <div className="w-full bg-white border border-cream-border hover:border-primary/40 rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all flex gap-3.5 sm:gap-4 items-stretch">
       {/* Thumbnail: ~30-35% on mobile */}
       <div className="w-[100px] sm:w-[125px] shrink-0 self-start">
         <PublicationThumbnail item={item} />
@@ -81,7 +81,7 @@ export function PublicationCard({ item, onView }: PublicationCardProps) {
 
             {item.status === 'SCHEDULED' && item.scheduledAt && (
               <span className="flex items-center gap-1.5 text-ink-muted">
-                <Calendar className="w-3.5 h-3.5 text-terracotta shrink-0" />
+                <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span>Prévue le {formatDateTimeFr(item.scheduledAt)}</span>
               </span>
             )}
@@ -100,7 +100,7 @@ export function PublicationCard({ item, onView }: PublicationCardProps) {
           <button
             type="button"
             onClick={() => onView(item)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium bg-ivory-card border border-ivory-border text-ink hover:bg-white transition-colors"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-subtle border border-cream-border text-ink hover:bg-white hover:border-primary/30 transition-colors"
           >
             <Eye className="w-3.5 h-3.5 text-ink-muted" />
             <span>Voir</span>
@@ -109,7 +109,7 @@ export function PublicationCard({ item, onView }: PublicationCardProps) {
           {item.status === 'SCHEDULED' && (
             <Link
               href={`/app/content/${item.contentId}`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium bg-white border border-ivory-border text-ink hover:border-terracotta/40 transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium bg-white border border-cream-border text-ink hover:border-primary/40 transition-colors"
             >
               <Edit2 className="w-3.5 h-3.5 text-ink-muted" />
               <span>Modifier</span>

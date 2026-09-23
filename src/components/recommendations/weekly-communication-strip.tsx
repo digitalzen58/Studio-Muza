@@ -27,7 +27,7 @@ const WEEK_DAYS: DaySlot[] = [
  */
 export function WeeklyCommunicationStrip() {
   return (
-    <Card variant="default" className="flex flex-col gap-3 p-4 sm:p-5 border-ivory-border/80">
+    <Card variant="default" className="flex flex-col gap-3 p-4 sm:p-5 border-cream-border">
       {/* Section Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
@@ -48,10 +48,10 @@ export function WeeklyCommunicationStrip() {
             key={idx}
             className={`flex flex-col items-center justify-between p-2 rounded-xl text-center min-w-[42px] transition-all ${
               slot.platform
-                ? 'bg-terracotta-light/70 border border-terracotta-border/50 text-terracotta-dark shadow-2xs'
+                ? 'bg-primary-light/70 border border-primary-border/60 text-primary-dark shadow-2xs'
                 : slot.isAddState
-                ? 'bg-ivory-subtle/70 border border-dashed border-ivory-border/90 text-ink-muted hover:border-terracotta/40'
-                : 'bg-ivory-card border border-ivory-border/50 text-ink-muted opacity-60'
+                ? 'bg-cream-subtle/70 border border-dashed border-cream-border/90 text-ink-muted hover:border-primary/40'
+                : 'bg-white border border-cream-border/50 text-ink-muted opacity-60'
             }`}
           >
             <span className="text-[10px] font-bold uppercase tracking-wider">
@@ -61,16 +61,16 @@ export function WeeklyCommunicationStrip() {
             <div className="my-2 flex flex-col items-center min-h-[28px] justify-center">
               {slot.platform ? (
                 <>
-                  <span className="w-2 h-2 rounded-full bg-terracotta mb-0.5" />
+                  <span className="w-2 h-2 rounded-full bg-primary mb-0.5" />
                   <span className="text-[9px] font-semibold text-ink leading-tight line-clamp-1">
                     {slot.platform}
                   </span>
-                  <span className="text-[8px] text-terracotta-dark font-medium">
+                  <span className="text-[8px] text-primary-dark font-medium">
                     {slot.format}
                   </span>
                 </>
               ) : slot.isAddState ? (
-                <span className="text-xs text-ink-light font-bold hover:text-terracotta transition-colors">
+                <span className="text-xs text-ink-light font-bold hover:text-primary transition-colors">
                   +
                 </span>
               ) : (

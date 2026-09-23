@@ -108,7 +108,7 @@ export function ScheduleContentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="bg-ivory-card border border-ivory-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl">
+      <div className="bg-white border border-cream-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="space-y-1">
@@ -130,7 +130,7 @@ export function ScheduleContentModal({
         <div className="space-y-3 pt-1">
           <div className="space-y-1">
             <label className="flex items-center gap-1.5 text-xs font-medium text-ink">
-              <Calendar className="w-3.5 h-3.5 text-terracotta" />
+              <Calendar className="w-3.5 h-3.5 text-primary" />
               <span>Date</span>
             </label>
             <input
@@ -139,13 +139,13 @@ export function ScheduleContentModal({
               value={localDate}
               onChange={(e) => setLocalDate(e.target.value)}
               disabled={isPending}
-              className="w-full px-3 py-2 bg-white border border-ivory-border rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta"
+              className="w-full px-3 py-2 bg-white border border-cream-border rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
 
           <div className="space-y-1">
             <label className="flex items-center gap-1.5 text-xs font-medium text-ink">
-              <Clock className="w-3.5 h-3.5 text-terracotta" />
+              <Clock className="w-3.5 h-3.5 text-primary" />
               <span>Heure</span>
             </label>
             <input
@@ -153,7 +153,7 @@ export function ScheduleContentModal({
               value={localTime}
               onChange={(e) => setLocalTime(e.target.value)}
               disabled={isPending}
-              className="w-full px-3 py-2 bg-white border border-ivory-border rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta"
+              className="w-full px-3 py-2 bg-white border border-cream-border rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
 
             {/* Quick time presets */}
@@ -166,8 +166,8 @@ export function ScheduleContentModal({
                   disabled={isPending}
                   className={`text-[10px] font-medium px-2.5 py-0.5 rounded-full border transition-colors ${
                     localTime === preset
-                      ? 'bg-terracotta text-white border-terracotta'
-                      : 'bg-ivory-subtle border-ivory-border text-ink hover:border-terracotta/40'
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-cream-subtle border-cream-border text-ink hover:border-primary/40'
                   }`}
                 >
                   {preset}
@@ -185,7 +185,7 @@ export function ScheduleContentModal({
         )}
 
         {/* Footer Actions */}
-        <div className="pt-2 flex items-center justify-between gap-2">
+        <div className="pt-2 flex items-center justify-between gap-2 border-t border-cream-border/60">
           <button
             type="button"
             onClick={onClose}
@@ -198,7 +198,7 @@ export function ScheduleContentModal({
             type="button"
             onClick={handleConfirm}
             disabled={isPending}
-            className="px-5 py-2 text-xs font-semibold rounded-xl bg-terracotta text-white hover:bg-terracotta-dark transition-colors shadow-xs disabled:opacity-50 inline-flex items-center gap-1.5"
+            className="px-5 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:bg-primary-hover transition-colors shadow-xs disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             {isPending ? 'Planification…' : 'Planifier'}
           </button>

@@ -27,7 +27,7 @@ export function BrandGreetingHero({ context }: BrandGreetingHeroProps) {
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-ink">
             {greeting}
           </h1>
-          <Badge variant="terracotta" showSymbol className="text-[11px] py-0.5 px-2.5">
+          <Badge variant="primary" showSymbol className="text-[11px] py-0.5 px-2.5">
             {context.businessName}
           </Badge>
         </div>
@@ -36,7 +36,7 @@ export function BrandGreetingHero({ context }: BrandGreetingHeroProps) {
       {/* Main Editorial Headline - Compact Height */}
       <h2 className="font-serif text-2xl sm:text-3xl lg:text-3.5xl text-ink font-normal leading-tight text-balance max-w-3xl">
         Et si on trouvait quoi raconter{' '}
-        <span className="italic text-terracotta font-serif">cette semaine ?</span>
+        <span className="italic text-primary font-serif">cette semaine ?</span>
       </h2>
     </div>
   )
@@ -58,11 +58,11 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
   return (
     <div className="w-full py-1">
       {/* Visual Moodboard Canvas Composition */}
-      <div className="relative w-full rounded-2xl bg-ivory-card border border-ivory-border/80 p-3.5 sm:p-4 overflow-hidden shadow-xs">
+      <div className="relative w-full rounded-2xl bg-white border border-cream-border p-3.5 sm:p-4 overflow-hidden shadow-2xs">
         {/* Soft Organic Background Accent Glow */}
         <div
           aria-hidden="true"
-          className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-terracotta-light/60 blur-2xl pointer-events-none"
+          className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary-light/70 blur-2xl pointer-events-none"
         />
 
         {/* Moodboard Header Tag */}
@@ -70,7 +70,7 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
           <span className="flex items-center gap-1">
             <MuzaSymbol size="sm" /> Studio Visuel • {context.businessName}
           </span>
-          <span className="text-terracotta font-semibold">
+          <span className="text-primary font-semibold">
             {media.length > 0 ? 'Matière Marque' : 'Gabarits Studio'}
           </span>
         </div>
@@ -78,7 +78,7 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
         {/* Asymmetrical Media Frames Grid */}
         <div className="relative min-h-[150px] sm:min-h-[170px] flex items-center justify-center my-0.5">
           {/* Main Dominant Visual Canvas */}
-          <div className="w-full sm:w-[84%] h-36 sm:h-42 rounded-xl border border-terracotta-border/40 flex flex-col justify-between relative overflow-hidden shadow-xs bg-gradient-to-br from-terracotta-light via-ivory to-emerald-50/40">
+          <div className="w-full sm:w-[84%] h-36 sm:h-42 rounded-xl border border-primary-border/60 flex flex-col justify-between relative overflow-hidden shadow-2xs bg-linear-to-br from-primary-light via-white to-blue-50/40">
             {primaryMedia ? (
               <>
                 <img
@@ -86,7 +86,7 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
                   alt={primaryMedia.alt}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" />
+                <div aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-ink/80 via-ink/20 to-transparent" />
                 <div className="relative z-10 p-3 flex flex-col justify-between h-full">
                   <span className="self-start text-[9px] font-bold text-white uppercase tracking-wider bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded-full border border-white/20">
                     Matière Marque
@@ -103,9 +103,9 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
               </>
             ) : (
               /* LEVEL 2 / LEVEL 3: Graphic Content Template Canvas */
-              <div className="p-3.5 flex flex-col justify-between h-full relative z-10 bg-gradient-to-br from-terracotta-light/90 via-ivory-card to-emerald-50/50">
+              <div className="p-3.5 flex flex-col justify-between h-full relative z-10 bg-linear-to-br from-primary-light/90 via-white to-blue-50/50">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-terracotta uppercase tracking-wider bg-white/90 backdrop-blur-xs border border-terracotta-border/30 px-2 py-0.5 rounded-full">
+                  <span className="text-[9px] font-bold text-primary uppercase tracking-wider bg-white/90 backdrop-blur-xs border border-primary-border/50 px-2 py-0.5 rounded-full">
                     ✦ Identity Canvas
                   </span>
                   <span className="text-[9px] font-mono text-ink-muted">
@@ -122,9 +122,9 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-ink-muted font-medium pt-1 border-t border-terracotta-border/30">
+                <div className="flex items-center justify-between text-[10px] text-ink-muted font-medium pt-1 border-t border-primary-border/30">
                   <span>Modèle de Studio Visuel</span>
-                  <span className="text-terracotta-dark font-semibold">✦ Mūza Graphic</span>
+                  <span className="text-primary-dark font-semibold">✦ Mūza Graphic</span>
                 </div>
               </div>
             )}
@@ -140,12 +140,12 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
                   className="absolute inset-0 w-full h-full object-cover opacity-80"
                 />
                 <div aria-hidden="true" className="absolute inset-0 bg-black/40" />
-                <div className="relative z-10 flex items-center justify-between text-[8px] font-bold text-terracotta-light uppercase">
+                <div className="relative z-10 flex items-center justify-between text-[8px] font-bold text-primary-light uppercase">
                   <span>Reel</span>
                   <span>0:30</span>
                 </div>
                 <div className="relative z-10 my-auto text-center">
-                  <span className="w-5 h-5 mx-auto rounded-full bg-terracotta flex items-center justify-center text-white text-[9px] shadow-xs">
+                  <span className="w-5 h-5 mx-auto rounded-full bg-primary flex items-center justify-center text-white text-[9px] shadow-xs">
                     ▶
                   </span>
                 </div>
@@ -156,25 +156,25 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
             ) : (
               /* Level 2/3 Reel Graphic Template */
               <>
-                <div className="flex items-center justify-between text-[8px] font-bold text-terracotta-light uppercase">
+                <div className="flex items-center justify-between text-[8px] font-bold text-primary-light uppercase">
                   <span>Reel</span>
                   <span>0:30</span>
                 </div>
                 <div className="my-auto text-center">
-                  <span className="w-5 h-5 mx-auto rounded-full bg-terracotta flex items-center justify-center text-white text-[9px] shadow-xs">
+                  <span className="w-5 h-5 mx-auto rounded-full bg-primary flex items-center justify-center text-white text-[9px] shadow-xs">
                     ▶
                   </span>
                   <p className="font-serif text-[9px] font-medium leading-tight mt-1 text-white/90 italic">
                     Gabarit Reel
                   </p>
                 </div>
-                <span className="text-[8px] text-terracotta-light text-center font-mono">✦ 9:16</span>
+                <span className="text-[8px] text-primary-light text-center font-mono">✦ 9:16</span>
               </>
             )}
           </div>
 
           {/* Overlapping Media Fragment 2: Mini Story Frame */}
-          <div className="absolute -right-1 sm:right-1 top-0.5 w-22 sm:w-26 h-26 sm:h-30 rounded-xl bg-gradient-to-b from-terracotta-light to-ivory-card p-2 flex flex-col justify-between shadow-md transform rotate-[4deg] hover:rotate-0 transition-transform duration-300 border-2 border-terracotta/40 z-20 overflow-hidden">
+          <div className="absolute -right-1 sm:right-1 top-0.5 w-22 sm:w-26 h-26 sm:h-30 rounded-xl bg-linear-to-b from-primary-light to-white p-2 flex flex-col justify-between shadow-md transform rotate-[4deg] hover:rotate-0 transition-transform duration-300 border-2 border-primary/40 z-20 overflow-hidden">
             {tertiaryMedia ? (
               <>
                 <img
@@ -182,9 +182,9 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
                   alt={tertiaryMedia.alt}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+                <div aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/30" />
                 <div className="relative z-10 flex items-center gap-1 text-[8px] font-bold text-white uppercase">
-                  <span className="w-1.5 h-1.5 rounded-full bg-terracotta" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   <span>Story</span>
                 </div>
                 <div className="relative z-10 text-[8px] font-bold text-white text-center">
@@ -194,19 +194,19 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
             ) : (
               /* Level 2/3 Story Graphic Template */
               <>
-                <div className="flex items-center gap-1 text-[8px] font-bold text-terracotta uppercase">
-                  <span className="w-1.5 h-1.5 rounded-full bg-terracotta" />
+                <div className="flex items-center gap-1 text-[8px] font-bold text-primary uppercase">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   <span>Story</span>
                 </div>
                 <div className="my-auto text-center px-0.5">
                   <p className="font-serif text-[9px] font-semibold text-ink leading-tight italic">
                     {context.businessName}
                   </p>
-                  <span className="text-[7px] text-terracotta bg-white/80 px-1 py-0.2 rounded-full inline-block mt-0.5 font-bold">
+                  <span className="text-[7px] text-primary bg-white/80 px-1 py-0.2 rounded-full inline-block mt-0.5 font-bold">
                     Interactive
                   </span>
                 </div>
-                <div className="text-[8px] text-terracotta-dark font-bold text-center">
+                <div className="text-[8px] text-primary-dark font-bold text-center">
                   ✦ Gabarit Story
                 </div>
               </>
@@ -215,7 +215,7 @@ export function BrandVisualHero({ context }: BrandVisualHeroProps) {
 
           {/* Central Decorative Mūza Star Badge */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
-            <div className="w-8 h-8 rounded-full bg-terracotta text-white flex items-center justify-center text-base shadow-md border-2 border-white">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-base shadow-md border-2 border-white">
               ✦
             </div>
           </div>

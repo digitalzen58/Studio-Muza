@@ -35,12 +35,12 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
 
   return (
     <>
-      <aside className="hidden md:flex flex-col w-60 lg:w-64 border-r border-ivory-border bg-ivory-card/80 p-5 shrink-0 min-h-screen justify-between sticky top-0 h-screen select-none">
+      <aside className="hidden md:flex flex-col w-60 lg:w-64 border-r border-cream-border bg-white/90 p-5 shrink-0 min-h-screen justify-between sticky top-0 h-screen select-none backdrop-blur-xs">
         {/* Top: Logo + Nav */}
         <div className="space-y-6">
           {/* Brand Logo */}
           <Link href="/app" className="flex items-center gap-2 group px-2 py-1">
-            <span className="font-serif text-xl font-bold tracking-tight text-ink group-hover:text-terracotta transition-colors">
+            <span className="font-serif text-xl font-bold tracking-tight text-ink group-hover:text-primary transition-colors">
               Studio Mūza
             </span>
             <MuzaSymbol size="md" />
@@ -50,7 +50,7 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
           <button
             type="button"
             onClick={() => setChooserOpen(true)}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-terracotta text-white rounded-xl text-xs font-semibold hover:bg-terracotta-dark transition-all shadow-xs hover:shadow-sm"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary-hover transition-all shadow-xs hover:shadow-sm"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Créer un contenu</span>
@@ -87,8 +87,8 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
                   href={item.href}
                   className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-terracotta-light/70 text-terracotta font-semibold'
-                      : 'text-ink-muted hover:text-ink hover:bg-white/60'
+                      ? 'bg-primary-light/80 text-primary font-semibold'
+                      : 'text-ink-muted hover:text-ink hover:bg-cream-subtle'
                   }`}
                 >
                   {item.isMuza ? (
@@ -96,7 +96,7 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
                       <MuzaSymbol size="sm" />
                     </div>
                   ) : Icon ? (
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-terracotta' : 'text-ink-muted'}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-ink-muted'}`} />
                   ) : null}
                   <span>{item.label}</span>
                 </Link>
@@ -112,16 +112,16 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
             href="/app/settings"
             className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
               isSettingsActive
-                ? 'bg-terracotta-light/70 text-terracotta font-semibold'
-                : 'text-ink-muted hover:text-ink hover:bg-white/60'
+                ? 'bg-primary-light/80 text-primary font-semibold'
+                : 'text-ink-muted hover:text-ink hover:bg-cream-subtle'
             }`}
           >
-            <Settings className={`w-4 h-4 ${isSettingsActive ? 'text-terracotta' : 'text-ink-muted'}`} />
+            <Settings className={`w-4 h-4 ${isSettingsActive ? 'text-primary' : 'text-ink-muted'}`} />
             <span>Paramètres</span>
           </Link>
 
           {/* User Info & Logout */}
-          <div className="pt-3 border-t border-ivory-border/80 flex items-center justify-between gap-2">
+          <div className="pt-3 border-t border-cream-border flex items-center justify-between gap-2">
             <div className="min-w-0 flex-1">
               <span className="text-xs font-medium text-ink block truncate" title={displayName}>
                 {displayName}
@@ -135,7 +135,7 @@ export function DesktopSidebar({ userEmail, userName }: DesktopSidebarProps) {
               <button
                 type="submit"
                 title="Se déconnecter"
-                className="p-2 text-ink-muted hover:text-terracotta hover:bg-terracotta-light rounded-xl transition-colors flex items-center justify-center text-xs cursor-pointer"
+                className="p-2 text-ink-muted hover:text-primary hover:bg-primary-light rounded-xl transition-colors flex items-center justify-center text-xs cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>

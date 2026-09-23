@@ -45,9 +45,9 @@ export function PublicationDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink/40 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-ivory-card border border-ivory-border rounded-2xl max-w-md w-full p-4 sm:p-5 space-y-4 shadow-xl my-auto animate-fadeIn">
+      <div className="bg-white border border-cream-border rounded-2xl max-w-md w-full p-4 sm:p-5 space-y-4 shadow-xl my-auto animate-fadeIn">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-ivory-border">
+        <div className="flex items-center justify-between pb-3 border-b border-cream-border">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <h3 className="font-serif font-bold text-base text-ink">
@@ -63,7 +63,7 @@ export function PublicationDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-ink-muted hover:text-ink rounded-lg hover:bg-white transition-colors"
+            className="p-1.5 text-ink-muted hover:text-ink rounded-lg hover:bg-cream-subtle transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -82,7 +82,7 @@ export function PublicationDetailModal({
                 />
               </div>
             ) : item.coverMediaUrl ? (
-              <div className="w-full max-w-[280px] mx-auto aspect-[4/5] rounded-xl overflow-hidden border border-ivory-border shadow-xs">
+              <div className="w-full max-w-[280px] mx-auto aspect-[4/5] rounded-xl overflow-hidden border border-cream-border shadow-xs">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.coverMediaUrl}
@@ -95,9 +95,9 @@ export function PublicationDetailModal({
             // Carousel Slides Preview
             <div className="space-y-2">
               {slides.length > 0 ? (
-                <div className="relative w-full max-w-[280px] mx-auto aspect-[4/5] bg-white rounded-xl border border-ivory-border overflow-hidden flex flex-col justify-between p-4 shadow-xs">
+                <div className="relative w-full max-w-[280px] mx-auto aspect-[4/5] bg-white rounded-xl border border-cream-border overflow-hidden flex flex-col justify-between p-4 shadow-xs">
                   <div className="space-y-2">
-                    <span className="text-[10px] font-semibold text-terracotta tracking-wider uppercase">
+                    <span className="text-[10px] font-semibold text-primary tracking-wider uppercase">
                       Page {carouselIndex} / {slides.length}
                     </span>
                     <h4 className="font-serif font-bold text-sm text-ink">
@@ -111,11 +111,11 @@ export function PublicationDetailModal({
                   </div>
 
                   {slides.length > 1 && (
-                    <div className="flex items-center justify-between pt-2 border-t border-ivory-border/60">
+                    <div className="flex items-center justify-between pt-2 border-t border-cream-border/60">
                       <button
                         type="button"
                         onClick={() => setCarouselIndex((prev) => (prev > 1 ? prev - 1 : slides.length))}
-                        className="p-1 rounded bg-ivory text-ink hover:bg-ivory-border transition-colors"
+                        className="p-1 rounded bg-cream-subtle text-ink hover:bg-cream-border transition-colors"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
                       </button>
@@ -125,7 +125,7 @@ export function PublicationDetailModal({
                       <button
                         type="button"
                         onClick={() => setCarouselIndex((prev) => (prev < slides.length ? prev + 1 : 1))}
-                        className="p-1 rounded bg-ivory text-ink hover:bg-ivory-border transition-colors"
+                        className="p-1 rounded bg-cream-subtle text-ink hover:bg-cream-border transition-colors"
                       >
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
@@ -133,7 +133,7 @@ export function PublicationDetailModal({
                   )}
                 </div>
               ) : item.coverMediaUrl ? (
-                <div className="w-full max-w-[280px] mx-auto aspect-[4/5] rounded-xl overflow-hidden border border-ivory-border shadow-xs">
+                <div className="w-full max-w-[280px] mx-auto aspect-[4/5] rounded-xl overflow-hidden border border-cream-border shadow-xs">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.coverMediaUrl}
@@ -150,7 +150,7 @@ export function PublicationDetailModal({
             <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider block">
               Titre / Sujet
             </span>
-            <p className="text-sm font-medium text-ink bg-white/70 p-2.5 rounded-xl border border-ivory-border">
+            <p className="text-sm font-medium text-ink bg-cream-subtle p-2.5 rounded-xl border border-cream-border">
               {item.title}
             </p>
           </div>
@@ -161,7 +161,7 @@ export function PublicationDetailModal({
               <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider block">
                 Texte de publication
               </span>
-              <p className="text-xs text-ink leading-relaxed whitespace-pre-wrap bg-white/70 p-3 rounded-xl border border-ivory-border">
+              <p className="text-xs text-ink leading-relaxed whitespace-pre-wrap bg-cream-subtle p-3 rounded-xl border border-cream-border">
                 {item.caption}
               </p>
             </div>
@@ -173,10 +173,10 @@ export function PublicationDetailModal({
               <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider block">
                 Action commerciale
               </span>
-              <div className="flex items-center gap-2 p-2.5 bg-terracotta-light/40 border border-terracotta/20 rounded-xl text-xs text-ink">
-                {item.action.type === 'PHONE' && <Phone className="w-3.5 h-3.5 text-terracotta" />}
-                {item.action.type === 'BOOKING' && <BookmarkCheck className="w-3.5 h-3.5 text-terracotta" />}
-                {item.action.type === 'APPOINTMENT' && <Calendar className="w-3.5 h-3.5 text-terracotta" />}
+              <div className="flex items-center gap-2 p-2.5 bg-primary-light border border-primary-border/60 rounded-xl text-xs text-ink">
+                {item.action.type === 'PHONE' && <Phone className="w-3.5 h-3.5 text-primary" />}
+                {item.action.type === 'BOOKING' && <BookmarkCheck className="w-3.5 h-3.5 text-primary" />}
+                {item.action.type === 'APPOINTMENT' && <Calendar className="w-3.5 h-3.5 text-primary" />}
                 <div className="space-y-0.5">
                   <span className="font-medium">
                     {item.action.type === 'PHONE' && 'Appeler : '}
@@ -192,7 +192,7 @@ export function PublicationDetailModal({
           )}
 
           {/* Date Information */}
-          <div className="p-3 bg-white rounded-xl border border-ivory-border space-y-1.5 text-xs text-ink">
+          <div className="p-3 bg-white rounded-xl border border-cream-border space-y-1.5 text-xs text-ink">
             {item.status === 'PUBLISHED' && item.publishedAt && (
               <div className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -202,7 +202,7 @@ export function PublicationDetailModal({
 
             {item.status === 'SCHEDULED' && item.scheduledAt && (
               <div className="flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5 text-terracotta shrink-0" />
+                <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span>Prévue le <strong>{formatFullDate(item.scheduledAt)}</strong></span>
               </div>
             )}
@@ -217,11 +217,11 @@ export function PublicationDetailModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-2 border-t border-ivory-border flex items-center justify-between gap-2">
+        <div className="pt-2 border-t border-cream-border flex items-center justify-between gap-2">
           {item.status === 'SCHEDULED' ? (
             <Link
               href={`/app/content/${item.contentId}`}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-terracotta text-white rounded-xl text-xs font-medium hover:bg-terracotta-dark transition-colors shadow-xs w-full sm:w-auto"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-medium hover:bg-primary-hover transition-colors shadow-xs w-full sm:w-auto"
             >
               <Edit2 className="w-3.5 h-3.5" />
               <span>Modifier le contenu</span>
@@ -235,7 +235,7 @@ export function PublicationDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-2 text-xs font-medium text-ink bg-white border border-ivory-border rounded-xl hover:bg-ivory transition-colors ml-auto"
+            className="px-3 py-2 text-xs font-medium text-ink bg-white border border-cream-border rounded-xl hover:bg-cream-subtle transition-colors ml-auto"
           >
             Fermer
           </button>

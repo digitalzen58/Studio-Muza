@@ -28,7 +28,7 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-ivory-card/95 backdrop-blur-md border-t border-ivory-border px-3 py-2 pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-cream-border px-3 py-2 pb-safe">
         <div className="max-w-md mx-auto flex items-center justify-around">
           {navItems.map((item) => {
             const isActive = item.href ? pathname === item.href : false
@@ -40,13 +40,13 @@ export function BottomNav() {
                   key={item.label}
                   type="button"
                   onClick={() => setChooserOpen(true)}
-                  className="flex flex-col items-center justify-center text-terracotta hover:scale-105 transition-transform cursor-pointer"
+                  className="flex flex-col items-center justify-center text-primary hover:scale-105 transition-transform cursor-pointer"
                   aria-label="Créer un nouveau contenu"
                 >
-                  <div className="bg-terracotta text-white p-2.5 rounded-full shadow-md shadow-terracotta/30">
+                  <div className="bg-primary text-white p-2.5 rounded-full shadow-md shadow-primary/25">
                     <PlusCircle className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-medium text-terracotta mt-0.5">
+                  <span className="text-[10px] font-medium text-primary mt-0.5">
                     {item.label}
                   </span>
                 </button>
@@ -78,16 +78,16 @@ export function BottomNav() {
                 href={item.href}
                 className={`flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-colors ${
                   isActive
-                    ? 'text-terracotta font-medium'
+                    ? 'text-primary font-medium'
                     : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 {item.isMuza ? (
-                  <div className={`p-1 rounded-lg ${isActive ? 'bg-terracotta-light' : ''}`}>
+                  <div className={`p-1 rounded-lg ${isActive ? 'bg-primary-light' : ''}`}>
                     <MuzaSymbol size="md" />
                   </div>
                 ) : Icon ? (
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-terracotta' : ''}`} />
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''}`} />
                 ) : null}
                 <span className="text-[10px] mt-1">{item.label}</span>
               </Link>

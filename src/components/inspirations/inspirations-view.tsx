@@ -142,8 +142,8 @@ export function InspirationsView({
   if (isPending) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center px-4 w-full max-w-5xl lg:max-w-6xl mx-auto py-8">
-        <div className="w-12 h-12 rounded-2xl bg-terracotta-light flex items-center justify-center animate-pulse">
-          <MuzaSymbol size="md" className="text-terracotta" />
+        <div className="w-12 h-12 rounded-2xl bg-primary-light flex items-center justify-center animate-pulse">
+          <MuzaSymbol size="md" className="text-primary" />
         </div>
         <div className="space-y-1">
           <h3 className="font-serif text-xl font-bold text-ink">
@@ -176,7 +176,7 @@ export function InspirationsView({
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-ink">
               Inspirations
             </h1>
-            <Badge variant="terracotta" showSymbol className="text-[11px] py-0.5 px-2.5">
+            <Badge variant="primary" showSymbol className="text-[11px] py-0.5 px-2.5">
               Community Manager
             </Badge>
           </div>
@@ -186,14 +186,14 @@ export function InspirationsView({
         </div>
 
         {/* Empty State Card */}
-        <div className="relative w-full rounded-2xl bg-ivory-card border border-ivory-border/80 p-6 sm:p-8 text-center overflow-hidden shadow-xs flex flex-col items-center gap-4">
+        <div className="relative w-full rounded-2xl bg-white border border-cream-border p-6 sm:p-8 text-center overflow-hidden shadow-xs flex flex-col items-center gap-4">
           <div
             aria-hidden="true"
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-terracotta-light/15 to-transparent pointer-events-none"
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-light/30 to-transparent pointer-events-none"
           />
 
-          <div className="w-12 h-12 rounded-2xl bg-terracotta-light/80 border border-terracotta-border/40 flex items-center justify-center relative z-10">
-            <Sparkles className="w-6 h-6 text-terracotta" />
+          <div className="w-12 h-12 rounded-2xl bg-primary-light border border-primary-border/60 flex items-center justify-center relative z-10">
+            <Sparkles className="w-6 h-6 text-primary" />
           </div>
 
           <div className="relative z-10 flex flex-col items-center gap-1.5 max-w-md">
@@ -206,7 +206,7 @@ export function InspirationsView({
           </div>
 
           {error && (
-            <p className="text-xs text-terracotta font-medium relative z-10">{error}</p>
+            <p className="text-xs text-rose-600 font-medium relative z-10">{error}</p>
           )}
 
           <div className="pt-2 relative z-10">
@@ -215,7 +215,7 @@ export function InspirationsView({
               size="lg"
               onClick={handleGenerate}
               disabled={isPending}
-              className="min-h-[48px] py-3 px-8 text-sm sm:text-base font-semibold shadow-md hover:shadow-lg bg-terracotta hover:bg-terracotta-dark text-white rounded-2xl gap-2 transition-all"
+              className="min-h-[48px] py-3 px-8 text-sm sm:text-base font-semibold shadow-md hover:shadow-lg bg-primary hover:bg-primary-hover text-white rounded-2xl gap-2 transition-all"
             >
               <span>Préparer mes prochaines idées</span>
               <span className="text-white text-base">✦</span>
@@ -229,13 +229,13 @@ export function InspirationsView({
   return (
     <div className="flex flex-col gap-6 w-full max-w-5xl lg:max-w-6xl mx-auto py-2">
       {/* 1. Page Header — Community Manager Identity */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-ivory-border/70 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-cream-border pb-4">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-ink">
               Inspirations
             </h1>
-            <Badge variant="terracotta" showSymbol className="text-[11px] py-0.5 px-2.5">
+            <Badge variant="primary" showSymbol className="text-[11px] py-0.5 px-2.5">
               Community Manager
             </Badge>
           </div>
@@ -254,7 +254,7 @@ export function InspirationsView({
             title="Demander à Mūza de préparer d’autres idées"
             className="text-xs font-semibold gap-1.5 shadow-2xs text-ink/80 hover:text-ink hover:bg-white"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-terracotta" />
+            <RefreshCw className="w-3.5 h-3.5 text-primary" />
             <span>Proposez-moi autre chose ✦</span>
           </Button>
         </div>
@@ -269,7 +269,7 @@ export function InspirationsView({
           </h2>
         </div>
 
-        <div className="inline-flex items-center gap-2 bg-terracotta-light/70 border border-terracotta-border/60 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-terracotta-dark shadow-2xs">
+        <div className="inline-flex items-center gap-2 bg-primary-light border border-primary-border/60 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-primary shadow-2xs">
           <span>Objectif : {goalContext}</span>
         </div>
       </div>
@@ -325,18 +325,18 @@ export function InspirationsView({
 
       {/* Batch Feedback Confirmation Notice */}
       {batchSuccessNotice && (
-        <div className="bg-ivory-subtle border border-terracotta-border/40 p-3 rounded-xl flex items-center justify-between gap-2 text-xs text-ink-muted animate-fadeIn">
+        <div className="bg-cream-subtle border border-primary-border/40 p-3 rounded-xl flex items-center justify-between gap-2 text-xs text-ink-muted animate-fadeIn">
           <div className="flex items-center gap-2">
-            <span className="text-terracotta font-serif font-bold text-sm">✦</span>
+            <span className="text-primary font-serif font-bold text-sm">✦</span>
             <span className="text-ink">{batchSuccessNotice}</span>
           </div>
-          <span className="text-[10px] uppercase font-semibold text-terracotta">Enregistré</span>
+          <span className="text-[10px] uppercase font-semibold text-primary">Enregistré</span>
         </div>
       )}
 
       {/* Batch Feedback Panel */}
       {batchFeedbackOpen ? (
-        <div className="flex flex-col gap-3 p-4 bg-ivory-subtle/90 border border-terracotta-border/50 rounded-2xl animate-fadeIn shadow-2xs">
+        <div className="flex flex-col gap-3 p-4 bg-cream-subtle/90 border border-primary-border/50 rounded-2xl animate-fadeIn shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-serif font-bold text-ink flex items-center gap-1.5">
               <MuzaSymbol size="sm" />
@@ -364,8 +364,8 @@ export function InspirationsView({
                   onClick={() => setSelectedBatchReason(opt.reason)}
                   className={`text-left p-2.5 rounded-lg text-xs transition-all border ${
                     isSelected
-                      ? 'bg-terracotta-light border-terracotta text-terracotta-dark font-semibold shadow-2xs'
-                      : 'bg-white/80 border-ivory-border text-ink hover:bg-white'
+                      ? 'bg-primary-light border-primary text-primary font-semibold shadow-2xs'
+                      : 'bg-white/80 border-cream-border text-ink hover:bg-white'
                   }`}
                 >
                   <div className="font-medium">{opt.label}</div>
@@ -386,13 +386,13 @@ export function InspirationsView({
               value={batchNote}
               onChange={(e) => setBatchNote(e.target.value.slice(0, 300))}
               placeholder="Ex: Je souhaite plutôt axer mes publications sur le calme et l'arrière-saison..."
-              className="w-full text-xs p-2.5 rounded-lg border border-ivory-border bg-white focus:outline-none focus:ring-1 focus:ring-terracotta/40 resize-none min-h-[58px]"
+              className="w-full text-xs p-2.5 rounded-lg border border-cream-border bg-white focus:outline-none focus:ring-1 focus:ring-primary/40 resize-none min-h-[58px]"
               maxLength={300}
             />
           </div>
 
           {batchActionError && (
-            <p className="text-xs text-terracotta font-medium">{batchActionError}</p>
+            <p className="text-xs text-rose-600 font-medium">{batchActionError}</p>
           )}
 
           <div className="flex items-center justify-end gap-2 pt-1">
@@ -420,7 +420,7 @@ export function InspirationsView({
             <button
               type="button"
               onClick={() => setBatchFeedbackOpen(true)}
-              className="text-xs text-ink-muted hover:text-terracotta font-medium transition-colors inline-flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-ivory-subtle cursor-pointer"
+              className="text-xs text-ink-muted hover:text-primary font-medium transition-colors inline-flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-cream-subtle cursor-pointer"
             >
               <span>✦ Rien ne me convient dans cette sélection</span>
             </button>
@@ -509,13 +509,13 @@ function CommunityManagerCard({
   return (
     <Card
       variant="default"
-      className="flex flex-col justify-between gap-4 p-5 sm:p-6 transition-all hover:shadow-md border-ivory-border/80 h-full bg-white rounded-2xl"
+      className="flex flex-col justify-between gap-4 p-5 sm:p-6 transition-all hover:shadow-md border-cream-border h-full bg-white rounded-2xl"
     >
       <div className="flex flex-col gap-3.5">
         {/* Top Header: Format badge + Draft status + estimated time */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="terracotta" showSymbol className="text-[11px] font-semibold py-0.5 px-2.5">
+            <Badge variant="primary" showSymbol className="text-[11px] font-semibold py-0.5 px-2.5">
               {formatBadge}
             </Badge>
 
@@ -535,7 +535,8 @@ function CommunityManagerCard({
 
         {/* Real Brand Media Preview (Only if authentic asset exists, no mock prototypes) */}
         {assignedMedia && (
-          <div className="relative w-full h-36 sm:h-40 rounded-xl overflow-hidden border border-ivory-border/80 shadow-2xs">
+          <div className="relative w-full h-36 sm:h-40 rounded-xl overflow-hidden border border-cream-border shadow-2xs">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={assignedMedia.url}
               alt={assignedMedia.alt || sanitizedTitle}
@@ -559,10 +560,10 @@ function CommunityManagerCard({
 
         {/* Why Mūza Recommends This (Simple, Jargon-Free Strategic Advice) */}
         {whyNow && (
-          <div className="bg-terracotta-light/60 px-3.5 py-2.5 rounded-xl border border-terracotta-border/40 flex items-start gap-2.5 mt-0.5">
+          <div className="bg-primary-light px-3.5 py-2.5 rounded-xl border border-primary-border/60 flex items-start gap-2.5 mt-0.5">
             <MuzaSymbol size="sm" className="mt-0.5 shrink-0" />
             <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] font-bold text-terracotta-dark">
+              <span className="text-[11px] font-bold text-primary">
                 Pourquoi Mūza vous le conseille
               </span>
               <p className="text-xs text-ink/85 font-medium leading-relaxed">
@@ -575,9 +576,9 @@ function CommunityManagerCard({
 
       {/* Card Actions / Feedback State */}
       {recordedFeedback ? (
-        <div className="bg-ivory-subtle border border-ivory-border p-3 rounded-xl flex items-center justify-between gap-2 text-xs text-ink-muted animate-fadeIn">
+        <div className="bg-cream-subtle border border-cream-border p-3 rounded-xl flex items-center justify-between gap-2 text-xs text-ink-muted animate-fadeIn">
           <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-terracotta" />
+            <Check className="w-4 h-4 text-primary" />
             <span>
               Avis noté :{' '}
               <strong className="text-ink font-semibold">
@@ -586,10 +587,10 @@ function CommunityManagerCard({
               . Mūza en tiendra compte.
             </span>
           </div>
-          <span className="text-[10px] uppercase font-semibold text-terracotta">Enregistré</span>
+          <span className="text-[10px] uppercase font-semibold text-primary">Enregistré</span>
         </div>
       ) : feedbackOpen ? (
-        <div className="flex flex-col gap-2.5 p-3 bg-ivory-subtle/90 border border-terracotta-border/40 rounded-xl animate-fadeIn">
+        <div className="flex flex-col gap-2.5 p-3 bg-cream-subtle/90 border border-primary-border/40 rounded-xl animate-fadeIn">
           <div className="flex items-center justify-between">
             <span className="text-xs font-serif font-bold text-ink flex items-center gap-1.5">
               <MuzaSymbol size="sm" />
@@ -611,8 +612,8 @@ function CommunityManagerCard({
                 onClick={() => setSelectedReason(r)}
                 className={`text-left p-2 rounded-lg text-xs transition-all border ${
                   selectedReason === r
-                    ? 'bg-terracotta-light border-terracotta text-terracotta-dark font-semibold'
-                    : 'bg-white/80 border-ivory-border text-ink hover:bg-white'
+                    ? 'bg-primary-light border-primary text-primary font-semibold'
+                    : 'bg-white/80 border-cream-border text-ink hover:bg-white'
                 }`}
               >
                 <div className="font-medium text-[11px] leading-tight">{FEEDBACK_REASON_LABELS[r].label}</div>
@@ -621,7 +622,7 @@ function CommunityManagerCard({
           </div>
 
           {actionError && (
-            <p className="text-xs text-terracotta font-medium">{actionError}</p>
+            <p className="text-xs text-rose-600 font-medium">{actionError}</p>
           )}
 
           <div className="flex items-center justify-end gap-2 pt-1">
@@ -646,7 +647,7 @@ function CommunityManagerCard({
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between gap-3 pt-3 border-t border-ivory-subtle">
+        <div className="flex items-center justify-between gap-3 pt-3 border-t border-cream-subtle">
           <Button
             variant="primary"
             size="md"
@@ -668,13 +669,13 @@ function CommunityManagerCard({
             variant="ghost"
             size="sm"
             onClick={() => setFeedbackOpen(true)}
-            className="text-xs text-ink-muted hover:text-terracotta shrink-0"
+            className="text-xs text-ink-muted hover:text-primary shrink-0"
           >
             <span>Pas pour moi</span>
           </Button>
 
           {draftError && (
-            <p className="text-xs text-terracotta font-medium pt-0.5">{draftError}</p>
+            <p className="text-xs text-rose-600 font-medium pt-0.5">{draftError}</p>
           )}
         </div>
       )}

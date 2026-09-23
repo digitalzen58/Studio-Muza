@@ -107,9 +107,9 @@ export function StockMediaModal({
       aria-labelledby="stock-media-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-ink/40 backdrop-blur-xs animate-in fade-in duration-150"
     >
-      <div className="relative w-full max-w-2xl max-h-[90vh] bg-ivory rounded-2xl shadow-xl border border-ivory-border flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-2xl max-h-[90vh] bg-cream rounded-2xl shadow-xl border border-cream-border flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-ivory-border/80 bg-white/80 shrink-0">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-cream-border/80 bg-white/80 shrink-0">
           <div>
             <div className="flex items-center gap-2">
               <h2
@@ -118,7 +118,7 @@ export function StockMediaModal({
               >
                 Photos gratuites
               </h2>
-              <span className="text-[10px] font-semibold text-terracotta bg-terracotta-light/40 border border-terracotta/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <span className="text-[10px] font-semibold text-primary bg-primary-light/60 border border-primary-border px-2 py-0.5 rounded-full uppercase tracking-wider">
                 Pexels
               </span>
             </div>
@@ -131,7 +131,7 @@ export function StockMediaModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-ink-muted hover:text-ink hover:bg-ivory-subtle transition-colors"
+            className="p-1.5 rounded-full text-ink-muted hover:text-ink hover:bg-cream-subtle transition-colors"
             aria-label="Fermer"
           >
             <X className="w-5 h-5" />
@@ -139,7 +139,7 @@ export function StockMediaModal({
         </div>
 
         {/* Search Bar & Suggestions */}
-        <div className="p-4 sm:p-5 bg-ivory-subtle/50 border-b border-ivory-border/60 space-y-3 shrink-0">
+        <div className="p-4 sm:p-5 bg-cream-subtle/70 border-b border-cream-border/60 space-y-3 shrink-0">
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -154,7 +154,7 @@ export function StockMediaModal({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Ex: forêt en automne, brume, nature..."
-                className="w-full pl-9 pr-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all shadow-2xs"
+                className="w-full pl-9 pr-3.5 py-2.5 bg-white border border-cream-border rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
               />
             </div>
             <Button
@@ -187,7 +187,7 @@ export function StockMediaModal({
                 key={suggestion}
                 type="button"
                 onClick={() => handleSelectSuggestion(suggestion)}
-                className="px-2.5 py-1 rounded-full text-[11px] bg-white border border-ivory-border text-ink hover:border-terracotta/40 hover:bg-terracotta-light/10 transition-colors shrink-0"
+                className="px-2.5 py-1 rounded-full text-[11px] bg-white border border-cream-border text-ink hover:border-primary/40 hover:bg-primary-light/20 transition-colors shrink-0"
               >
                 {suggestion}
               </button>
@@ -222,12 +222,12 @@ export function StockMediaModal({
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 min-h-[260px]">
           {isSearching ? (
             <div className="flex flex-col items-center justify-center h-48 gap-2 text-ink-muted">
-              <Loader2 className="w-6 h-6 animate-spin text-terracotta" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
               <p className="text-xs">Recherche de photos sur Pexels...</p>
             </div>
           ) : !hasSearched ? (
             <div className="flex flex-col items-center justify-center h-48 text-center p-6 text-ink-muted space-y-2">
-              <div className="w-12 h-12 rounded-full bg-terracotta-light/30 flex items-center justify-center text-terracotta">
+              <div className="w-12 h-12 rounded-full bg-primary-light flex items-center justify-center text-primary">
                 <Sparkles className="w-6 h-6" />
               </div>
               <p className="text-xs sm:text-sm font-medium text-ink">
@@ -254,10 +254,10 @@ export function StockMediaModal({
                 return (
                   <div
                     key={item.externalId}
-                    className="group relative rounded-2xl overflow-hidden border border-ivory-border bg-white hover:border-terracotta/40 hover:shadow-sm transition-all flex flex-col"
+                    className="group relative rounded-2xl overflow-hidden border border-cream-border bg-white hover:border-primary/40 hover:shadow-sm transition-all flex flex-col"
                   >
                     {/* Image Preview */}
-                    <div className="relative aspect-4/3 overflow-hidden bg-ivory-subtle">
+                    <div className="relative aspect-4/3 overflow-hidden bg-cream-subtle">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={item.previewUrl}
@@ -278,7 +278,7 @@ export function StockMediaModal({
                           href={item.creatorUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] text-ink hover:text-terracotta font-medium truncate w-full group/link"
+                          className="inline-flex items-center gap-1 text-[11px] text-ink hover:text-primary font-medium truncate w-full group/link"
                           title={`Voir le profil de ${item.creatorName} sur Pexels`}
                         >
                           <span className="truncate">{item.creatorName}</span>
@@ -288,7 +288,7 @@ export function StockMediaModal({
                           href={item.sourceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] text-ink-muted hover:text-terracotta truncate block"
+                          className="text-[10px] text-ink-muted hover:text-primary truncate block"
                           title="Voir sur Pexels"
                         >
                           sur Pexels
@@ -300,7 +300,7 @@ export function StockMediaModal({
                         type="button"
                         onClick={() => handleImportAndAssign(item)}
                         disabled={Boolean(importingId)}
-                        className="w-full py-1.5 px-2 bg-terracotta text-white rounded-xl text-xs font-medium hover:bg-terracotta-dark transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        className="w-full py-1.5 px-2 bg-primary text-white rounded-xl text-xs font-medium hover:bg-primary-hover transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                       >
                         {isImporting ? (
                           <>
@@ -323,14 +323,14 @@ export function StockMediaModal({
         </div>
 
         {/* Footer */}
-        <div className="p-3 sm:px-5 bg-white border-t border-ivory-border/80 flex items-center justify-between text-[11px] text-ink-muted shrink-0">
+        <div className="p-3 sm:px-5 bg-white border-t border-cream-border/80 flex items-center justify-between text-[11px] text-ink-muted shrink-0">
           <span>
             Photos fournies gratuitement par{' '}
             <a
               href="https://www.pexels.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-terracotta hover:underline"
+              className="font-medium text-primary hover:underline"
             >
               Pexels
             </a>

@@ -69,9 +69,9 @@ export function WritingAssistancePanel({
   // 1. Loading State
   if (isPending) {
     return (
-      <div className="mt-2 p-3.5 bg-terracotta-light/20 border border-terracotta/30 rounded-xl flex items-center justify-between animate-in fade-in duration-150 shadow-2xs">
-        <div className="flex items-center gap-2.5 text-xs text-terracotta-dark font-medium">
-          <Loader2 className="w-4 h-4 animate-spin text-terracotta shrink-0" />
+      <div className="mt-2 p-3.5 bg-primary-light/40 border border-primary-border/60 rounded-xl flex items-center justify-between animate-in fade-in duration-150 shadow-2xs">
+        <div className="flex items-center gap-2.5 text-xs text-primary-dark font-medium">
+          <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
           <span>✦ Mūza prépare une suggestion…</span>
         </div>
         <span className="text-[10px] text-ink-muted">Patience, zéro raccourci IA</span>
@@ -139,7 +139,7 @@ export function WritingAssistancePanel({
             type="button"
             size="sm"
             onClick={handleConfirmStaleReplace}
-            className="h-7 px-3 text-xs bg-terracotta hover:bg-terracotta-dark text-white font-medium"
+            className="h-7 px-3 text-xs bg-primary hover:bg-primary-hover text-white font-medium"
           >
             Utiliser la suggestion
           </Button>
@@ -156,10 +156,10 @@ export function WritingAssistancePanel({
   // 5. Hooks Selection (Multiple Options)
   if (operation === 'SUGGEST_HOOKS') {
     return (
-      <div className="mt-2 p-3.5 bg-white border border-terracotta/30 rounded-xl shadow-xs space-y-3 animate-in fade-in duration-150">
-        <div className="flex items-center justify-between pb-1 border-b border-ivory-border/60">
+      <div className="mt-2 p-3.5 bg-white border border-primary-border/60 rounded-xl shadow-xs space-y-3 animate-in fade-in duration-150">
+        <div className="flex items-center justify-between pb-1 border-b border-cream-border/60">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-ink">
-            <Sparkles className="w-3.5 h-3.5 text-terracotta" />
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
             <span>Mūza vous propose 3 accroches :</span>
           </div>
           <button
@@ -176,7 +176,7 @@ export function WritingAssistancePanel({
           {options.map((hookText, idx) => (
             <div
               key={idx}
-              className="group p-2.5 rounded-lg border border-ivory-border bg-ivory-subtle/40 hover:border-terracotta/40 hover:bg-terracotta-light/10 transition-all flex items-center justify-between gap-2.5"
+              className="group p-2.5 rounded-lg border border-cream-border bg-cream-subtle/40 hover:border-primary/40 hover:bg-primary-light/20 transition-all flex items-center justify-between gap-2.5"
             >
               <p className="text-xs text-ink leading-relaxed flex-1 italic">
                 « {hookText} »
@@ -185,7 +185,7 @@ export function WritingAssistancePanel({
                 type="button"
                 size="sm"
                 onClick={() => handleSelectOption(hookText)}
-                className="h-7 px-3 text-xs bg-terracotta hover:bg-terracotta-dark text-white shrink-0 font-medium gap-1"
+                className="h-7 px-3 text-xs bg-primary hover:bg-primary-hover text-white shrink-0 font-medium gap-1"
               >
                 <Check className="w-3 h-3" />
                 <span>Utiliser</span>
@@ -194,11 +194,11 @@ export function WritingAssistancePanel({
           ))}
         </div>
 
-        <div className="flex items-center justify-between pt-1 border-t border-ivory-border/60">
+        <div className="flex items-center justify-between pt-1 border-t border-cream-border/60">
           <button
             type="button"
             onClick={onRetry}
-            className="text-[11px] text-terracotta hover:underline font-medium flex items-center gap-1"
+            className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Réessayer ✦</span>
@@ -219,10 +219,10 @@ export function WritingAssistancePanel({
   const suggestionText = options[0] || ''
 
   return (
-    <div className="mt-2 p-3.5 bg-white border border-terracotta/30 rounded-xl shadow-xs space-y-2.5 animate-in fade-in duration-150">
-      <div className="flex items-center justify-between pb-1 border-b border-ivory-border/60">
+    <div className="mt-2 p-3.5 bg-white border border-primary-border/60 rounded-xl shadow-xs space-y-2.5 animate-in fade-in duration-150">
+      <div className="flex items-center justify-between pb-1 border-b border-cream-border/60">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-ink">
-          <Sparkles className="w-3.5 h-3.5 text-terracotta" />
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span>Mūza vous propose :</span>
         </div>
         <button
@@ -235,7 +235,7 @@ export function WritingAssistancePanel({
         </button>
       </div>
 
-      <p className="text-xs text-ink leading-relaxed p-2.5 bg-ivory-subtle/50 rounded-lg border border-ivory-border/60 italic">
+      <p className="text-xs text-ink leading-relaxed p-2.5 bg-cream-subtle/50 rounded-lg border border-cream-border/60 italic">
         {suggestionText}
       </p>
 
@@ -243,7 +243,7 @@ export function WritingAssistancePanel({
         <button
           type="button"
           onClick={onRetry}
-          className="text-[11px] text-terracotta hover:underline font-medium flex items-center gap-1"
+          className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1"
         >
           <RotateCcw className="w-3 h-3" />
           <span>Réessayer ✦</span>
@@ -263,7 +263,7 @@ export function WritingAssistancePanel({
             type="button"
             size="sm"
             onClick={() => handleSelectOption(suggestionText)}
-            className="h-7 px-3 text-xs bg-terracotta hover:bg-terracotta-dark text-white font-medium gap-1"
+            className="h-7 px-3 text-xs bg-primary hover:bg-primary-hover text-white font-medium gap-1"
           >
             <Check className="w-3 h-3" />
             <span>Utiliser cette version</span>

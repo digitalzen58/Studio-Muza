@@ -2,21 +2,23 @@ import React from 'react'
 import { MuzaSymbol } from './muza-symbol'
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'terracotta' | 'ivory' | 'ink'
+  variant?: 'primary' | 'secondary' | 'ivory' | 'ink' | 'terracotta'
   showSymbol?: boolean
 }
 
 export function Badge({
   children,
-  variant = 'terracotta',
+  variant = 'primary',
   showSymbol = false,
   className = '',
   ...props
 }: BadgeProps) {
   const variantStyles = {
-    terracotta: 'bg-terracotta-light text-terracotta-dark border border-terracotta-border/50',
-    ivory: 'bg-ivory-card text-ink border border-ivory-border',
-    ink: 'bg-ink text-ivory-card',
+    primary: 'bg-primary-light text-primary-dark border border-primary-border/60',
+    secondary: 'bg-cream-subtle text-ink-muted border border-cream-border',
+    terracotta: 'bg-primary-light text-primary-dark border border-primary-border/60',
+    ivory: 'bg-white text-ink border border-cream-border shadow-2xs',
+    ink: 'bg-ink text-white',
   }
 
   return (

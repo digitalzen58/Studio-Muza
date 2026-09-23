@@ -48,7 +48,7 @@ export function CalendarViewContainer({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-terracotta-light/60 flex items-center justify-center text-terracotta">
+            <div className="w-8 h-8 rounded-xl bg-primary-light flex items-center justify-center text-primary">
               {activeView === 'calendar' ? (
                 <CalendarIcon className="w-4 h-4" />
               ) : (
@@ -67,14 +67,14 @@ export function CalendarViewContainer({
         </div>
 
         {/* Segmented Switch: [ Calendrier ] [ Publications ] */}
-        <div className="flex items-center p-1 bg-ivory-card border border-ivory-border rounded-xl self-start sm:self-auto shadow-2xs">
+        <div className="flex items-center p-1 bg-white border border-cream-border rounded-xl self-start sm:self-auto shadow-2xs">
           <button
             type="button"
             onClick={() => handleSwitchView('calendar')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               activeView === 'calendar'
-                ? 'bg-terracotta text-white shadow-xs font-semibold'
-                : 'text-ink-muted hover:text-ink hover:bg-white/60'
+                ? 'bg-primary text-white shadow-xs font-semibold'
+                : 'text-ink-muted hover:text-ink hover:bg-cream-subtle'
             }`}
           >
             <CalendarIcon className="w-3.5 h-3.5" />
@@ -84,7 +84,7 @@ export function CalendarViewContainer({
                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                   activeView === 'calendar'
                     ? 'bg-white/20 text-white'
-                    : 'bg-ivory text-ink-muted'
+                    : 'bg-cream-subtle text-ink-muted'
                 }`}
               >
                 {scheduledItems.length}
@@ -97,8 +97,8 @@ export function CalendarViewContainer({
             onClick={() => handleSwitchView('publications')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               activeView === 'publications'
-                ? 'bg-terracotta text-white shadow-xs font-semibold'
-                : 'text-ink-muted hover:text-ink hover:bg-white/60'
+                ? 'bg-primary text-white shadow-xs font-semibold'
+                : 'text-ink-muted hover:text-ink hover:bg-cream-subtle'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -108,7 +108,7 @@ export function CalendarViewContainer({
                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                   activeView === 'publications'
                     ? 'bg-white/20 text-white'
-                    : 'bg-ivory text-ink-muted'
+                    : 'bg-cream-subtle text-ink-muted'
                 }`}
               >
                 {publishedCount}

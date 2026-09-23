@@ -94,7 +94,7 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
       {/* Section Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <FileEdit className="w-5 h-5 text-terracotta" />
+          <FileEdit className="w-5 h-5 text-primary" />
           <h2 className="font-serif text-xl font-bold text-ink">
             Vos brouillons en cours
           </h2>
@@ -127,12 +127,12 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
           return (
             <div
               key={draft.id}
-              className="bg-white border border-ivory-border/80 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between gap-3 h-full group"
+              className="bg-white border border-cream-border/80 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between gap-3 h-full group"
             >
               <div className="flex flex-col gap-2.5">
                 {/* Top Row: Format & Status & Quick Delete */}
                 <div className="flex items-center justify-between gap-2">
-                  <Badge variant="terracotta" className="text-[10px]">
+                  <Badge variant="primary" className="text-[10px]">
                     {formatBadge}
                   </Badge>
 
@@ -160,8 +160,8 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
               </div>
 
               {/* Bottom Row: State & CTA */}
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-ivory-subtle">
-                <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-cream-subtle">
+                <span className="text-[11px] font-medium text-ink-muted bg-cream-subtle border border-cream-border px-2 py-0.5 rounded-full">
                   Brouillon
                 </span>
 
@@ -184,7 +184,7 @@ export function DraftContentsSection({ drafts }: DraftContentsSectionProps) {
       {/* Delete Draft Confirmation Modal */}
       {draftToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-          <div className="bg-ivory-card border border-ivory-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl animate-in zoom-in-95 duration-150">
+          <div className="bg-white border border-cream-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl animate-in zoom-in-95 duration-150">
             <div className="space-y-1">
               <h3 className="text-sm font-serif font-bold text-ink">
                 Supprimer ce brouillon ?

@@ -14,11 +14,11 @@ export function Header({ userEmail, userName }: HeaderProps) {
   const displayName = userName || userEmail?.split('@')[0] || 'Entrepreneur'
 
   return (
-    <header className="sticky top-0 z-30 bg-ivory/95 backdrop-blur-md border-b border-ivory-border/80 px-4 py-3">
+    <header className="sticky top-0 z-30 bg-cream/95 backdrop-blur-md border-b border-cream-border px-4 py-3">
       <div className="max-w-md mx-auto flex items-center justify-between">
         {/* Brand logo */}
         <Link href="/app" className="flex items-center gap-1.5 group">
-          <span className="font-serif text-xl font-bold tracking-tight text-ink group-hover:text-terracotta transition-colors">
+          <span className="font-serif text-xl font-bold tracking-tight text-ink group-hover:text-primary transition-colors">
             Studio Mūza
           </span>
           <MuzaSymbol size="md" />
@@ -32,7 +32,7 @@ export function Header({ userEmail, userName }: HeaderProps) {
           <Link
             href="/app/settings"
             title="Paramètres"
-            className="p-2 text-ink-muted hover:text-terracotta hover:bg-terracotta-light rounded-full transition-colors flex items-center justify-center text-xs"
+            className="p-2 text-ink-muted hover:text-primary hover:bg-primary-light rounded-full transition-colors flex items-center justify-center text-xs"
           >
             <Settings className="w-4 h-4" />
           </Link>
@@ -40,7 +40,7 @@ export function Header({ userEmail, userName }: HeaderProps) {
             <button
               type="submit"
               title="Se déconnecter"
-              className="p-2 text-ink-muted hover:text-terracotta hover:bg-terracotta-light rounded-full transition-colors flex items-center justify-center text-xs cursor-pointer"
+              className="p-2 text-ink-muted hover:text-primary hover:bg-primary-light rounded-full transition-colors flex items-center justify-center text-xs cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>

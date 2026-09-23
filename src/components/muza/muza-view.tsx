@@ -68,8 +68,8 @@ export function MuzaView({
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 pb-12">
       {/* 1. Page Header */}
-      <header className="space-y-2 border-b border-ivory-border/60 pb-5">
-        <div className="flex items-center gap-2 text-xs font-semibold text-terracotta tracking-wide uppercase">
+      <header className="space-y-2 border-b border-cream-border/60 pb-5">
+        <div className="flex items-center gap-2 text-xs font-semibold text-primary tracking-wide uppercase">
           <MuzaSymbol size="sm" />
           <span>Votre coach de visibilité</span>
         </div>
@@ -90,20 +90,20 @@ export function MuzaView({
       {/* 2. Primary Hero: Ce qui compte maintenant */}
       <section className="space-y-3">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-          <Compass className="w-4 h-4 text-terracotta" />
+          <Compass className="w-4 h-4 text-primary" />
           <span>Ce qui compte maintenant</span>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-terracotta-border/40 bg-linear-to-br from-terracotta-light/50 via-ivory-card to-ivory-card p-6 sm:p-7 shadow-xs">
+        <div className="relative overflow-hidden rounded-2xl border border-primary-border/60 bg-linear-to-br from-primary-light/60 via-white to-white p-6 sm:p-7 shadow-xs">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div className="space-y-3 max-w-3xl">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-terracotta text-white shadow-xs">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary text-white shadow-xs">
                   <Sparkles className="w-3 h-3" />
                   Objectif prioritaire
                 </span>
                 {priority.timeframe && (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-ivory-border/60 text-ink-muted">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-cream-subtle text-ink-muted border border-cream-border">
                     {priority.timeframe}
                   </span>
                 )}
@@ -126,13 +126,13 @@ export function MuzaView({
         {/* Left Column (Wider): Ce que je vous conseille maintenant */}
         <div className="lg:col-span-7 flex flex-col justify-between space-y-3">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-            <Sparkles className="w-4 h-4 text-terracotta" />
+            <Sparkles className="w-4 h-4 text-primary" />
             <span>Ce que je vous conseille maintenant</span>
           </div>
 
-          <Card className="flex-1 flex flex-col justify-between border border-ivory-border/80 bg-ivory-card p-6 rounded-2xl shadow-xs space-y-5">
+          <Card className="flex-1 flex flex-col justify-between border border-cream-border bg-white p-6 rounded-2xl shadow-xs space-y-5">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-terracotta-light text-terracotta-dark border border-terracotta-border/30">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-primary-light text-primary border border-primary-border/60">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>{nextAction.badgeLabel}</span>
               </div>
@@ -146,10 +146,10 @@ export function MuzaView({
               </p>
             </div>
 
-            <div className="pt-2 border-t border-ivory-border/40">
+            <div className="pt-2 border-t border-cream-border/60">
               <Link
                 href={nextAction.ctaHref}
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-terracotta hover:bg-terracotta-dark text-white text-sm font-semibold transition-all shadow-xs hover:shadow-sm"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-all shadow-xs hover:shadow-sm"
               >
                 <span>{nextAction.ctaLabel}</span>
               </Link>
@@ -160,11 +160,11 @@ export function MuzaView({
         {/* Right Column: Votre communication en ce moment */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-3">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-            <Calendar className="w-4 h-4 text-terracotta" />
+            <Calendar className="w-4 h-4 text-primary" />
             <span>Votre communication en ce moment</span>
           </div>
 
-          <Card className="flex-1 flex flex-col justify-between border border-ivory-border/80 bg-ivory-card p-6 rounded-2xl shadow-xs space-y-4">
+          <Card className="flex-1 flex flex-col justify-between border border-cream-border bg-white p-6 rounded-2xl shadow-xs space-y-4">
             <div className="space-y-3">
               <p className="text-xs font-medium text-ink-muted">
                 {communicationState.summarySentence}
@@ -173,22 +173,22 @@ export function MuzaView({
               {/* Status items */}
               <div className="space-y-2.5 pt-1">
                 {/* Drafts */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-ivory-bg/60 border border-ivory-border/50">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-cream-subtle border border-cream-border/60">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-terracotta-light/60 text-terracotta flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-lg bg-primary-light text-primary flex items-center justify-center">
                       <FileText className="w-4 h-4" />
                     </div>
                     <span className="text-xs font-medium text-ink">Brouillons en cours</span>
                   </div>
-                  <span className="text-xs font-bold text-ink bg-white px-2 py-0.5 rounded-md border border-ivory-border/60">
+                  <span className="text-xs font-bold text-ink bg-white px-2 py-0.5 rounded-md border border-cream-border">
                     {communicationState.activeDraftsCount}
                   </span>
                 </div>
 
                 {/* Scheduled */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-ivory-bg/60 border border-ivory-border/50">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-cream-subtle border border-cream-border/60">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-terracotta-light/60 text-terracotta flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-lg bg-primary-light text-primary flex items-center justify-center">
                       <Calendar className="w-4 h-4" />
                     </div>
                     <div>
@@ -200,20 +200,20 @@ export function MuzaView({
                       )}
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-ink bg-white px-2 py-0.5 rounded-md border border-ivory-border/60">
+                  <span className="text-xs font-bold text-ink bg-white px-2 py-0.5 rounded-md border border-cream-border">
                     {communicationState.scheduledCount}
                   </span>
                 </div>
 
                 {/* Recommendations */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-ivory-bg/60 border border-ivory-border/50">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-cream-subtle border border-cream-border/60">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-terracotta-light/60 text-terracotta flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-lg bg-primary-light text-primary flex items-center justify-center">
                       <Lightbulb className="w-4 h-4" />
                     </div>
                     <span className="text-xs font-medium text-ink">Idées disponibles</span>
                   </div>
-                  <span className="text-xs font-bold text-ink bg-white px-2 py-0.5 rounded-md border border-ivory-border/60">
+                  <span className="text-xs font-bold text-ink bg-white px-2 py-0.5 rounded-md border border-cream-border">
                     {communicationState.usableRecommendationsCount}
                   </span>
                 </div>
@@ -221,10 +221,10 @@ export function MuzaView({
             </div>
 
             {/* Direct Links */}
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-ivory-border/40 text-xs font-medium">
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-cream-border/60 text-xs font-medium">
               <Link
                 href="/app/inspirations"
-                className="inline-flex items-center gap-1 text-terracotta hover:underline py-1"
+                className="inline-flex items-center gap-1 text-primary hover:underline py-1"
               >
                 <span>Ouvrir Inspirations</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -262,10 +262,10 @@ export function MuzaView({
             return (
               <Card
                 key={fact.id}
-                className="p-4 sm:p-5 rounded-2xl border border-ivory-border/70 bg-ivory-card space-y-2 hover:border-terracotta-border/40 transition-colors"
+                className="p-4 sm:p-5 rounded-2xl border border-cream-border bg-white space-y-2 hover:border-primary/40 transition-colors"
               >
                 <div className="flex items-center gap-2 text-xs font-medium text-ink-muted">
-                  <div className="w-6 h-6 rounded-md bg-terracotta-light/60 text-terracotta flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-md bg-primary-light text-primary flex items-center justify-center">
                     <Icon className="w-3.5 h-3.5" />
                   </div>
                   <span>{fact.label}</span>
@@ -292,7 +292,7 @@ export function MuzaView({
             onClick={() => setShowCorrectionInfo(!showCorrectionInfo)}
             className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition-colors cursor-pointer py-1"
           >
-            <Info className="w-3.5 h-3.5 text-terracotta" />
+            <Info className="w-3.5 h-3.5 text-primary" />
             <span className="underline underline-offset-2">Corriger ou mettre à jour ce que Mūza sait</span>
             {showCorrectionInfo ? (
               <ChevronUp className="w-3.5 h-3.5" />
@@ -302,7 +302,7 @@ export function MuzaView({
           </button>
 
           {showCorrectionInfo && (
-            <div className="mt-3 p-4 rounded-xl border border-ivory-border/70 bg-ivory-card/80 text-xs text-ink-muted leading-relaxed space-y-2 animate-in fade-in-50 duration-200">
+            <div className="mt-3 p-4 rounded-xl border border-cream-border bg-white text-xs text-ink-muted leading-relaxed space-y-2 animate-in fade-in-50 duration-200">
               <p>
                 <strong className="text-ink font-semibold">Comment Mūza apprend de vous :</strong> Les informations ci-dessus proviennent de votre configuration initiale (votre profil d’activité, votre clientèle cible, votre ton de marque et vos préférences de création).
               </p>

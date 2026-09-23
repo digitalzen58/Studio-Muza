@@ -23,7 +23,7 @@ export function PublicationStatusBadge({ status }: PublicationStatusBadgeProps) 
 
   if (status === 'SCHEDULED') {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-terracotta-light text-terracotta border border-terracotta/30">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-primary-light text-primary border border-primary-border/60">
         <Clock className="w-3 h-3" />
         <span>{label}</span>
       </span>
@@ -40,7 +40,7 @@ export function PublicationStatusBadge({ status }: PublicationStatusBadgeProps) 
   }
 
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-ivory-card text-ink-muted border border-ivory-border">
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white text-ink-muted border border-cream-border">
       <span>{label}</span>
     </span>
   )

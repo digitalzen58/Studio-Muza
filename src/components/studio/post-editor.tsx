@@ -94,7 +94,7 @@ export function PostEditor({
             setIsDirty(true)
           }}
           placeholder="Ex: Les nouveaux horaires de la terrasse..."
-          className="w-full px-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all"
+          className="w-full px-3.5 py-2.5 bg-white border border-cream-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
         />
       </div>
 
@@ -136,7 +136,7 @@ export function PostEditor({
                     type="button"
                     onClick={() => onRequestAssistance('CAPTION', 'HELP_WRITE')}
                     disabled={Boolean(assistanceState?.isPending)}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:opacity-50"
                   >
                     <Sparkles className="w-3 h-3" />
                     <span>M’aider à écrire ✦</span>
@@ -147,7 +147,7 @@ export function PostEditor({
                       type="button"
                       onClick={() => onRequestAssistance('CAPTION', 'IMPROVE_TEXT')}
                       disabled={Boolean(assistanceState?.isPending)}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:opacity-50"
                     >
                       <Sparkles className="w-3 h-3" />
                       <span>Améliorer ✦</span>
@@ -157,7 +157,7 @@ export function PostEditor({
                       type="button"
                       onClick={() => onRequestAssistance('CAPTION', 'SHORTEN_TEXT')}
                       disabled={Boolean(assistanceState?.isPending)}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-terracotta hover:underline disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:opacity-50"
                     >
                       <Sparkles className="w-3 h-3" />
                       <span>Raccourcir ✦</span>
@@ -176,7 +176,7 @@ export function PostEditor({
               }}
               placeholder="Rédigez le texte qui accompagnera votre publication..."
               style={{ minHeight: '160px', maxHeight: '320px' }}
-              className="w-full px-3.5 py-2.5 bg-white border border-ivory-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta transition-all resize-none min-h-[160px] max-h-[320px] leading-relaxed"
+              className="w-full px-3.5 py-2.5 bg-white border border-cream-border rounded-xl text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none min-h-[160px] max-h-[320px] leading-relaxed"
             />
 
             {/* AI Writing Assistance Panel for Post Caption */}

@@ -11,9 +11,9 @@ export function Card({
   ...props
 }: CardProps) {
   const variantStyles = {
-    default: 'bg-ivory-card border border-ivory-border/70 shadow-xs shadow-ink/5',
-    accent: 'bg-terracotta-light border border-terracotta-border/50 text-terracotta-dark',
-    outlined: 'bg-transparent border border-ivory-border',
+    default: 'bg-white border border-cream-border/80 shadow-2xs shadow-ink/5',
+    accent: 'bg-primary-light border border-primary-border/60 text-primary-dark',
+    outlined: 'bg-transparent border border-cream-border',
   }
 
   return (

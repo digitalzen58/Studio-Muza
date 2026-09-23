@@ -15,7 +15,7 @@ export function MuzaSymbol({ className = '', size = 'md' }: MuzaSymbolProps) {
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex items-center justify-center text-terracotta select-none ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center text-primary select-none ${sizeClasses[size]} ${className}`}
     >
       ✦
     </span>

@@ -60,12 +60,12 @@ export interface VisualComposition {
  * Curated brand background colors for Studio Mūza
  */
 export const BRAND_BACKGROUND_COLORS = [
-  { label: 'Ivoire chaud', hex: '#FDFBF7', textMode: 'DARK' as const },
-  { label: 'Terracotta', hex: '#C85A32', textMode: 'LIGHT' as const },
-  { label: 'Terracotta clair', hex: '#F4ECE6', textMode: 'DARK' as const },
-  { label: 'Sable chaud', hex: '#E8DFD8', textMode: 'DARK' as const },
-  { label: 'Sauge', hex: '#5A6B5C', textMode: 'LIGHT' as const },
-  { label: 'Charbon doux', hex: '#1E1E24', textMode: 'LIGHT' as const },
+  { label: 'Crème Zen', hex: '#FBF9F5', textMode: 'DARK' as const },
+  { label: 'Bleu Digital Zen', hex: '#1E4E8C', textMode: 'LIGHT' as const },
+  { label: 'Bleu ciel doux', hex: '#EDF4FC', textMode: 'DARK' as const },
+  { label: 'Bleu nuit', hex: '#0F1E36', textMode: 'LIGHT' as const },
+  { label: 'Bleu grisé', hex: '#E2E8F0', textMode: 'DARK' as const },
+  { label: 'Blanc pur', hex: '#FFFFFF', textMode: 'DARK' as const },
 ]
 
 /**
@@ -98,7 +98,7 @@ export function createDefaultVisualComposition(
         }
       : {
           type: 'COLOR',
-          color: '#FDFBF7',
+          color: '#FBF9F5',
           positionX: 0,
           positionY: 0,
           scale: 1.0,

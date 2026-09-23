@@ -183,7 +183,7 @@ export function RecommendationSection({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pt-0.5 pb-1">
           {/* Objective Chip */}
           <div className="flex justify-center md:justify-start">
-            <div className="inline-flex items-center gap-2 bg-terracotta-light/70 border border-terracotta-border/60 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-terracotta-dark shadow-2xs text-center md:text-left">
+            <div className="inline-flex items-center gap-2 bg-primary-light/70 border border-primary-border/60 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-primary-dark shadow-2xs text-center md:text-left">
               <MuzaSymbol size="sm" />
               <span>Cette semaine, Mūza vous aide à {goalContext}.</span>
             </div>
@@ -195,7 +195,7 @@ export function RecommendationSection({
               variant="primary"
               size="lg"
               onClick={() => setChooserOpen(true)}
-              className="w-full sm:w-auto min-w-[220px] md:min-w-[190px] min-h-[48px] md:min-h-[44px] py-3 md:py-2.5 px-6 md:px-5 text-sm md:text-base font-semibold shadow-md hover:shadow-lg bg-terracotta hover:bg-terracotta-dark text-white rounded-2xl gap-2 transition-all transform active:scale-[0.98] cursor-pointer"
+              className="w-full sm:w-auto min-w-[220px] md:min-w-[190px] min-h-[48px] md:min-h-[44px] py-3 md:py-2.5 px-6 md:px-5 text-sm md:text-base font-semibold shadow-md hover:shadow-lg bg-primary hover:bg-primary-hover text-white rounded-2xl gap-2 transition-all transform active:scale-[0.98] cursor-pointer"
               aria-label="Créer un nouveau contenu"
             >
               <Plus className="w-4 h-4 md:w-5 md:h-5 text-white" />
@@ -235,9 +235,9 @@ export function RecommendationSection({
 
             {/* Error notification banner if new generation attempt failed, preserving existing batch */}
             {error && (
-              <div className="bg-terracotta-light/60 border border-terracotta-border/80 p-3.5 rounded-xl flex items-center justify-between gap-3 text-xs text-ink animate-fadeIn">
+              <div className="bg-red-50 border border-red-200 p-3.5 rounded-xl flex items-center justify-between gap-3 text-xs text-ink animate-fadeIn">
                 <div className="flex flex-col gap-0.5 text-left">
-                  <span className="font-serif font-bold text-terracotta-dark">
+                  <span className="font-serif font-bold text-red-700">
                     Mūza n’a pas réussi à préparer de nouvelles idées.
                   </span>
                   <span className="text-[11px] text-ink-muted">
@@ -289,18 +289,18 @@ export function RecommendationSection({
 
             {/* Batch Dissatisfaction Confirmation Notice */}
             {batchSuccessNotice && (
-              <div className="bg-ivory-subtle border border-terracotta-border/40 p-3 rounded-xl flex items-center justify-between gap-2 text-xs text-ink-muted animate-fadeIn">
+              <div className="bg-cream-subtle border border-cream-border p-3 rounded-xl flex items-center justify-between gap-2 text-xs text-ink-muted animate-fadeIn">
                 <div className="flex items-center gap-2">
-                  <span className="text-terracotta font-serif font-bold text-sm">✦</span>
+                  <span className="text-primary font-serif font-bold text-sm">✦</span>
                   <span className="text-ink">{batchSuccessNotice}</span>
                 </div>
-                <span className="text-[10px] uppercase font-semibold text-terracotta">Enregistré</span>
+                <span className="text-[10px] uppercase font-semibold text-primary">Enregistré</span>
               </div>
             )}
 
             {/* Action D: "Rien ne me convient" Batch Dissatisfaction Panel */}
             {batchFeedbackOpen ? (
-              <div className="flex flex-col gap-3 p-4 bg-ivory-subtle/90 border border-terracotta-border/50 rounded-2xl animate-fadeIn shadow-2xs">
+              <div className="flex flex-col gap-3 p-4 bg-cream-subtle/90 border border-primary-border/50 rounded-2xl animate-fadeIn shadow-2xs">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-serif font-bold text-ink flex items-center gap-1.5">
                     <MuzaSymbol size="sm" />
@@ -329,8 +329,8 @@ export function RecommendationSection({
                         onClick={() => setSelectedBatchReason(opt.reason)}
                         className={`text-left p-2.5 rounded-lg text-xs transition-all border ${
                           isSelected
-                            ? 'bg-terracotta-light border-terracotta text-terracotta-dark font-semibold shadow-2xs'
-                            : 'bg-white/80 border-ivory-border text-ink hover:bg-white'
+                            ? 'bg-primary-light border-primary text-primary-dark font-semibold shadow-2xs'
+                            : 'bg-white/80 border-cream-border text-ink hover:bg-white'
                         }`}
                       >
                         <div className="font-medium">{opt.label}</div>
@@ -352,13 +352,13 @@ export function RecommendationSection({
                     value={batchNote}
                     onChange={(e) => setBatchNote(e.target.value.slice(0, 300))}
                     placeholder="Ex: Je souhaite plutôt axer mes publications sur le calme et l'arrière-saison..."
-                    className="w-full text-xs p-2.5 rounded-lg border border-ivory-border bg-white focus:outline-none focus:ring-1 focus:ring-terracotta/40 resize-none min-h-[58px]"
+                    className="w-full text-xs p-2.5 rounded-lg border border-cream-border bg-white focus:outline-none focus:ring-1 focus:ring-primary/40 resize-none min-h-[58px]"
                     maxLength={300}
                   />
                 </div>
 
                 {batchActionError && (
-                  <p className="text-xs text-terracotta font-medium">{batchActionError}</p>
+                  <p className="text-xs text-red-600 font-medium">{batchActionError}</p>
                 )}
 
                 <div className="flex items-center justify-end gap-2 pt-1">
@@ -386,7 +386,7 @@ export function RecommendationSection({
                   <button
                     type="button"
                     onClick={() => setBatchFeedbackOpen(true)}
-                    className="text-xs text-ink-muted hover:text-terracotta font-medium transition-colors inline-flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-ivory-subtle cursor-pointer"
+                    className="text-xs text-ink-muted hover:text-primary font-medium transition-colors inline-flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-cream-subtle cursor-pointer"
                   >
                     <span>✦ Rien ne me convient dans ces idées</span>
                   </button>
