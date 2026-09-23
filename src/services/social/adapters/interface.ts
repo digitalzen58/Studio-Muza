@@ -34,8 +34,8 @@ export interface DiscoveredDestination {
 
 export interface SocialProviderAdapter {
   readonly provider: SocialProvider
-  getAuthConfig(): ProviderAuthConfig
-  isConfigured(): boolean
+  getAuthConfig(platform?: SocialPlatform): ProviderAuthConfig
+  isConfigured(platform?: SocialPlatform): boolean
   getAuthorizationUrl(params: AuthorizationParams): Promise<AuthUrlResult | null>
   handleAuthorizationCallback(params: CallbackExchangeParams): Promise<{
     destinations: DiscoveredDestination[]

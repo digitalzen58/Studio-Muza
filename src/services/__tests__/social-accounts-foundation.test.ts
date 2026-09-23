@@ -259,25 +259,27 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
     assert.ok(!migrationFiles.some((f) => f.startsWith('017_')), 'No migration 017 allowed')
   })
 
-  // 11. Step 164I — Independent Meta OAuth URLs (Instagram Login vs Facebook Login)
-  await t.test('11. Independent OAuth URLs: Instagram Login (instagram.com) vs Facebook Login (facebook.com/dialog/oauth)', async () => {
+  // 11. Step 164K — Dedicated Instagram & Facebook App Credentials
+  await t.test('11. Dedicated App Credentials: Instagram (INSTAGRAM_APP_ID) vs Facebook (META_APP_ID)', async () => {
     const originalEnv = { ...process.env }
+    const originalFetch = globalThis.fetch
     try {
-      process.env.META_APP_ID = 'test-meta-app-id-123'
-      process.env.META_APP_SECRET = 'test-meta-secret-456'
-      process.env.META_CONFIG_ID = 'test-meta-business-config-789'
+      process.env.INSTAGRAM_APP_ID = 'test-ig-app-id-777'
+      process.env.INSTAGRAM_APP_SECRET = 'test-ig-app-secret-888'
+      process.env.META_APP_ID = 'test-fb-app-id-123'
+      process.env.META_APP_SECRET = 'test-fb-secret-456'
+      process.env.META_CONFIG_ID = 'test-fb-business-config-789'
       process.env.CREDENTIAL_ENCRYPTION_KEY = 'test-key-32-bytes-for-unit-testing-vault'
       process.env.NEXT_PUBLIC_SITE_URL = 'https://studio-muza.vercel.app'
 
       const adapter = new MetaSocialProviderAdapter()
-      const config = adapter.getAuthConfig()
 
-      assert.strictEqual(config.isConfigured, true)
-      assert.strictEqual(config.appIdPresent, true)
-      assert.strictEqual(config.appSecretPresent, true)
-      assert.strictEqual(config.configIdPresent, true)
+      // Platform specific config checks
+      assert.strictEqual(adapter.isConfigured('INSTAGRAM'), true)
+      assert.strictEqual(adapter.isConfigured('FACEBOOK'), true)
+      assert.strictEqual(adapter.isConfigured(), true)
 
-      // 1. Instagram OAuth URL uses direct Instagram Login dialog
+      // 1. Instagram OAuth URL uses INSTAGRAM_APP_ID
       const igAuthRes = await adapter.getAuthorizationUrl({
         userId: 'u1',
         businessId: 'b1',
@@ -288,12 +290,12 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       assert.ok(igAuthRes.url.startsWith('https://www.instagram.com/oauth/authorize'), 'Instagram must use direct Instagram Login')
 
       const igParsed = new URL(igAuthRes.url)
-      assert.strictEqual(igParsed.searchParams.get('client_id'), 'test-meta-app-id-123')
+      assert.strictEqual(igParsed.searchParams.get('client_id'), 'test-ig-app-id-777', 'Instagram OAuth URL must use INSTAGRAM_APP_ID')
       assert.strictEqual(igParsed.searchParams.get('redirect_uri'), 'https://studio-muza.vercel.app/api/auth/social/meta/callback')
       assert.ok(igParsed.searchParams.get('scope')?.includes('instagram_business_basic'))
       assert.strictEqual(igParsed.searchParams.get('state'), igAuthRes.state)
 
-      // 2. Facebook OAuth URL uses Facebook Login dialog
+      // 2. Facebook OAuth URL uses META_APP_ID
       const fbAuthRes = await adapter.getAuthorizationUrl({
         userId: 'u1',
         businessId: 'b1',
@@ -304,15 +306,94 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       assert.ok(fbAuthRes.url.startsWith('https://www.facebook.com/v21.0/dialog/oauth'), 'Facebook must use Facebook Login dialog')
 
       const fbParsed = new URL(fbAuthRes.url)
-      assert.strictEqual(fbParsed.searchParams.get('client_id'), 'test-meta-app-id-123')
-      assert.strictEqual(fbParsed.searchParams.get('config_id'), 'test-meta-business-config-789')
+      assert.strictEqual(fbParsed.searchParams.get('client_id'), 'test-fb-app-id-123', 'Facebook OAuth URL must use META_APP_ID')
+      assert.strictEqual(fbParsed.searchParams.get('config_id'), 'test-fb-business-config-789')
       assert.strictEqual(fbParsed.searchParams.get('state'), fbAuthRes.state)
+
+      // 3. Instagram Callback Exchange uses INSTAGRAM_APP_ID & INSTAGRAM_APP_SECRET
+      const interceptedFetchCalls: { url: string; body?: string }[] = []
+      globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const urlStr = String(input)
+        interceptedFetchCalls.push({ url: urlStr, body: init?.body ? String(init.body) : undefined })
+
+        if (urlStr.includes('api.instagram.com/oauth/access_token')) {
+          return new Response(JSON.stringify({ access_token: 'short-lived-ig-token' }), { status: 200 })
+        }
+        if (urlStr.includes('graph.instagram.com/access_token')) {
+          return new Response(JSON.stringify({ access_token: 'long-lived-ig-token', expires_in: 5184000 }), { status: 200 })
+        }
+        if (urlStr.includes('graph.instagram.com') && urlStr.includes('/me?')) {
+          return new Response(JSON.stringify({ id: 'ig-123', username: 'muza_insta', account_type: 'BUSINESS' }), { status: 200 })
+        }
+        return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 })
+      }
+
+      const igCallbackRes = await adapter.handleAuthorizationCallback({
+        code: 'auth-code-ig-123',
+        state: igAuthRes.state,
+        currentUserId: 'u1',
+        currentBusinessId: 'b1',
+      })
+
+      assert.strictEqual(igCallbackRes.destinations.length, 1)
+      assert.strictEqual(igCallbackRes.destinations[0].platform, 'INSTAGRAM')
+      assert.strictEqual(igCallbackRes.destinations[0].accountName, '@muza_insta')
+
+      const igTokenPost = interceptedFetchCalls.find(c => c.url.includes('api.instagram.com/oauth/access_token'))
+      assert.ok(igTokenPost?.body?.includes('client_id=test-ig-app-id-777'), 'Instagram token exchange POST must use INSTAGRAM_APP_ID')
+      assert.ok(igTokenPost?.body?.includes('client_secret=test-ig-app-secret-888'), 'Instagram token exchange POST must use INSTAGRAM_APP_SECRET')
+
+      const igLongExchange = interceptedFetchCalls.find(c => c.url.includes('graph.instagram.com/access_token'))
+      assert.ok(igLongExchange?.url.includes('client_secret=test-ig-app-secret-888'), 'Instagram long token exchange must use INSTAGRAM_APP_SECRET')
+
+      // 4. Credential Isolation: Instagram without Facebook credentials works
+      delete process.env.META_APP_ID
+      delete process.env.META_APP_SECRET
+      assert.strictEqual(adapter.isConfigured('INSTAGRAM'), true)
+      assert.strictEqual(adapter.isConfigured('FACEBOOK'), false)
+
+      const igStandaloneAuth = await adapter.getAuthorizationUrl({
+        userId: 'u1',
+        businessId: 'b1',
+        platform: 'INSTAGRAM',
+      })
+      assert.ok(igStandaloneAuth !== null, 'Instagram must work when only INSTAGRAM credentials are present')
+
+      const fbMissingAuth = await adapter.getAuthorizationUrl({
+        userId: 'u1',
+        businessId: 'b1',
+        platform: 'FACEBOOK',
+      })
+      assert.strictEqual(fbMissingAuth, null, 'Facebook must fail closed when META_APP_ID is missing')
+
+      // 5. Credential Isolation: Facebook without Instagram credentials works
+      delete process.env.INSTAGRAM_APP_ID
+      delete process.env.INSTAGRAM_APP_SECRET
+      process.env.META_APP_ID = 'test-fb-app-id-123'
+      process.env.META_APP_SECRET = 'test-fb-secret-456'
+      assert.strictEqual(adapter.isConfigured('INSTAGRAM'), false)
+      assert.strictEqual(adapter.isConfigured('FACEBOOK'), true)
+
+      const igMissingAuth = await adapter.getAuthorizationUrl({
+        userId: 'u1',
+        businessId: 'b1',
+        platform: 'INSTAGRAM',
+      })
+      assert.strictEqual(igMissingAuth, null, 'Instagram must fail closed when INSTAGRAM_APP_ID is missing')
+
+      const fbStandaloneAuth = await adapter.getAuthorizationUrl({
+        userId: 'u1',
+        businessId: 'b1',
+        platform: 'FACEBOOK',
+      })
+      assert.ok(fbStandaloneAuth !== null, 'Facebook must work when only META credentials are present')
 
       // Ensure no publishing calls exist in the adapter
       const adapterCode = fs.readFileSync(path.join(rootDir, 'src/services/social/adapters/meta-adapter.ts'), 'utf8')
-      assert.ok(!adapterCode.includes('media_publish'), 'Adapter must NOT contain media publish endpoints in Step 164I')
+      assert.ok(!adapterCode.includes('media_publish'), 'Adapter must NOT contain media publish endpoints in Step 164K')
     } finally {
       process.env = originalEnv
+      globalThis.fetch = originalFetch
     }
   })
 

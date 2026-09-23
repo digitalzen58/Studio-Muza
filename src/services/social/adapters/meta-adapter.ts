@@ -40,29 +40,64 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
     'pages_manage_posts',
   ]
 
-  getAuthConfig(): ProviderAuthConfig {
-    const appId = process.env.META_APP_ID || process.env.FACEBOOK_APP_ID
-    const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET
-    const configId =
+  getAuthConfig(platform?: SocialPlatform): ProviderAuthConfig {
+    const redirectUri =
+      process.env.META_REDIRECT_URI?.trim() ||
+      process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+      process.env.NEXT_PUBLIC_APP_URL?.trim()
+
+    if (platform === 'INSTAGRAM') {
+      const appId = process.env.INSTAGRAM_APP_ID?.trim()
+      const appSecret = process.env.INSTAGRAM_APP_SECRET?.trim()
+      return {
+        isConfigured: Boolean(appId && appSecret),
+        appIdPresent: Boolean(appId),
+        appSecretPresent: Boolean(appSecret),
+        redirectUriPresent: Boolean(redirectUri),
+      }
+    }
+
+    if (platform === 'FACEBOOK') {
+      const appId = (process.env.META_APP_ID || process.env.FACEBOOK_APP_ID)?.trim()
+      const appSecret = (process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET)?.trim()
+      const configId = (
+        process.env.META_CONFIG_ID ||
+        process.env.META_BUSINESS_CONFIG_ID ||
+        process.env.FACEBOOK_CONFIG_ID
+      )?.trim()
+      return {
+        isConfigured: Boolean(appId && appSecret),
+        appIdPresent: Boolean(appId),
+        appSecretPresent: Boolean(appSecret),
+        configIdPresent: Boolean(configId),
+        redirectUriPresent: Boolean(redirectUri),
+      }
+    }
+
+    const fbAppId = (process.env.META_APP_ID || process.env.FACEBOOK_APP_ID)?.trim()
+    const fbAppSecret = (process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET)?.trim()
+    const igAppId = process.env.INSTAGRAM_APP_ID?.trim()
+    const igAppSecret = process.env.INSTAGRAM_APP_SECRET?.trim()
+    const configId = (
       process.env.META_CONFIG_ID ||
       process.env.META_BUSINESS_CONFIG_ID ||
       process.env.FACEBOOK_CONFIG_ID
-    const redirectUri =
-      process.env.META_REDIRECT_URI ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL
+    )?.trim()
+
+    const isFbConfigured = Boolean(fbAppId && fbAppSecret)
+    const isIgConfigured = Boolean(igAppId && igAppSecret)
 
     return {
-      isConfigured: Boolean(appId && appSecret),
-      appIdPresent: Boolean(appId),
-      appSecretPresent: Boolean(appSecret),
+      isConfigured: isFbConfigured || isIgConfigured,
+      appIdPresent: Boolean(fbAppId || igAppId),
+      appSecretPresent: Boolean(fbAppSecret || igAppSecret),
       configIdPresent: Boolean(configId),
       redirectUriPresent: Boolean(redirectUri),
     }
   }
 
-  isConfigured(): boolean {
-    return this.getAuthConfig().isConfigured
+  isConfigured(platform?: SocialPlatform): boolean {
+    return this.getAuthConfig(platform).isConfigured
   }
 
   getCapabilities(platform: SocialPlatform, accountType?: string): SocialCapabilities {
@@ -94,22 +129,17 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
   }
 
   async getAuthorizationUrl(params: AuthorizationParams): Promise<AuthUrlResult | null> {
-    if (!this.isConfigured()) {
+    if (!this.isConfigured(params.platform)) {
       return null
     }
 
-    const appId = process.env.META_APP_ID || process.env.FACEBOOK_APP_ID
-    const configId =
-      process.env.META_CONFIG_ID ||
-      process.env.META_BUSINESS_CONFIG_ID ||
-      process.env.FACEBOOK_CONFIG_ID
     const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+      process.env.NEXT_PUBLIC_APP_URL?.trim() ||
       'http://localhost:3000'
     const baseRedirect =
       params.redirectUriOverride ||
-      process.env.META_REDIRECT_URI ||
+      process.env.META_REDIRECT_URI?.trim() ||
       `${siteUrl.replace(/\/$/, '')}/api/auth/social/meta/callback`
 
     // Generate tamper-proof OAuth state
@@ -126,12 +156,15 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
 
     const signedState = signOAuthState(statePayload as unknown as Record<string, unknown>)
 
-    // 1. INSTAGRAM LOGIN (Direct Instagram OAuth dialog)
+    // 1. INSTAGRAM LOGIN (Direct Instagram OAuth dialog using INSTAGRAM_APP_ID)
     if (params.platform === 'INSTAGRAM') {
+      const igAppId = process.env.INSTAGRAM_APP_ID?.trim()
+      if (!igAppId) return null
+
       const urlParams = new URLSearchParams({
         enable_fb_login: '0',
         force_authentication: '1',
-        client_id: appId!,
+        client_id: igAppId,
         redirect_uri: baseRedirect,
         response_type: 'code',
         scope: this.instagramScopes.join(','),
@@ -145,9 +178,18 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       }
     }
 
-    // 2. FACEBOOK LOGIN (Facebook OAuth dialog)
+    // 2. FACEBOOK LOGIN (Facebook OAuth dialog using META_APP_ID)
+    const fbAppId = (process.env.META_APP_ID || process.env.FACEBOOK_APP_ID)?.trim()
+    if (!fbAppId) return null
+
+    const configId = (
+      process.env.META_CONFIG_ID ||
+      process.env.META_BUSINESS_CONFIG_ID ||
+      process.env.FACEBOOK_CONFIG_ID
+    )?.trim()
+
     const urlParams = new URLSearchParams({
-      client_id: appId!,
+      client_id: fbAppId,
       redirect_uri: baseRedirect,
       state: signedState,
       response_type: 'code',
@@ -171,10 +213,6 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
     destinations: DiscoveredDestination[]
     error?: string
   }> {
-    if (!this.isConfigured()) {
-      return { destinations: [], error: 'Meta Provider credentials not configured.' }
-    }
-
     // 1. Verify OAuth state signature & expiration
     const state = verifyOAuthState<OAuthStatePayload>(params.state)
     if (!state) {
@@ -186,25 +224,33 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       return { destinations: [], error: 'Violation d’isolation multi-tenant: état OAuth incohérent.' }
     }
 
-    const appId = process.env.META_APP_ID || process.env.FACEBOOK_APP_ID
-    const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET
     const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+      process.env.NEXT_PUBLIC_APP_URL?.trim() ||
       'http://localhost:3000'
     const redirectUri =
-      process.env.META_REDIRECT_URI ||
+      process.env.META_REDIRECT_URI?.trim() ||
       `${siteUrl.replace(/\/$/, '')}/api/auth/social/meta/callback`
 
     try {
       // ----------------------------------------------------------------------
-      // FLOW A: INSTAGRAM API WITH INSTAGRAM LOGIN
+      // FLOW A: INSTAGRAM API WITH INSTAGRAM LOGIN (INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET)
       // ----------------------------------------------------------------------
       if (state.platform === 'INSTAGRAM') {
+        const igAppId = process.env.INSTAGRAM_APP_ID?.trim()
+        const igAppSecret = process.env.INSTAGRAM_APP_SECRET?.trim()
+
+        if (!igAppId || !igAppSecret) {
+          return {
+            destinations: [],
+            error: 'Configuration Instagram manquante.',
+          }
+        }
+
         // Step 1: Exchange authorization code on api.instagram.com
         const formBody = new URLSearchParams()
-        formBody.set('client_id', appId!)
-        formBody.set('client_secret', appSecret!)
+        formBody.set('client_id', igAppId)
+        formBody.set('client_secret', igAppSecret)
         formBody.set('grant_type', 'authorization_code')
         formBody.set('redirect_uri', redirectUri)
         formBody.set('code', params.code)
@@ -229,7 +275,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         // Step 2: Exchange short-lived token for long-lived (60 days) token on graph.instagram.com
         const longLivedUrl = new URL('https://graph.instagram.com/access_token')
         longLivedUrl.searchParams.set('grant_type', 'ig_exchange_token')
-        longLivedUrl.searchParams.set('client_secret', appSecret!)
+        longLivedUrl.searchParams.set('client_secret', igAppSecret)
         longLivedUrl.searchParams.set('access_token', shortLivedToken)
 
         const longRes = await fetch(longLivedUrl.toString())
@@ -278,11 +324,21 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       }
 
       // ----------------------------------------------------------------------
-      // FLOW B: FACEBOOK LOGIN (Facebook Pages)
+      // FLOW B: FACEBOOK LOGIN (Facebook Pages with META_APP_ID / META_APP_SECRET)
       // ----------------------------------------------------------------------
+      const fbAppId = (process.env.META_APP_ID || process.env.FACEBOOK_APP_ID)?.trim()
+      const fbAppSecret = (process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET)?.trim()
+
+      if (!fbAppId || !fbAppSecret) {
+        return {
+          destinations: [],
+          error: 'Configuration Facebook manquante.',
+        }
+      }
+
       const tokenUrl = new URL(`https://graph.facebook.com/${this.graphApiVersion}/oauth/access_token`)
-      tokenUrl.searchParams.set('client_id', appId!)
-      tokenUrl.searchParams.set('client_secret', appSecret!)
+      tokenUrl.searchParams.set('client_id', fbAppId)
+      tokenUrl.searchParams.set('client_secret', fbAppSecret)
       tokenUrl.searchParams.set('redirect_uri', redirectUri)
       tokenUrl.searchParams.set('code', params.code)
 
@@ -301,8 +357,8 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       // Exchange short-lived token for long-lived token (60 days)
       const longLivedUrl = new URL(`https://graph.facebook.com/${this.graphApiVersion}/oauth/access_token`)
       longLivedUrl.searchParams.set('grant_type', 'fb_exchange_token')
-      longLivedUrl.searchParams.set('client_id', appId!)
-      longLivedUrl.searchParams.set('client_secret', appSecret!)
+      longLivedUrl.searchParams.set('client_id', fbAppId)
+      longLivedUrl.searchParams.set('client_secret', fbAppSecret)
       longLivedUrl.searchParams.set('fb_exchange_token', shortLivedToken)
 
       const longRes = await fetch(longLivedUrl.toString())
@@ -348,12 +404,11 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
     accountName?: string
     error?: string
   }> {
-    if (!this.isConfigured()) {
-      return { isValid: false, isAuthError: false, error: 'Configuration Meta manquante.' }
-    }
-
     try {
       const token = accessTokenEncrypted // decrypted in service layer
+      if (!token) {
+        return { isValid: false, isAuthError: true, error: 'Token manquant.' }
+      }
 
       // ----------------------------------------------------------------------
       // VERIFY INSTAGRAM: Direct query to graph.instagram.com /me

@@ -123,11 +123,13 @@ export async function getSocialAuthUrlAction(
     }
 
     if (platform === 'INSTAGRAM' || platform === 'FACEBOOK') {
-      if (!metaSocialAdapter.isConfigured()) {
+      if (!metaSocialAdapter.isConfigured(platform)) {
         return {
           url: null,
           error:
-            'La connexion Meta (Instagram / Facebook) nécessite la configuration de l’application Meta Developer (META_APP_ID / META_APP_SECRET).',
+            platform === 'INSTAGRAM'
+              ? 'La connexion Instagram nécessite la configuration des identifiants d’application Instagram (INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET).'
+              : 'La connexion Facebook nécessite la configuration de l’application Meta Developer (META_APP_ID / META_APP_SECRET).',
         }
       }
 
