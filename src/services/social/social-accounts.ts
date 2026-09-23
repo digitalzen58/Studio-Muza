@@ -230,10 +230,23 @@ export async function verifySocialAccount(
     }
 
     if (account.platform === 'INSTAGRAM' || account.platform === 'FACEBOOK') {
+      let parentPageId: string | undefined
+      if (account.platform === 'INSTAGRAM') {
+        const { data: fbAccount } = await supabase
+          .from('social_accounts')
+          .select('external_account_id')
+          .eq('business_id', businessId)
+          .eq('platform', 'FACEBOOK')
+          .maybeSingle()
+
+        parentPageId = fbAccount?.external_account_id
+      }
+
       const res = await metaSocialAdapter.verifyConnection(
         decryptedToken,
         account.external_account_id,
-        account.platform
+        account.platform,
+        parentPageId
       )
 
       if (res.isValid) {

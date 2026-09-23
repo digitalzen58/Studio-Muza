@@ -255,7 +255,8 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
   async verifyConnection(
     accessTokenEncrypted: string,
     externalAccountId: string,
-    platform: SocialPlatform = 'FACEBOOK'
+    platform: SocialPlatform = 'FACEBOOK',
+    parentPageId?: string
   ): Promise<{
     isValid: boolean
     isAuthError?: boolean
@@ -268,9 +269,18 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
 
     try {
       const token = accessTokenEncrypted // decrypted in service layer
-      // Tailored queries per platform: Instagram Business User does not accept 'name'
-      const fields = platform === 'INSTAGRAM' ? 'id,username' : 'id,name'
-      const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=${fields}&access_token=${encodeURIComponent(token)}`
+
+      // Platform specific validation endpoints:
+      // FACEBOOK: Check page node directly
+      // INSTAGRAM: Check linked page node containing instagram_business_account
+      let verifyUrl: string
+      if (platform === 'INSTAGRAM') {
+        const targetPage = parentPageId || 'me'
+        verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(targetPage)}?fields=id,instagram_business_account{id,username}&access_token=${encodeURIComponent(token)}`
+      } else {
+        verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=id,name&access_token=${encodeURIComponent(token)}`
+      }
+
       const res = await fetch(verifyUrl)
 
       if (!res.ok) {
@@ -315,8 +325,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
 
       const data = await res.json()
 
-      // Validate returned payload and matching ID
-      if (!data || typeof data !== 'object' || data.id !== externalAccountId) {
+      if (!data || typeof data !== 'object') {
         return {
           isValid: false,
           isAuthError: false,
@@ -324,14 +333,37 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         }
       }
 
-      const accountName = platform === 'INSTAGRAM'
-        ? (data.username ? `@${data.username}` : undefined)
-        : data.name
+      if (platform === 'INSTAGRAM') {
+        const ig = data.instagram_business_account
+        if (!ig || typeof ig !== 'object' || ig.id !== externalAccountId) {
+          return {
+            isValid: false,
+            isAuthError: false,
+            error: "Le compte Instagram n'est plus relié à cette Page Facebook.",
+          }
+        }
+
+        const accountName = ig.username ? `@${ig.username}` : undefined
+        return {
+          isValid: true,
+          isAuthError: false,
+          accountName,
+        }
+      }
+
+      // FACEBOOK
+      if (data.id !== externalAccountId) {
+        return {
+          isValid: false,
+          isAuthError: false,
+          error: 'Impossible de vérifier la connexion pour le moment.',
+        }
+      }
 
       return {
         isValid: true,
         isAuthError: false,
-        accountName,
+        accountName: data.name,
       }
     } catch {
       return {

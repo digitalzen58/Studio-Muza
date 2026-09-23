@@ -356,8 +356,8 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
     }
   })
 
-  // 13. Step 164D — Platform-Aware Meta Verification & Error Classification
-  await t.test('13. Platform-aware Meta verification, Facebook (id,name) vs Instagram (id,username), and robust error classification', async () => {
+  // 13. Step 164F — Platform-Aware Meta Verification & Instagram Linked-Page Model
+  await t.test('13. Platform-aware Meta verification, Facebook (id,name) vs Instagram linked page (id,instagram_business_account{id,username})', async () => {
     const originalEnv = { ...process.env }
     const originalFetch = globalThis.fetch
     try {
@@ -369,7 +369,7 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       const adapter = new MetaSocialProviderAdapter()
       const interceptedUrls: string[] = []
 
-      // 1. Facebook verification uses fields=id,name
+      // 1. Facebook verification uses fields=id,name on /{facebook_page_id}
       globalThis.fetch = async (input: RequestInfo | URL) => {
         const urlStr = String(input)
         interceptedUrls.push(urlStr)
@@ -388,40 +388,70 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       assert.strictEqual(fbResult.accountName, 'Digital Zen Page')
       assert.ok(interceptedUrls.some(u => u.includes('/fb-page-123?') && (u.includes('fields=id%2Cname') || u.includes('fields=id,name'))))
 
-      // 2. Instagram verification uses fields=id,username and does NOT request name or fields=id,name,username
+      // 2. Instagram verification queries linked page node and matches instagram_business_account.id
       interceptedUrls.length = 0
       globalThis.fetch = async (input: RequestInfo | URL) => {
         const urlStr = String(input)
         interceptedUrls.push(urlStr)
 
-        if (urlStr.includes('/ig-user-456?')) {
-          return new Response(JSON.stringify({ id: 'ig-user-456', username: 'digital_zen_58' }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          })
+        if (urlStr.includes('/fb-page-123?')) {
+          return new Response(
+            JSON.stringify({
+              id: 'fb-page-123',
+              instagram_business_account: {
+                id: 'ig-user-456',
+                username: 'digital_zen_58',
+              },
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
         }
         return new Response(JSON.stringify({ error: { message: 'Not found' } }), { status: 404 })
       }
 
-      const igResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM')
+      const igResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
       assert.strictEqual(igResult.isValid, true)
       assert.strictEqual(igResult.accountName, '@digital_zen_58')
-      assert.ok(interceptedUrls.some(u => u.includes('/ig-user-456?') && (u.includes('fields=id%2Cusername') || u.includes('fields=id,username'))))
-      assert.ok(!interceptedUrls.some(u => u.includes('id,name,username') || u.includes('id%2Cname%2Cusername')))
+      assert.ok(interceptedUrls.some(u => u.includes('/fb-page-123?') && (u.includes('instagram_business_account') || u.includes('instagram_business_account%7Bid%2Cusername%7D'))))
+      assert.ok(!interceptedUrls.some(u => u.includes('/ig-user-456?')), 'Must NEVER query /{ig_user_id} directly with Page Access Token')
 
-      // 3. ID mismatch returns controlled failure (isValid: false, isAuthError: false)
+      // 3. Instagram: instagram_business_account absent => controlled business failure (not auth failure)
       globalThis.fetch = async () => {
-        return new Response(JSON.stringify({ id: 'different-id-999', username: 'imposter' }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
+        return new Response(
+          JSON.stringify({
+            id: 'fb-page-123',
+            // no instagram_business_account
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
       }
-      const mismatchResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
-      assert.strictEqual(mismatchResult.isValid, false)
-      assert.strictEqual(mismatchResult.isAuthError, false)
-      assert.strictEqual(mismatchResult.error, 'Impossible de vérifier la connexion pour le moment.')
+      const igMissingResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
+      assert.strictEqual(igMissingResult.isValid, false)
+      assert.strictEqual(igMissingResult.isAuthError, false)
+      assert.strictEqual(igMissingResult.error, "Le compte Instagram n'est plus relié à cette Page Facebook.")
 
-      // 4. True OAuth revocation / expiration (code 190) returns isAuthError: true
+      // 4. Instagram: instagram_business_account.id different from expected => controlled business failure
+      globalThis.fetch = async () => {
+        return new Response(
+          JSON.stringify({
+            id: 'fb-page-123',
+            instagram_business_account: {
+              id: 'different-ig-id-999',
+              username: 'other_user',
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      const igDifferentResult = await adapter.verifyConnection('valid-ig-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
+      assert.strictEqual(igDifferentResult.isValid, false)
+      assert.strictEqual(igDifferentResult.isAuthError, false)
+      assert.strictEqual(igDifferentResult.error, "Le compte Instagram n'est plus relié à cette Page Facebook.")
+
+      // 5. True OAuth revocation / expiration (code 190) returns isAuthError: true
       globalThis.fetch = async () => {
         return new Response(
           JSON.stringify({
@@ -435,28 +465,10 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      const oauthRevokedResult = await adapter.verifyConnection('expired-token', 'ig-user-456', 'INSTAGRAM')
+      const oauthRevokedResult = await adapter.verifyConnection('expired-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
       assert.strictEqual(oauthRevokedResult.isValid, false)
       assert.strictEqual(oauthRevokedResult.isAuthError, true)
       assert.strictEqual(oauthRevokedResult.error, 'Autorisation à renouveler.')
-
-      // 5. HTTP 400 non-auth (code 100 Bad parameter / field) => isAuthError: false (NO automatic REAUTH_REQUIRED)
-      globalThis.fetch = async () => {
-        return new Response(
-          JSON.stringify({
-            error: {
-              message: '(#100) Tried accessing nonexisting field (name) on node type (IGUser)',
-              type: 'OAuthException',
-              code: 100,
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      const paramErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
-      assert.strictEqual(paramErrorResult.isValid, false)
-      assert.strictEqual(paramErrorResult.isAuthError, false)
-      assert.strictEqual(paramErrorResult.error, 'Impossible de vérifier la connexion pour le moment.')
 
       // 6. HTTP 5xx Server Error => isAuthError: false (NO automatic REAUTH_REQUIRED)
       globalThis.fetch = async () => {
@@ -471,7 +483,7 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      const serverErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
+      const serverErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
       assert.strictEqual(serverErrorResult.isValid, false)
       assert.strictEqual(serverErrorResult.isAuthError, false)
       assert.strictEqual(serverErrorResult.error, 'Impossible de vérifier la connexion pour le moment.')
@@ -480,18 +492,19 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       globalThis.fetch = async () => {
         throw new Error('fetch failed: connect ECONNREFUSED')
       }
-      const networkErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM')
+      const networkErrorResult = await adapter.verifyConnection('valid-token', 'ig-user-456', 'INSTAGRAM', 'fb-page-123')
       assert.strictEqual(networkErrorResult.isValid, false)
       assert.strictEqual(networkErrorResult.isAuthError, false)
       assert.strictEqual(networkErrorResult.error, 'Impossible de vérifier la connexion pour le moment.')
 
       // 8. Static source code verification: verifyConnection uses platform and never fields=id,name,username
       const adapterSource = fs.readFileSync(path.join(rootDir, 'src/services/social/adapters/meta-adapter.ts'), 'utf8')
-      assert.ok(adapterSource.includes("platform === 'INSTAGRAM' ? 'id,username' : 'id,name'"))
+      assert.ok(adapterSource.includes("instagram_business_account{id,username}"))
       assert.ok(!adapterSource.includes('fields=id,name,username'))
 
       const socialSource = fs.readFileSync(path.join(rootDir, 'src/services/social/social-accounts.ts'), 'utf8')
       assert.ok(socialSource.includes('account.platform'), 'social-accounts must pass account.platform to verifyConnection')
+      assert.ok(socialSource.includes('parentPageId'), 'social-accounts must resolve parentPageId')
       assert.ok(socialSource.includes('res.isAuthError'), 'social-accounts must check res.isAuthError before transitioning to REAUTH_REQUIRED')
     } finally {
       process.env = originalEnv
