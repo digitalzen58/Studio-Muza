@@ -73,9 +73,16 @@ export function NetworksView({
   const [errorMessage, setErrorMessage] = useState<string | null>(initialError || null)
   const [successMessage, setSuccessMessage] = useState<string | null>(initialSuccess || null)
 
-  // Find accounts by platform
-  const instagramAccount = accounts.find((a) => a.platform === 'INSTAGRAM')
-  const facebookAccount = accounts.find((a) => a.platform === 'FACEBOOK')
+  // Find accounts by platform - prioritize CONNECTED accounts, then active/reauth accounts
+  const instagramAccount =
+    accounts.find((a) => a.platform?.toUpperCase() === 'INSTAGRAM' && a.status === 'CONNECTED') ||
+    accounts.find((a) => a.platform?.toUpperCase() === 'INSTAGRAM' && a.status === 'REAUTH_REQUIRED') ||
+    accounts.find((a) => a.platform?.toUpperCase() === 'INSTAGRAM')
+
+  const facebookAccount =
+    accounts.find((a) => a.platform?.toUpperCase() === 'FACEBOOK' && a.status === 'CONNECTED') ||
+    accounts.find((a) => a.platform?.toUpperCase() === 'FACEBOOK' && a.status === 'REAUTH_REQUIRED') ||
+    accounts.find((a) => a.platform?.toUpperCase() === 'FACEBOOK')
 
   const isInstagramConnected = instagramAccount?.status === 'CONNECTED'
   const isInstagramReauth =

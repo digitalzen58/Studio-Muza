@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ensureInitialWorkspace } from '@/services/workspace'
 import { getActiveWorkspaceBusiness } from '@/services/business'
 import { metaSocialAdapter } from '@/services/social/adapters/meta-adapter'
-import { saveSocialAccount } from '@/services/social/social-accounts'
+import { saveSocialAccount, getBusinessSocialAccounts } from '@/services/social/social-accounts'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,11 +86,28 @@ export async function GET(request: NextRequest) {
         status: 'CONNECTED',
       })
 
-      if (saveRes.error) {
+      if (saveRes.error || !saveRes.accountId) {
         console.error('Error saving social account from callback:', saveRes.error)
         redirectTarget.searchParams.set('error', 'Erreur lors de l’enregistrement du compte.')
         return NextResponse.redirect(redirectTarget)
       }
+    }
+
+    // 6. Post-save verification: Re-read accounts for the active business to guarantee persistence
+    const { accounts: savedAccounts, error: readError } = await getBusinessSocialAccounts(business.id)
+    const hasConnectedTarget = savedAccounts.some(
+      (a) =>
+        a.status === 'CONNECTED' &&
+        exchangeResult.destinations.some((d) => d.platform.toUpperCase() === a.platform.toUpperCase())
+    )
+
+    if (readError || !hasConnectedTarget) {
+      console.error('Verification failed after saving social account:', readError)
+      redirectTarget.searchParams.set(
+        'error',
+        'La connexion n’a pas pu être confirmée pour votre activité.'
+      )
+      return NextResponse.redirect(redirectTarget)
     }
 
     redirectTarget.searchParams.set('success', 'true')

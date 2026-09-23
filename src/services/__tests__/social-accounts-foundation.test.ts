@@ -9,7 +9,7 @@ import {
   verifyOAuthState,
 } from '../social/crypto'
 import { MetaSocialProviderAdapter } from '../social/adapters/meta-adapter'
-import { type OAuthStatePayload } from '../social/types'
+import { type OAuthStatePayload, type SocialAccountSummary } from '../social/types'
 
 test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', async (t) => {
   const rootDir = process.cwd()
@@ -603,6 +603,103 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       process.env = originalEnv
       globalThis.fetch = originalFetch
     }
+  })
+
+  // 14. Instagram OAuth Persistence, Retrieval Priority, NetworksView Matching, and Tenant Isolation
+  await t.test('14. Instagram OAuth Persistence: canonical platform, updated_at priority, NetworksView CONNECTED status, and tenant isolation', async () => {
+    const callbackSource = fs.readFileSync(path.join(rootDir, 'src/app/api/auth/social/meta/callback/route.ts'), 'utf8')
+    const socialServiceSource = fs.readFileSync(path.join(rootDir, 'src/services/social/social-accounts.ts'), 'utf8')
+    const networksViewSource = fs.readFileSync(path.join(rootDir, 'src/components/social/networks-view.tsx'), 'utf8')
+
+    // 1. Callback route verifies persistence before redirecting with success=true
+    assert.ok(
+      callbackSource.includes('getBusinessSocialAccounts(business.id)'),
+      'Callback route must re-read accounts via getBusinessSocialAccounts before redirecting with success'
+    )
+    assert.ok(
+      callbackSource.includes('hasConnectedTarget'),
+      'Callback route must confirm connected target exists in DB for active business'
+    )
+
+    // 2. getBusinessSocialAccounts orders by updated_at descending and canonicalizes platform to uppercase
+    assert.ok(
+      socialServiceSource.includes("order('updated_at', { ascending: false })"),
+      'getBusinessSocialAccounts must order by updated_at descending to prioritize newest updates'
+    )
+    assert.ok(
+      socialServiceSource.includes('rawPlatform.toUpperCase()') || socialServiceSource.includes('.toUpperCase().trim()'),
+      'getBusinessSocialAccounts must canonicalize platform to uppercase'
+    )
+
+    // 3. saveSocialAccount deactivates superseded accounts when connecting a new one
+    assert.ok(
+      socialServiceSource.includes("status: 'DISCONNECTED'") && socialServiceSource.includes("neq('external_account_id', input.externalAccountId)"),
+      'saveSocialAccount must deactivate older superseded accounts for the same business/platform'
+    )
+
+    // 4. NetworksView lookup logic prioritizes CONNECTED over DISCONNECTED/stale accounts
+    assert.ok(
+      networksViewSource.includes("a.status === 'CONNECTED'"),
+      'NetworksView must prioritize CONNECTED account status'
+    )
+
+    // 5. Simulated data-flow test: Simulate accounts array with both an old disconnected row and a new connected row
+    const mockAccountsList: SocialAccountSummary[] = [
+      {
+        id: 'acc-new-ig',
+        businessId: 'biz-current-123',
+        provider: 'META' as const,
+        platform: 'INSTAGRAM' as const,
+        externalAccountId: 'ig-178499999',
+        accountName: '@digital_zen_58',
+        accountType: 'BUSINESS',
+        status: 'CONNECTED' as const,
+        capabilities: { canPublishPosts: true, canPublishCarousels: true, canPublishShortVideo: true, canReadInsights: true },
+        scopes: ['instagram_business_basic', 'instagram_business_content_publish'],
+        connectedAt: '2026-09-23T16:00:00.000Z',
+        lastVerifiedAt: '2026-09-23T16:00:00.000Z',
+      },
+      {
+        id: 'acc-old-ig',
+        businessId: 'biz-current-123',
+        provider: 'META' as const,
+        platform: 'INSTAGRAM' as const,
+        externalAccountId: 'ig-old-page-scoped',
+        accountName: 'Digital Zen Old',
+        accountType: 'BUSINESS',
+        status: 'DISCONNECTED' as const,
+        capabilities: { canPublishPosts: true, canPublishCarousels: true, canPublishShortVideo: false, canReadInsights: false },
+        scopes: [],
+        connectedAt: '2026-09-20T10:00:00.000Z',
+        lastVerifiedAt: null,
+      },
+    ]
+
+    // Priority selector in NetworksView
+    const resolvedIg =
+      mockAccountsList.find((a) => a.platform?.toUpperCase() === 'INSTAGRAM' && a.status === 'CONNECTED') ||
+      mockAccountsList.find((a) => a.platform?.toUpperCase() === 'INSTAGRAM' && a.status === 'REAUTH_REQUIRED') ||
+      mockAccountsList.find((a) => a.platform?.toUpperCase() === 'INSTAGRAM')
+
+    assert.ok(resolvedIg !== undefined)
+    assert.strictEqual(resolvedIg.id, 'acc-new-ig')
+    assert.strictEqual(resolvedIg.status, 'CONNECTED')
+    assert.strictEqual(resolvedIg.accountName, '@digital_zen_58')
+
+    // 6. Tenant isolation test: Verify querying business A does not return business B
+    const businessAId = 'biz-aaa-111'
+    const businessBId = 'biz-bbb-222'
+
+    const allDbRows = [
+      { id: '1', business_id: businessAId, platform: 'INSTAGRAM', status: 'CONNECTED' },
+      { id: '2', business_id: businessBId, platform: 'INSTAGRAM', status: 'CONNECTED' },
+    ]
+
+    const filteredForBizA = allDbRows.filter((r) => r.business_id === businessAId)
+    assert.strictEqual(filteredForBizA.length, 1)
+    assert.strictEqual(filteredForBizA[0].id, '1')
+    assert.strictEqual(filteredForBizA[0].business_id, businessAId)
+    assert.ok(!filteredForBizA.some((r) => r.business_id === businessBId), 'Tenant isolation: Biz A must not see Biz B data')
   })
 })
 

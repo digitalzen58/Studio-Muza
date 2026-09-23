@@ -30,6 +30,7 @@ export function getProviderConfigStatus(provider: SocialProvider): ProviderAuthC
 /**
  * Retrieves all social accounts connected for a given business.
  * Plaintext tokens are NEVER included in the returned summaries.
+ * Ordered by most recent activity (updated_at desc) so active accounts take precedence.
  */
 export async function getBusinessSocialAccounts(
   businessId: string
@@ -50,10 +51,11 @@ export async function getBusinessSocialAccounts(
         capabilities,
         scopes,
         created_at,
+        updated_at,
         last_verified_at
       `)
       .eq('business_id', businessId)
-      .order('created_at', { ascending: true })
+      .order('updated_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching social accounts:', error.message)
@@ -61,7 +63,13 @@ export async function getBusinessSocialAccounts(
     }
 
     const accounts: SocialAccountSummary[] = (data || []).map((row) => {
-      const platform = (row.platform as SocialPlatform) || 'INSTAGRAM'
+      const rawPlatform = typeof row.platform === 'string' ? row.platform.toUpperCase().trim() : 'INSTAGRAM'
+      const platform: SocialPlatform = (
+        ['INSTAGRAM', 'FACEBOOK', 'LINKEDIN', 'TIKTOK', 'YOUTUBE'].includes(rawPlatform)
+          ? rawPlatform
+          : 'INSTAGRAM'
+      ) as SocialPlatform
+
       const provider: SocialProvider =
         platform === 'INSTAGRAM' || platform === 'FACEBOOK'
           ? 'META'
@@ -70,6 +78,13 @@ export async function getBusinessSocialAccounts(
             : platform === 'TIKTOK'
               ? 'TIKTOK'
               : 'GOOGLE'
+
+      const rawStatus = typeof row.status === 'string' ? row.status.toUpperCase().trim() : 'CONNECTED'
+      const status: SocialConnectionStatus = (
+        ['CONNECTED', 'REAUTH_REQUIRED', 'DISCONNECTED', 'ERROR'].includes(rawStatus)
+          ? rawStatus
+          : 'CONNECTED'
+      ) as SocialConnectionStatus
 
       const rawCaps = (row.capabilities as Record<string, unknown>) || {}
       const capabilities: SocialCapabilities = {
@@ -89,7 +104,7 @@ export async function getBusinessSocialAccounts(
         externalAccountId: row.external_account_id,
         accountName: row.account_name,
         accountType: row.account_type,
-        status: (row.status as SocialConnectionStatus) || 'CONNECTED',
+        status,
         capabilities,
         scopes,
         connectedAt: row.created_at,
@@ -113,13 +128,28 @@ export async function saveSocialAccount(
 ): Promise<{ accountId: string | null; error: string | null }> {
   try {
     const supabase = await createClient()
+    const canonicalPlatform = (input.platform?.toUpperCase().trim() || 'INSTAGRAM') as SocialPlatform
+    const targetStatus = input.status || 'CONNECTED'
+
+    // If connecting a new account for a platform, disconnect any superseded accounts for this business
+    if (targetStatus === 'CONNECTED') {
+      await supabase
+        .from('social_accounts')
+        .update({
+          status: 'DISCONNECTED',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('business_id', input.businessId)
+        .eq('platform', canonicalPlatform)
+        .neq('external_account_id', input.externalAccountId)
+    }
 
     const { data, error } = await supabase
       .from('social_accounts')
       .upsert(
         {
           business_id: input.businessId,
-          platform: input.platform,
+          platform: canonicalPlatform,
           external_account_id: input.externalAccountId,
           account_name: input.accountName || null,
           account_type: input.accountType || null,
@@ -128,7 +158,7 @@ export async function saveSocialAccount(
           token_expires_at: input.tokenExpiresAt || null,
           scopes: input.scopes || [],
           capabilities: input.capabilities || {},
-          status: input.status || 'CONNECTED',
+          status: targetStatus,
           last_verified_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
