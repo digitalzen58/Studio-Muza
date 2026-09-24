@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Calendar, Send } from 'lucide-react'
 import { VisualCanvas } from './visual-canvas'
 import type { VisualComposition } from '@/services/visual-composition/types'
 import type { BrandMediaAsset } from '@/services/media'
@@ -11,6 +11,7 @@ interface ContentPreviewModalProps {
   isOpen: boolean
   onClose: () => void
   onProceedToSchedule: () => void
+  onProceedToPublish?: () => void
   format: 'POST' | 'CAROUSEL'
   workingTitle: string
   hook?: string | null
@@ -31,6 +32,7 @@ export function ContentPreviewModal({
   isOpen,
   onClose,
   onProceedToSchedule,
+  onProceedToPublish,
   format,
   workingTitle,
   hook,
@@ -309,26 +311,42 @@ export function ContentPreviewModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-2 border-t border-cream-border/60 flex items-center justify-between gap-2">
+        <div className="pt-2 border-t border-cream-border/60 flex items-center justify-between gap-2 flex-wrap">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-ink-muted hover:text-ink transition-colors"
+            className="px-3 py-2 text-xs font-medium text-ink-muted hover:text-ink transition-colors"
           >
             Modifier
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              onClose()
-              onProceedToSchedule()
-            }}
-            className="px-5 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:bg-primary-hover transition-colors shadow-xs inline-flex items-center gap-1.5"
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>{isScheduled ? 'Changer la date' : 'Planifier'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                onProceedToSchedule()
+              }}
+              className="px-3.5 py-2 text-xs font-medium rounded-xl border border-cream-border text-ink hover:bg-cream-subtle transition-colors inline-flex items-center gap-1.5"
+            >
+              <Calendar className="w-3.5 h-3.5 text-ink-muted" />
+              <span>{isScheduled ? 'Changer la date' : 'Planifier'}</span>
+            </button>
+
+            {onProceedToPublish && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  onProceedToPublish()
+                }}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:bg-primary-hover transition-colors shadow-xs inline-flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Publier</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

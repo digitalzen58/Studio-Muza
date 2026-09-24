@@ -410,9 +410,9 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       })
       assert.ok(fbStandaloneAuth !== null, 'Facebook must work when only META credentials are present')
 
-      // Ensure no publishing calls exist in the adapter
+      // Verify publishing capability in adapter
       const adapterCode = fs.readFileSync(path.join(rootDir, 'src/services/social/adapters/meta-adapter.ts'), 'utf8')
-      assert.ok(!adapterCode.includes('media_publish'), 'Adapter must NOT contain media publish endpoints in Step 164K')
+      assert.ok(adapterCode.includes('publishInstagramPhotoPost'), 'Adapter contains publishInstagramPhotoPost')
     } finally {
       process.env = originalEnv
       globalThis.fetch = originalFetch

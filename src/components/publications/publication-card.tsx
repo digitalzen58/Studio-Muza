@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Eye, Edit2, Calendar, Clock, AlertCircle } from 'lucide-react'
+import { Eye, Edit2, Calendar, Clock, AlertCircle, ExternalLink } from 'lucide-react'
 import type { PublicationItem } from '@/services/publication-history/types'
 import { mapFormatLabel, mapPlatformLabel } from '@/services/publication-history/types'
 import { PublicationThumbnail } from './publication-thumbnail'
@@ -105,6 +105,18 @@ export function PublicationCard({ item, onView }: PublicationCardProps) {
             <Eye className="w-3.5 h-3.5 text-ink-muted" />
             <span>Voir</span>
           </button>
+
+          {item.status === 'PUBLISHED' && item.platformPostUrl && (
+            <a
+              href={item.platformPostUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium bg-white border border-cream-border text-ink hover:text-primary hover:border-primary/40 transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-primary" />
+              <span>Voir la publication</span>
+            </a>
+          )}
 
           {item.status === 'SCHEDULED' && (
             <Link

@@ -66,11 +66,20 @@ export async function getBusinessPublicationsHistory(
       Array.isArray(c.content_variants) ? c.content_variants.map((v) => v.id) : []
     )
 
-    const publishJobsMap = new Map<string, Array<{ status: string; published_at?: string | null; last_error_message?: string | null; created_at: string }>>()
+    const publishJobsMap = new Map<
+      string,
+      Array<{
+        status: string
+        published_at?: string | null
+        platform_post_url?: string | null
+        last_error_message?: string | null
+        created_at: string
+      }>
+    >()
     if (variantIds.length > 0) {
       const { data: jobsData } = await supabase
         .from('publish_jobs')
-        .select('id, content_variant_id, status, published_at, last_error_message, created_at')
+        .select('id, content_variant_id, status, published_at, platform_post_url, last_error_message, created_at')
         .in('content_variant_id', variantIds)
 
       if (jobsData) {
@@ -195,6 +204,7 @@ export async function getBusinessPublicationsHistory(
         publishedAt,
         failedAt,
         failureReason,
+        platformPostUrl: publishedJob?.platform_post_url || null,
         visualComposition: visualComp,
         slides,
         coverMediaUrl,

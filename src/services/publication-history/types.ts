@@ -48,6 +48,7 @@ export interface PublicationItem {
   publishedAt?: string | null
   failedAt?: string | null
   failureReason?: string | null
+  platformPostUrl?: string | null
   visualComposition?: VisualComposition | null
   slides?: PublicationSlideItem[]
   coverMediaUrl?: string | null

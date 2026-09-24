@@ -10,6 +10,7 @@ import {
   Calendar as CalendarIcon,
   Eye,
   Trash2,
+  Send,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import { StockMediaModal } from './stock-media-modal'
 import { ContentReadinessModal } from './content-readiness-modal'
 import { ScheduleContentModal } from './schedule-content-modal'
 import { ContentPreviewModal } from './content-preview-modal'
+import { PublishContentModal } from './publish-content-modal'
 import { PostEditor } from './post-editor'
 import { CarouselEditor } from './carousel-editor'
 import { requestWritingAssistanceAction } from '@/actions/ai-assistance'
@@ -242,12 +244,13 @@ export function ContentStudio({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
 
-  // Scheduling state
+  // Scheduling & Publishing state
   const [currentStatus, setCurrentStatus] = useState(content.status)
   const [currentScheduledAt, setCurrentScheduledAt] = useState<string | null>(content.scheduled_at || null)
   const [previewModalOpen, setPreviewModalOpen] = useState(false)
   const [readinessModalOpen, setReadinessModalOpen] = useState(false)
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
+  const [publishModalOpen, setPublishModalOpen] = useState(false)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -503,6 +506,40 @@ export function ContentStudio({
     }
   }
 
+  const handlePublishClick = async () => {
+    if (isDirty) {
+      await executeSave()
+    }
+
+    let readiness: ContentReadinessResult
+    if (format === 'CAROUSEL') {
+      readiness = validateCarouselReadiness({
+        workingTitle,
+        hook,
+        slides,
+        caption,
+        cta,
+      })
+    } else {
+      readiness = validatePostReadiness({
+        workingTitle,
+        body: caption,
+        primaryMediaId,
+        visualComposition,
+        cta,
+      })
+    }
+
+    setBlockingIssues(readiness.blockingIssues)
+    setReadinessWarnings(readiness.warnings)
+
+    if (!readiness.ready) {
+      setReadinessModalOpen(true)
+    } else {
+      setPublishModalOpen(true)
+    }
+  }
+
   const handleConfirmSchedule = async (payload: {
     localDate: string
     localTime: string
@@ -609,7 +646,11 @@ export function ContentStudio({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-serif font-bold text-ink">Studio Mūza</h1>
-              {currentStatus === 'SCHEDULED' ? (
+              {currentStatus === 'PUBLISHED' ? (
+                <Badge variant="ivory" className="text-[11px] font-semibold tracking-wide bg-emerald-50 text-emerald-800 border-emerald-200">
+                  Publié ✦
+                </Badge>
+              ) : currentStatus === 'SCHEDULED' ? (
                 <Badge variant="ivory" className="text-[11px] font-semibold tracking-wide bg-emerald-50 text-emerald-800 border-emerald-200">
                   Planifié
                 </Badge>
@@ -703,18 +744,41 @@ export function ContentStudio({
               >
                 Annuler
               </button>
+              <Button
+                type="button"
+                onClick={handlePublishClick}
+                disabled={isPending || isScheduling || isDeleting}
+                size="sm"
+                className="gap-1.5 bg-primary hover:bg-primary-hover text-white font-semibold shadow-xs"
+              >
+                <Send className="w-3.5 h-3.5 text-white" />
+                <span>Publier maintenant</span>
+              </Button>
             </>
           ) : (
-            <Button
-              type="button"
-              onClick={handlePlanifierClick}
-              disabled={isPending || isScheduling || isDeleting}
-              size="sm"
-              className="gap-1.5 bg-primary hover:bg-primary-hover text-white font-semibold shadow-xs"
-            >
-              <CalendarIcon className="w-3.5 h-3.5 text-white" />
-              <span>Planifier</span>
-            </Button>
+            <>
+              <Button
+                type="button"
+                onClick={handlePlanifierClick}
+                disabled={isPending || isScheduling || isDeleting}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shadow-2xs font-medium"
+              >
+                <CalendarIcon className="w-3.5 h-3.5 text-ink-muted" />
+                <span>Planifier</span>
+              </Button>
+              <Button
+                type="button"
+                onClick={handlePublishClick}
+                disabled={isPending || isScheduling || isDeleting}
+                size="sm"
+                className="gap-1.5 bg-primary hover:bg-primary-hover text-white font-semibold shadow-xs"
+              >
+                <Send className="w-3.5 h-3.5 text-white" />
+                <span>Publier</span>
+              </Button>
+            </>
           )}
         </div>
       </header>
@@ -889,6 +953,7 @@ export function ContentStudio({
         isOpen={previewModalOpen}
         onClose={() => setPreviewModalOpen(false)}
         onProceedToSchedule={handlePlanifierClick}
+        onProceedToPublish={handlePublishClick}
         format={format}
         workingTitle={workingTitle}
         hook={hook}
@@ -900,6 +965,29 @@ export function ContentStudio({
         slides={slides}
         mediaAssets={mediaAssets}
         isScheduled={currentStatus === 'SCHEDULED'}
+      />
+
+      {/* 11. Publish Content Modal */}
+      <PublishContentModal
+        isOpen={publishModalOpen}
+        onClose={() => setPublishModalOpen(false)}
+        contentId={content.id}
+        format={format}
+        workingTitle={workingTitle || content.topic}
+        hasVisual={
+          format === 'CAROUSEL'
+            ? slides.some((s) => Boolean(s.media_id))
+            : Boolean(
+                primaryMediaId ||
+                  visualComposition?.background?.mediaAssetId ||
+                  visualComposition?.background?.mediaUrl
+              )
+        }
+        onPublishSuccess={() => {
+          setCurrentStatus('PUBLISHED')
+          setSchedulingFeedback('Publication réussie sur vos réseaux sociaux !')
+          setTimeout(() => setSchedulingFeedback(null), 5000)
+        }}
       />
 
       {/* 9. Cancel Schedule Confirmation Dialog */}

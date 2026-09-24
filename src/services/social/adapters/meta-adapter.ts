@@ -448,22 +448,53 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
     isAuthError?: boolean
     accountName?: string
     error?: string
+    grantedPermissions?: string[]
   }> {
     try {
       const token = accessTokenEncrypted // decrypted in service layer
       if (!token) {
-        return { isValid: false, isAuthError: true, error: 'Token manquant.' }
+        return {
+          isValid: false,
+          isAuthError: true,
+          error: 'Jeton d’accès manquant. Veuillez reconnecter votre compte.',
+        }
+      }
+
+      const isMetaAuthErrorCode = (code: number, subcode?: number, type?: string) => {
+        if (code === 1 || code === 2 || code === 100) return false
+        return (
+          code === 190 ||
+          code === 200 ||
+          code === 10 ||
+          [102, 458, 463, 467].includes(code) ||
+          [458, 459, 460, 463, 467, 490, 491, 492].includes(subcode || 0) ||
+          (type === 'OAuthException' && (!code || code === 190))
+        )
       }
 
       // ----------------------------------------------------------------------
-      // VERIFY INSTAGRAM: Direct query to graph.instagram.com /me
+      // VERIFY INSTAGRAM: Direct query to graph.instagram.com
       // ----------------------------------------------------------------------
       if (platform === 'INSTAGRAM') {
-        const verifyUrl = `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,username,account_type&access_token=${encodeURIComponent(token)}`
-        const res = await fetch(verifyUrl)
+        let meData: { id?: string | number; user_id?: string | number; username?: string; account_type?: string } | null = null
+        let isAuthError = false
 
-        if (!res.ok) {
-          let isAuthError = false
+        // Attempt 1: Standard id, username, account_type
+        const verifyUrl = `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,username,account_type&access_token=${encodeURIComponent(token)}`
+        let res = await fetch(verifyUrl)
+
+        if (!res.ok && res.status === 400) {
+          // Attempt 2: Minimal fallback id, username (in case account_type is rejected on node)
+          const fallbackUrl = `https://graph.instagram.com/${this.graphApiVersion}/me?fields=id,username&access_token=${encodeURIComponent(token)}`
+          const fallbackRes = await fetch(fallbackUrl)
+          if (fallbackRes.ok) {
+            res = fallbackRes
+          }
+        }
+
+        if (res.ok) {
+          meData = await res.json().catch(() => null)
+        } else {
           try {
             const errData = await res.json()
             const errObj = errData?.error
@@ -471,24 +502,22 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
               const code = Number(errObj.code)
               const subcode = Number(errObj.error_subcode)
               const type = String(errObj.type || '')
-
-              if (
-                code === 190 ||
-                [102, 458, 463, 467].includes(code) ||
-                [458, 459, 460, 463, 467, 490, 491, 492].includes(subcode) ||
-                (type === 'OAuthException' && code !== 100 && code !== 1 && code !== 2 && (!code || code === 190))
-              ) {
+              if (isMetaAuthErrorCode(code, subcode, type) && code !== 100) {
                 isAuthError = true
               }
             }
           } catch {
-            if (res.status === 401) {
+            if (res.status === 401 || res.status === 403) {
               isAuthError = true
             }
           }
 
           if (isAuthError) {
-            return { isValid: false, isAuthError: true, error: 'Autorisation à renouveler.' }
+            return {
+              isValid: false,
+              isAuthError: true,
+              error: 'Autorisation à renouveler.',
+            }
           }
 
           return {
@@ -498,8 +527,13 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
           }
         }
 
-        const data = await res.json()
-        if (!data || typeof data !== 'object' || (String(data.id) !== externalAccountId && String(data.user_id) !== externalAccountId)) {
+        if (
+          !meData ||
+          (!meData.id && !meData.user_id) ||
+          (externalAccountId &&
+            String(meData.id) !== externalAccountId &&
+            String(meData.user_id) !== externalAccountId)
+        ) {
           return {
             isValid: false,
             isAuthError: false,
@@ -507,9 +541,10 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
           }
         }
 
-        const accountName = data.username
-          ? (data.username.startsWith('@') ? data.username : `@${data.username}`)
+        const accountName = meData.username
+          ? (meData.username.startsWith('@') ? meData.username : `@${meData.username}`)
           : 'Instagram'
+
         return {
           isValid: true,
           isAuthError: false,
@@ -518,13 +553,27 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       }
 
       // ----------------------------------------------------------------------
-      // VERIFY FACEBOOK: Direct query to graph.facebook.com /{page_id}
+      // VERIFY FACEBOOK: Direct query to graph.facebook.com
       // ----------------------------------------------------------------------
-      const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=id,name&access_token=${encodeURIComponent(token)}`
-      const res = await fetch(verifyUrl)
+      let pageData: { id?: string | number; name?: string } | null = null
+      let isAuthError = false
 
+      // Attempt 1: Query /{page_id}?fields=id,name
+      const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=id,name&access_token=${encodeURIComponent(token)}`
+      let res = await fetch(verifyUrl)
+
+      // Attempt 2: Fallback to /me?fields=id,name for Page Access Token
       if (!res.ok) {
-        let isAuthError = false
+        const meUrl = `https://graph.facebook.com/${this.graphApiVersion}/me?fields=id,name&access_token=${encodeURIComponent(token)}`
+        const meRes = await fetch(meUrl)
+        if (meRes.ok) {
+          res = meRes
+        }
+      }
+
+      if (res.ok) {
+        pageData = await res.json().catch(() => null)
+      } else {
         try {
           const errData = await res.json()
           const errObj = errData?.error
@@ -532,24 +581,22 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
             const code = Number(errObj.code)
             const subcode = Number(errObj.error_subcode)
             const type = String(errObj.type || '')
-
-            if (
-              code === 190 ||
-              [102, 458, 463, 467].includes(code) ||
-              [458, 459, 460, 463, 467, 490, 491, 492].includes(subcode) ||
-              (type === 'OAuthException' && code !== 100 && code !== 1 && code !== 2 && (!code || code === 190))
-            ) {
+            if (isMetaAuthErrorCode(code, subcode, type) && code !== 100) {
               isAuthError = true
             }
           }
         } catch {
-          if (res.status === 401) {
+          if (res.status === 401 || res.status === 403) {
             isAuthError = true
           }
         }
 
         if (isAuthError) {
-          return { isValid: false, isAuthError: true, error: 'Autorisation à renouveler.' }
+          return {
+            isValid: false,
+            isAuthError: true,
+            error: 'Autorisation à renouveler.',
+          }
         }
 
         return {
@@ -559,8 +606,11 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         }
       }
 
-      const data = await res.json()
-      if (!data || typeof data !== 'object' || String(data.id) !== externalAccountId) {
+      if (
+        !pageData ||
+        !pageData.id ||
+        (externalAccountId && String(pageData.id) !== externalAccountId)
+      ) {
         return {
           isValid: false,
           isAuthError: false,
@@ -571,13 +621,320 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       return {
         isValid: true,
         isAuthError: false,
-        accountName: data.name,
+        accountName: pageData.name || 'Facebook',
       }
     } catch {
       return {
         isValid: false,
         isAuthError: false,
         error: 'Impossible de vérifier la connexion pour le moment.',
+      }
+    }
+  }
+
+  /**
+   * Helper to sanitize error messages so no access tokens or internal secrets are leaked.
+   */
+  private sanitizeErrorMessage(message: string): string {
+    return message
+      .replace(/access_token=[a-zA-Z0-9_\-]+/gi, 'access_token=[REDACTED]')
+      .replace(/EA[A-Za-z0-9]+/g, '[REDACTED_TOKEN]')
+  }
+
+  /**
+   * Publishes a photo or text post to a Facebook Page.
+   * Endpoints:
+   * - Photo: POST https://graph.facebook.com/v21.0/{page_id}/photos
+   * - Text-only: POST https://graph.facebook.com/v21.0/{page_id}/feed
+   */
+  async publishFacebookPost(params: {
+    accessToken: string
+    pageId: string
+    message?: string | null
+    imageUrl?: string | null
+  }): Promise<{
+    success: boolean
+    platformPostId?: string
+    platformPostUrl?: string
+    errorCode?: string
+    errorMessage?: string
+  }> {
+    try {
+      if (!params.accessToken) {
+        return {
+          success: false,
+          errorCode: 'MISSING_ACCESS_TOKEN',
+          errorMessage: 'Jeton d’accès manquant pour la page Facebook.',
+        }
+      }
+      if (!params.pageId) {
+        return {
+          success: false,
+          errorCode: 'MISSING_PAGE_ID',
+          errorMessage: 'Identifiant de page Facebook manquant.',
+        }
+      }
+
+      // Case 1: Photo post
+      if (params.imageUrl) {
+        const photoUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(params.pageId)}/photos`
+        const formBody = new URLSearchParams()
+        formBody.set('url', params.imageUrl)
+        if (params.message) {
+          formBody.set('caption', params.message)
+        }
+        formBody.set('access_token', params.accessToken)
+
+        const res = await fetch(photoUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formBody.toString(),
+        })
+
+        const resData = await res.json().catch(() => ({}))
+
+        if (!res.ok) {
+          const rawErr = resData?.error?.message || 'Erreur lors de la publication photo sur Facebook.'
+          const code = String(resData?.error?.code || res.status)
+          return {
+            success: false,
+            errorCode: code,
+            errorMessage: this.sanitizeErrorMessage(rawErr),
+          }
+        }
+
+        const platformPostId = String(resData.post_id || resData.id || '')
+        let platformPostUrl: string | undefined = undefined
+
+        if (platformPostId) {
+          try {
+            const permalinkUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(platformPostId)}?fields=permalink_url&access_token=${encodeURIComponent(params.accessToken)}`
+            const permalinkRes = await fetch(permalinkUrl)
+            if (permalinkRes.ok) {
+              const permalinkData = await permalinkRes.json().catch(() => ({}))
+              if (permalinkData?.permalink_url && typeof permalinkData.permalink_url === 'string') {
+                platformPostUrl = permalinkData.permalink_url
+              }
+            }
+          } catch {
+            // Non-blocking: platformPostUrl will remain undefined if no reliable URL is returned
+          }
+        }
+
+        return {
+          success: true,
+          platformPostId,
+          platformPostUrl,
+        }
+      }
+
+      // Case 2: Text-only post
+      const feedUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(params.pageId)}/feed`
+      const formBody = new URLSearchParams()
+      formBody.set('message', params.message || '')
+      formBody.set('access_token', params.accessToken)
+
+      const res = await fetch(feedUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formBody.toString(),
+      })
+
+      const resData = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        const rawErr = resData?.error?.message || 'Erreur lors de la publication du message sur Facebook.'
+        const code = String(resData?.error?.code || res.status)
+        return {
+          success: false,
+          errorCode: code,
+          errorMessage: this.sanitizeErrorMessage(rawErr),
+        }
+      }
+
+      const platformPostId = String(resData.id || '')
+      let platformPostUrl: string | undefined = undefined
+
+      if (platformPostId) {
+        try {
+          const permalinkUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(platformPostId)}?fields=permalink_url&access_token=${encodeURIComponent(params.accessToken)}`
+          const permalinkRes = await fetch(permalinkUrl)
+          if (permalinkRes.ok) {
+            const permalinkData = await permalinkRes.json().catch(() => ({}))
+            if (permalinkData?.permalink_url && typeof permalinkData.permalink_url === 'string') {
+              platformPostUrl = permalinkData.permalink_url
+            }
+          }
+        } catch {
+          // Non-blocking
+        }
+      }
+
+      return {
+        success: true,
+        platformPostId,
+        platformPostUrl,
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inattendue Facebook'
+      return {
+        success: false,
+        errorCode: 'UNEXPECTED_ERROR',
+        errorMessage: this.sanitizeErrorMessage(msg),
+      }
+    }
+  }
+
+  /**
+   * Publishes a photo post to an Instagram Professional account via the official Content Publishing API (Instagram Login).
+   * Host: graph.instagram.com
+   * Flux:
+   * 1. Create Media Container: POST graph.instagram.com/{version}/{ig_user_id}/media (image_url, caption)
+   * 2. Status verification if needed: GET graph.instagram.com/{version}/{container_id}?fields=status_code
+   * 3. Publish Container: POST graph.instagram.com/{version}/{ig_user_id}/media_publish (creation_id)
+   * 4. Best-effort permalink retrieval: GET graph.instagram.com/{version}/{media_id}?fields=permalink
+   */
+  async publishInstagramPhotoPost(params: {
+    accessToken: string
+    instagramAccountId: string
+    imageUrl: string
+    caption?: string | null
+  }): Promise<{
+    success: boolean
+    platformPostId?: string
+    platformPostUrl?: string
+    errorCode?: string
+    errorMessage?: string
+  }> {
+    try {
+      if (!params.accessToken) {
+        return {
+          success: false,
+          errorCode: 'MISSING_ACCESS_TOKEN',
+          errorMessage: 'Jeton d’accès manquant pour le compte Instagram.',
+        }
+      }
+      if (!params.instagramAccountId) {
+        return {
+          success: false,
+          errorCode: 'MISSING_ACCOUNT_ID',
+          errorMessage: 'Identifiant de compte Instagram manquant.',
+        }
+      }
+      if (!params.imageUrl) {
+        return {
+          success: false,
+          errorCode: 'MISSING_IMAGE_URL',
+          errorMessage: 'Une image est obligatoire pour publier sur Instagram.',
+        }
+      }
+
+      // Step 1: Create Container (Directly on graph.instagram.com for Instagram Login)
+      const containerUrl = `https://graph.instagram.com/${this.graphApiVersion}/${encodeURIComponent(params.instagramAccountId)}/media`
+      const containerForm = new URLSearchParams()
+      containerForm.set('image_url', params.imageUrl)
+      if (params.caption) {
+        containerForm.set('caption', params.caption)
+      }
+      containerForm.set('access_token', params.accessToken)
+
+      const containerRes = await fetch(containerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: containerForm.toString(),
+      })
+
+      const containerData = await containerRes.json().catch(() => ({}))
+
+      if (!containerRes.ok || !containerData.id) {
+        const rawErr = containerData?.error?.message || 'Erreur lors de la préparation du média Instagram.'
+        const code = String(containerData?.error?.code || containerRes.status)
+        return {
+          success: false,
+          errorCode: code,
+          errorMessage: this.sanitizeErrorMessage(rawErr),
+        }
+      }
+
+      const containerId = String(containerData.id)
+
+      // Step 2: Check status if container is in progress (up to 3 retries with 1s pause)
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const statusUrl = `https://graph.instagram.com/${this.graphApiVersion}/${encodeURIComponent(containerId)}?fields=status_code,status&access_token=${encodeURIComponent(params.accessToken)}`
+        const statusRes = await fetch(statusUrl)
+        if (statusRes.ok) {
+          const statusData = await statusRes.json().catch(() => ({}))
+          const statusCode = statusData?.status_code
+          if (statusCode === 'FINISHED') {
+            break
+          }
+          if (statusCode === 'ERROR' || statusCode === 'EXPIRED') {
+            return {
+              success: false,
+              errorCode: 'MEDIA_CONTAINER_FAILED',
+              errorMessage: 'Le traitement du média par Instagram a échoué.',
+            }
+          }
+        } else {
+          // If status endpoint isn't supported or returned error, try proceeding to publish directly
+          break
+        }
+        // Brief wait before rechecking
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+
+      // Step 3: Publish Media Container (Directly on graph.instagram.com for Instagram Login)
+      const publishUrl = `https://graph.instagram.com/${this.graphApiVersion}/${encodeURIComponent(params.instagramAccountId)}/media_publish`
+      const publishForm = new URLSearchParams()
+      publishForm.set('creation_id', containerId)
+      publishForm.set('access_token', params.accessToken)
+
+      const publishRes = await fetch(publishUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: publishForm.toString(),
+      })
+
+      const publishData = await publishRes.json().catch(() => ({}))
+
+      if (!publishRes.ok || !publishData.id) {
+        const rawErr = publishData?.error?.message || 'Erreur lors de la publication sur Instagram.'
+        const code = String(publishData?.error?.code || publishRes.status)
+        return {
+          success: false,
+          errorCode: code,
+          errorMessage: this.sanitizeErrorMessage(rawErr),
+        }
+      }
+
+      const mediaId = String(publishData.id)
+
+      // Step 4: Best-effort permalink retrieval
+      let platformPostUrl: string | undefined = undefined
+      try {
+        const permalinkUrl = `https://graph.instagram.com/${this.graphApiVersion}/${encodeURIComponent(mediaId)}?fields=permalink&access_token=${encodeURIComponent(params.accessToken)}`
+        const permalinkRes = await fetch(permalinkUrl)
+        if (permalinkRes.ok) {
+          const permalinkData = await permalinkRes.json().catch(() => ({}))
+          if (permalinkData?.permalink && typeof permalinkData.permalink === 'string') {
+            platformPostUrl = permalinkData.permalink
+          }
+        }
+      } catch {
+        // Non-blocking
+      }
+
+      return {
+        success: true,
+        platformPostId: mediaId,
+        platformPostUrl,
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inattendue Instagram'
+      return {
+        success: false,
+        errorCode: 'UNEXPECTED_ERROR',
+        errorMessage: this.sanitizeErrorMessage(msg),
       }
     }
   }
