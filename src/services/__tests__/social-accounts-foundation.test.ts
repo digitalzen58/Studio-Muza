@@ -800,5 +800,76 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
       globalThis.fetch = originalFetch
     }
   })
+
+  // 16. Facebook Verification Resilience: Code 100 does NOT degrade to REAUTH_REQUIRED, while Code 190 / Token Expiry does
+  await t.test('16. Facebook Verification Resilience: Code 100 preserves status without auth error, while true expiry triggers REAUTH_REQUIRED', async () => {
+    const adapter = new MetaSocialProviderAdapter()
+    const originalFetch = globalThis.fetch
+
+    try {
+      // 1. Meta Code 100 (e.g. pages_read_engagement read-node requirement on /me or /{page_id}) => Inconclusive, NOT isAuthError
+      globalThis.fetch = async () => {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'Unsupported get request. Object with ID does not exist or cannot be loaded due to missing permissions.',
+              type: 'OAuthException',
+              code: 100,
+              error_subcode: 33,
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const inconclusiveRes = await adapter.verifyConnection('valid-page-token', '10987654321', 'FACEBOOK')
+      assert.strictEqual(inconclusiveRes.isValid, false)
+      assert.strictEqual(inconclusiveRes.isAuthError, false, 'Code 100 must NOT be treated as an expired auth error')
+      assert.strictEqual(inconclusiveRes.error, 'Impossible de vérifier la connexion pour le moment.')
+
+      // 2. Genuine Token Expiration / Revocation (Code 190) => isAuthError: true
+      globalThis.fetch = async () => {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'Error validating access token: The session has been invalidated because the user changed their password.',
+              type: 'OAuthException',
+              code: 190,
+              error_subcode: 460,
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const expiredRes = await adapter.verifyConnection('expired-page-token', '10987654321', 'FACEBOOK')
+      assert.strictEqual(expiredRes.isValid, false)
+      assert.strictEqual(expiredRes.isAuthError, true, 'Code 190 / revoked token must be flagged as isAuthError')
+      assert.strictEqual(expiredRes.error, 'Autorisation à renouveler.')
+
+      // 3. Instagram verification remains unaffected (independent query to graph.instagram.com)
+      globalThis.fetch = async (input: RequestInfo | URL) => {
+        const urlStr = String(input)
+        if (urlStr.includes('graph.instagram.com/v21.0/me?')) {
+          return new Response(
+            JSON.stringify({
+              id: 'ig-12345',
+              username: 'digital_zen_58',
+              account_type: 'BUSINESS',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response(JSON.stringify({ error: { message: 'Not found' } }), { status: 404 })
+      }
+
+      const igRes = await adapter.verifyConnection('ig-valid-token', 'ig-12345', 'INSTAGRAM')
+      assert.strictEqual(igRes.isValid, true)
+      assert.strictEqual(igRes.accountName, '@digital_zen_58')
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
 })
+
 

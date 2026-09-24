@@ -572,21 +572,6 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       const meRes = await fetch(meUrl)
       const meData = await meRes.json().catch(() => null)
 
-      console.info('[Facebook Verification] Query /me result:', {
-        endpoint: `GET https://graph.facebook.com/${this.graphApiVersion}/me?fields=id,name`,
-        httpStatus: meRes.status,
-        ok: meRes.ok,
-        resolvedId: meData?.id || null,
-        error: meData?.error
-          ? {
-              type: meData.error.type,
-              code: meData.error.code,
-              error_subcode: meData.error.error_subcode,
-              message: meData.error.message,
-            }
-          : null,
-      })
-
       if (meRes.ok && meData?.id) {
         pageData = meData
       } else {
@@ -596,21 +581,6 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=id,name&access_token=${encodeURIComponent(token)}`
         const res = await fetch(verifyUrl)
         const resData = await res.json().catch(() => null)
-
-        console.info('[Facebook Verification] Fallback /{page_id} result:', {
-          endpoint: `GET https://graph.facebook.com/${this.graphApiVersion}/${externalAccountId}?fields=id,name`,
-          httpStatus: res.status,
-          ok: res.ok,
-          resolvedId: resData?.id || null,
-          error: resData?.error
-            ? {
-                type: resData.error.type,
-                code: resData.error.code,
-                error_subcode: resData.error.error_subcode,
-                message: resData.error.message,
-              }
-            : null,
-        })
 
         if (res.ok && resData?.id) {
           pageData = resData
@@ -637,27 +607,22 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       }
 
       // If both failed to resolve, classify error
+      // Note: Meta code 100 (e.g. read permission / pages_read_engagement check on GET node)
+      // indicates an inconclusive verification check, NOT an expired or revoked token.
       if (lastErrorObj) {
         const code = Number(lastErrorObj.code)
         const subcode = Number(lastErrorObj.error_subcode)
-        const type = String(lastErrorObj.type || '')
         const msg = String(lastErrorObj.message || '')
 
         if (
-          isMetaAuthErrorCode(code, subcode, type) ||
           code === 190 ||
-          code === 200 ||
-          code === 10 ||
-          subcode === 33 ||
-          subcode === 458 ||
-          subcode === 463 ||
-          subcode === 467 ||
-          msg.includes('missing permissions') ||
-          msg.includes('Cannot load') ||
+          [458, 459, 460, 463, 467, 490, 491, 492].includes(subcode) ||
+          [458, 463, 467].includes(code) ||
           msg.includes('Error validating access token') ||
           msg.includes('Session has expired') ||
-          type === 'OAuthException' ||
-          type === 'GraphMethodException'
+          msg.includes('Session is invalid') ||
+          msg.includes('has been invalidated') ||
+          msg.includes('User logged out')
         ) {
           isAuthError = true
         }
