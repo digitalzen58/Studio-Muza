@@ -554,74 +554,101 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
 
       // ----------------------------------------------------------------------
       // VERIFY FACEBOOK: Direct query to graph.facebook.com
+      // Supports Page Access Token (direct node /{page_id} & /me)
+      // and User Access Token (/me/accounts list)
       // ----------------------------------------------------------------------
       let pageData: { id?: string | number; name?: string } | null = null
       let isAuthError = false
+      let lastErrorObj: { code?: number; error_subcode?: number; type?: string; message?: string } | null = null
 
       // Attempt 1: Query /{page_id}?fields=id,name
       const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=id,name&access_token=${encodeURIComponent(token)}`
-      let res = await fetch(verifyUrl)
+      const res1 = await fetch(verifyUrl)
+      const res1Data = await res1.json().catch(() => null)
 
-      // Attempt 2: Fallback to /me?fields=id,name for Page Access Token
-      if (!res.ok) {
-        const meUrl = `https://graph.facebook.com/${this.graphApiVersion}/me?fields=id,name&access_token=${encodeURIComponent(token)}`
-        const meRes = await fetch(meUrl)
-        if (meRes.ok) {
-          res = meRes
-        }
-      }
-
-      if (res.ok) {
-        pageData = await res.json().catch(() => null)
+      if (res1.ok && res1Data && (String(res1Data.id) === String(externalAccountId) || !externalAccountId)) {
+        pageData = res1Data
       } else {
-        try {
-          const errData = await res.json()
-          const errObj = errData?.error
-          if (errObj) {
-            const code = Number(errObj.code)
-            const subcode = Number(errObj.error_subcode)
-            const type = String(errObj.type || '')
-            if (isMetaAuthErrorCode(code, subcode, type) && code !== 100) {
-              isAuthError = true
+        if (res1Data?.error) lastErrorObj = res1Data.error
+
+        // Attempt 2: Query /me?fields=id,name (standard for Page Access Tokens)
+        const meUrl = `https://graph.facebook.com/${this.graphApiVersion}/me?fields=id,name&access_token=${encodeURIComponent(token)}`
+        const res2 = await fetch(meUrl)
+        const res2Data = await res2.json().catch(() => null)
+
+        if (res2.ok && res2Data && (String(res2Data.id) === String(externalAccountId) || !externalAccountId)) {
+          pageData = res2Data
+        } else {
+          if (res2Data?.error) lastErrorObj = res2Data.error
+
+          // Attempt 3: Query /me/accounts (in case token is User Access Token managing the Page)
+          const accountsUrl = `https://graph.facebook.com/${this.graphApiVersion}/me/accounts?fields=id,name&access_token=${encodeURIComponent(token)}`
+          const res3 = await fetch(accountsUrl)
+          const res3Data = await res3.json().catch(() => null)
+
+          if (res3.ok && Array.isArray(res3Data?.data)) {
+            const matchingPage = res3Data.data.find(
+              (p: { id: string | number; name?: string }) => String(p.id) === String(externalAccountId)
+            )
+            if (matchingPage) {
+              pageData = matchingPage
+            } else if (res3Data.data.length > 0 && !externalAccountId) {
+              pageData = res3Data.data[0]
             }
+          } else if (res3Data?.error) {
+            lastErrorObj = res3Data.error
           }
-        } catch {
-          if (res.status === 401 || res.status === 403) {
-            isAuthError = true
-          }
-        }
-
-        if (isAuthError) {
-          return {
-            isValid: false,
-            isAuthError: true,
-            error: 'Autorisation à renouveler.',
-          }
-        }
-
-        return {
-          isValid: false,
-          isAuthError: false,
-          error: 'Impossible de vérifier la connexion pour le moment.',
         }
       }
 
-      if (
-        !pageData ||
-        !pageData.id ||
-        (externalAccountId && String(pageData.id) !== externalAccountId)
-      ) {
+      // If pageData was resolved, verification succeeded!
+      if (pageData && pageData.id) {
+        return {
+          isValid: true,
+          isAuthError: false,
+          accountName: pageData.name || 'Facebook',
+        }
+      }
+
+      // If all attempts failed to resolve pageData, classify error
+      if (lastErrorObj) {
+        const code = Number(lastErrorObj.code)
+        const subcode = Number(lastErrorObj.error_subcode)
+        const type = String(lastErrorObj.type || '')
+        const msg = String(lastErrorObj.message || '')
+
+        if (
+          isMetaAuthErrorCode(code, subcode, type) ||
+          code === 190 ||
+          code === 200 ||
+          code === 10 ||
+          subcode === 33 ||
+          subcode === 458 ||
+          subcode === 463 ||
+          subcode === 467 ||
+          msg.includes('missing permissions') ||
+          msg.includes('Cannot load') ||
+          msg.includes('Error validating access token') ||
+          msg.includes('Session has expired') ||
+          type === 'OAuthException' ||
+          type === 'GraphMethodException'
+        ) {
+          isAuthError = true
+        }
+      }
+
+      if (isAuthError) {
         return {
           isValid: false,
-          isAuthError: false,
-          error: 'Identifiant de Page Facebook incohérent.',
+          isAuthError: true,
+          error: 'Autorisation à renouveler.',
         }
       }
 
       return {
-        isValid: true,
+        isValid: false,
         isAuthError: false,
-        accountName: pageData.name || 'Facebook',
+        error: 'Impossible de vérifier la connexion pour le moment.',
       }
     } catch {
       return {
