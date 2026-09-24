@@ -572,6 +572,21 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       const meRes = await fetch(meUrl)
       const meData = await meRes.json().catch(() => null)
 
+      console.info('[Facebook Verification] Query /me result:', {
+        endpoint: `GET https://graph.facebook.com/${this.graphApiVersion}/me?fields=id,name`,
+        httpStatus: meRes.status,
+        ok: meRes.ok,
+        resolvedId: meData?.id || null,
+        error: meData?.error
+          ? {
+              type: meData.error.type,
+              code: meData.error.code,
+              error_subcode: meData.error.error_subcode,
+              message: meData.error.message,
+            }
+          : null,
+      })
+
       if (meRes.ok && meData?.id) {
         pageData = meData
       } else {
@@ -581,6 +596,22 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=id,name&access_token=${encodeURIComponent(token)}`
         const res = await fetch(verifyUrl)
         const resData = await res.json().catch(() => null)
+
+        console.info('[Facebook Verification] Fallback /{page_id} result:', {
+          endpoint: `GET https://graph.facebook.com/${this.graphApiVersion}/${externalAccountId}?fields=id,name`,
+          httpStatus: res.status,
+          ok: res.ok,
+          resolvedId: resData?.id || null,
+          error: resData?.error
+            ? {
+                type: resData.error.type,
+                code: resData.error.code,
+                error_subcode: resData.error.error_subcode,
+                message: resData.error.message,
+              }
+            : null,
+        })
+
         if (res.ok && resData?.id) {
           pageData = resData
         } else {

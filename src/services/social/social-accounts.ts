@@ -237,6 +237,14 @@ export async function verifySocialAccount(
       return { isValid: false, status: 'ERROR', error: 'Compte introuvable.' }
     }
 
+    console.info('[Social Verification] Selected account:', {
+      id: account.id,
+      platform: account.platform,
+      externalAccountId: account.external_account_id,
+      statusBefore: account.status,
+      hasEncryptedToken: Boolean(account.access_token_encrypted),
+    })
+
     if (!account.access_token_encrypted) {
       return { isValid: false, status: 'DISCONNECTED', error: 'Aucun jeton d’accès disponible.' }
     }
