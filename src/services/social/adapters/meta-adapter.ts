@@ -210,12 +210,11 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       redirect_uri: canonicalRedirectUri,
       state: signedState,
       response_type: 'code',
+      scope: this.facebookScopes.join(','),
     })
 
     if (configId) {
       urlParams.set('config_id', configId)
-    } else {
-      urlParams.set('scope', this.facebookScopes.join(','))
     }
 
     const authUrl = `https://www.facebook.com/${this.graphApiVersion}/dialog/oauth?${urlParams.toString()}`
@@ -409,8 +408,8 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       const longRes = await fetch(longLivedUrl.toString())
       const userAccessToken = longRes.ok ? (await longRes.json()).access_token : shortLivedToken
 
-      // Discover Facebook Pages only
-      const accountsUrl = `https://graph.facebook.com/${this.graphApiVersion}/me/accounts?fields=id,name,access_token&access_token=${userAccessToken}`
+      // Discover Facebook Pages only - Request access_token, tasks, category
+      const accountsUrl = `https://graph.facebook.com/${this.graphApiVersion}/me/accounts?fields=id,name,access_token,tasks,category&access_token=${userAccessToken}`
       const accountsRes = await fetch(accountsUrl)
 
       if (!accountsRes.ok) {
@@ -419,13 +418,23 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
 
       const accountsData = await accountsRes.json()
       const pages = Array.isArray(accountsData.data) ? accountsData.data : []
-      const destinations: DiscoveredDestination[] = pages.map((page: { id: string; name: string; access_token?: string }) => ({
+      const validPages = pages.filter((page: { id?: string | number; name?: string; access_token?: string }) => Boolean(page.id && page.access_token))
+
+      if (validPages.length === 0) {
+        return {
+          destinations: [],
+          error: 'Aucune Page Facebook avec droit de gestion trouvée. Veuillez cocher votre Page et autoriser sa gestion lors de la connexion Facebook.',
+        }
+      }
+
+      // Strictly store the PAGE ACCESS TOKEN in rawTokenEncrypted for each Page
+      const destinations: DiscoveredDestination[] = validPages.map((page: { id: string | number; name: string; access_token: string }) => ({
         platform: 'FACEBOOK' as SocialPlatform,
-        externalAccountId: page.id,
+        externalAccountId: String(page.id),
         accountName: page.name,
         accountType: 'PAGE',
         capabilities: this.getCapabilities('FACEBOOK', 'PAGE'),
-        rawTokenEncrypted: encryptCredential(page.access_token || userAccessToken),
+        rawTokenEncrypted: encryptCredential(page.access_token),
         scopes: this.facebookScopes,
       }))
 
@@ -553,56 +562,43 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
       }
 
       // ----------------------------------------------------------------------
-      // VERIFY FACEBOOK: Direct query to graph.facebook.com
-      // Supports Page Access Token (direct node /{page_id} & /me)
-      // and User Access Token (/me/accounts list)
+      // VERIFY FACEBOOK: Query graph.facebook.com with Page Access Token
       // ----------------------------------------------------------------------
       let pageData: { id?: string | number; name?: string } | null = null
       let isAuthError = false
       let lastErrorObj: { code?: number; error_subcode?: number; type?: string; message?: string } | null = null
 
-      // Attempt 1: Query /{page_id}?fields=id,name
-      const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=id,name&access_token=${encodeURIComponent(token)}`
-      const res1 = await fetch(verifyUrl)
-      const res1Data = await res1.json().catch(() => null)
+      // Primary: Query /me?fields=id,name (native resolution for Page Access Token)
+      const meUrl = `https://graph.facebook.com/${this.graphApiVersion}/me?fields=id,name&access_token=${encodeURIComponent(token)}`
+      const meRes = await fetch(meUrl)
+      const meData = await meRes.json().catch(() => null)
 
-      if (res1.ok && res1Data && (String(res1Data.id) === String(externalAccountId) || !externalAccountId)) {
-        pageData = res1Data
+      if (meRes.ok && meData?.id) {
+        pageData = meData
       } else {
-        if (res1Data?.error) lastErrorObj = res1Data.error
+        if (meData?.error) lastErrorObj = meData.error
 
-        // Attempt 2: Query /me?fields=id,name (standard for Page Access Tokens)
-        const meUrl = `https://graph.facebook.com/${this.graphApiVersion}/me?fields=id,name&access_token=${encodeURIComponent(token)}`
-        const res2 = await fetch(meUrl)
-        const res2Data = await res2.json().catch(() => null)
-
-        if (res2.ok && res2Data && (String(res2Data.id) === String(externalAccountId) || !externalAccountId)) {
-          pageData = res2Data
+        // Fallback: Query /{page_id}?fields=id,name
+        const verifyUrl = `https://graph.facebook.com/${this.graphApiVersion}/${encodeURIComponent(externalAccountId)}?fields=id,name&access_token=${encodeURIComponent(token)}`
+        const res = await fetch(verifyUrl)
+        const resData = await res.json().catch(() => null)
+        if (res.ok && resData?.id) {
+          pageData = resData
         } else {
-          if (res2Data?.error) lastErrorObj = res2Data.error
-
-          // Attempt 3: Query /me/accounts (in case token is User Access Token managing the Page)
-          const accountsUrl = `https://graph.facebook.com/${this.graphApiVersion}/me/accounts?fields=id,name&access_token=${encodeURIComponent(token)}`
-          const res3 = await fetch(accountsUrl)
-          const res3Data = await res3.json().catch(() => null)
-
-          if (res3.ok && Array.isArray(res3Data?.data)) {
-            const matchingPage = res3Data.data.find(
-              (p: { id: string | number; name?: string }) => String(p.id) === String(externalAccountId)
-            )
-            if (matchingPage) {
-              pageData = matchingPage
-            } else if (res3Data.data.length > 0 && !externalAccountId) {
-              pageData = res3Data.data[0]
-            }
-          } else if (res3Data?.error) {
-            lastErrorObj = res3Data.error
-          }
+          if (resData?.error) lastErrorObj = resData.error
         }
       }
 
-      // If pageData was resolved, verification succeeded!
+      // If pageData was resolved, verify ID match
       if (pageData && pageData.id) {
+        if (externalAccountId && String(pageData.id) !== externalAccountId) {
+          return {
+            isValid: false,
+            isAuthError: false,
+            error: 'Identifiant de Page Facebook incohérent.',
+          }
+        }
+
         return {
           isValid: true,
           isAuthError: false,
@@ -610,7 +606,7 @@ export class MetaSocialProviderAdapter implements SocialProviderAdapter {
         }
       }
 
-      // If all attempts failed to resolve pageData, classify error
+      // If both failed to resolve, classify error
       if (lastErrorObj) {
         const code = Number(lastErrorObj.code)
         const subcode = Number(lastErrorObj.error_subcode)

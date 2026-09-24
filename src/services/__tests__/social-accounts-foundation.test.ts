@@ -701,5 +701,104 @@ test('=== STUDIO MŪZA — STEP 161 & 161B COMPREHENSIVE CHECKPOINT TESTS ===', 
     assert.strictEqual(filteredForBizA[0].business_id, businessAId)
     assert.ok(!filteredForBizA.some((r) => r.business_id === businessBId), 'Tenant isolation: Biz A must not see Biz B data')
   })
+
+  // 15. Facebook OAuth Flow: User Token -> /me/accounts -> Digital Zen Page Access Token extraction -> Encrypted Page Token Storage -> Subsequent Verification Success
+  await t.test('15. Facebook OAuth Flow: User Token -> /me/accounts -> Digital Zen Page Access Token extraction -> Encrypted Page Token Storage -> Verification Success', async () => {
+    process.env.META_APP_ID = 'test-meta-app-id-123'
+    process.env.META_APP_SECRET = 'test-meta-secret-456'
+    process.env.CREDENTIAL_ENCRYPTION_KEY = 'test-key-32-bytes-for-unit-testing-vault'
+
+    const adapter = new MetaSocialProviderAdapter()
+    const originalFetch = globalThis.fetch
+
+    try {
+      // Step 1: Mock OAuth exchange returning User Access Token, then /me/accounts returning Page Access Token
+      globalThis.fetch = async (input: RequestInfo | URL) => {
+        const urlStr = String(input)
+
+        // Token exchange
+        if (urlStr.includes('/oauth/access_token')) {
+          return new Response(
+            JSON.stringify({
+              access_token: 'EAAB_USER_ACCESS_TOKEN_SHORT',
+              token_type: 'bearer',
+              expires_in: 5184000,
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+
+        // /me/accounts with fields=id,name,access_token,tasks,category
+        if (urlStr.includes('/me/accounts')) {
+          return new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: '10987654321',
+                  name: 'Digital Zen',
+                  access_token: 'EAAB_PAGE_ACCESS_TOKEN_DIGITAL_ZEN',
+                  category: 'Health/Beauty',
+                  tasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE', 'ANALYZE'],
+                },
+              ],
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+
+        return new Response(JSON.stringify({ error: { message: 'Not found' } }), { status: 404 })
+      }
+
+      const stateToken = signOAuthState({
+        userId: 'usr-123',
+        businessId: 'biz-123',
+        platform: 'FACEBOOK',
+        expiresAt: Date.now() + 600000,
+      })
+
+      const exchangeResult = await adapter.handleAuthorizationCallback({
+        code: 'valid-fb-code-xyz',
+        state: stateToken,
+        currentUserId: 'usr-123',
+        currentBusinessId: 'biz-123',
+      })
+
+      assert.strictEqual(exchangeResult.destinations.length, 1)
+      const dest = exchangeResult.destinations[0]
+      assert.strictEqual(dest.platform, 'FACEBOOK')
+      assert.strictEqual(dest.externalAccountId, '10987654321')
+      assert.strictEqual(dest.accountName, 'Digital Zen')
+      assert.strictEqual(dest.accountType, 'PAGE')
+
+      // Verify the decrypted token stored is strictly the Page Access Token, NOT the user access token
+      const decryptedStoredToken = decryptCredential(dest.rawTokenEncrypted)
+      assert.strictEqual(
+        decryptedStoredToken,
+        'EAAB_PAGE_ACCESS_TOKEN_DIGITAL_ZEN',
+        'rawTokenEncrypted must store strictly the Page Access Token'
+      )
+
+      // Step 2: Test subsequent verifyConnection with this Page Access Token
+      globalThis.fetch = async (input: RequestInfo | URL) => {
+        const urlStr = String(input)
+        if (urlStr.includes('/me?') && urlStr.includes('fields=id,name') && urlStr.includes('EAAB_PAGE_ACCESS_TOKEN_DIGITAL_ZEN')) {
+          return new Response(
+            JSON.stringify({
+              id: '10987654321',
+              name: 'Digital Zen',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response(JSON.stringify({ error: { message: 'Not found' } }), { status: 404 })
+      }
+
+      const verifyRes = await adapter.verifyConnection(decryptedStoredToken, '10987654321', 'FACEBOOK')
+      assert.strictEqual(verifyRes.isValid, true, 'Page verification must succeed with Page Access Token')
+      assert.strictEqual(verifyRes.accountName, 'Digital Zen')
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
 })
 
