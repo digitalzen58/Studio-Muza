@@ -24,6 +24,18 @@ export interface BackgroundEffectConfig {
   intensity: number // 0.0 to 1.0 (default 0.35)
 }
 
+export type TextEffectType = 'none' | 'shadow' | 'outline' | 'highlight' | 'glow' | 'relief'
+export type TextAlign = 'left' | 'center' | 'right'
+export type FontWeight = 'normal' | 'bold'
+export type FontStyle = 'normal' | 'italic'
+
+export interface TextEffectConfig {
+  type: TextEffectType
+  color?: string
+  intensity?: number // 0.1 to 1.0 (default 0.5)
+  size?: number // 1 to 10 (default 2)
+}
+
 export interface VisualTextElement {
   id: string
   type: 'TEXT'
@@ -37,6 +49,18 @@ export interface VisualTextElement {
   colorMode: VisualColorMode
   // Optional background pill for high contrast
   boxStyle?: VisualBoxStyle
+
+  // Rich text customization
+  fontFamily?: string
+  fontSize?: number
+  fontWeight?: FontWeight
+  fontStyle?: FontStyle
+  color?: string
+  align?: TextAlign
+  letterSpacing?: string
+  uppercase?: boolean
+  autoContrast?: boolean
+  effect?: TextEffectConfig
 }
 
 export interface VisualEmojiElement {

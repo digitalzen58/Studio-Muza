@@ -11,8 +11,6 @@ import {
   Minus,
   Plus,
   Edit3,
-  SunMedium,
-  Moon,
   Move,
   Check,
   ArrowDown,
@@ -28,6 +26,7 @@ import {
   type BackgroundGradientDirection,
   type BackgroundEffectType,
   type BackgroundEffectConfig,
+  type TextEffectType,
   BRAND_BACKGROUND_COLORS,
   RICH_BACKGROUND_COLORS,
   CURATED_GRADIENTS,
@@ -35,6 +34,12 @@ import {
   CURATED_EMOJIS,
   getVisualBackgroundStyle,
 } from '@/services/visual-composition/types'
+import {
+  CURATED_FONTS,
+  TEXT_PRESET_COLORS,
+  getTextElementCssStyle,
+  ensureGoogleFontsLoaded,
+} from '@/services/visual-composition/fonts'
 import type { BrandMediaAsset } from '@/services/media'
 
 /**
@@ -123,6 +128,7 @@ interface VisualCanvasProps {
   onChange: (newComposition: VisualComposition) => void
   mediaAssets?: BrandMediaAsset[]
   brandColors?: string[]
+  brandFonts?: string[]
   onOpenMediaPicker?: () => void
   onOpenStockModal?: () => void
   readOnly?: boolean
@@ -133,6 +139,7 @@ export function VisualCanvas({
   onChange,
   mediaAssets = [],
   brandColors,
+  brandFonts = [],
   onOpenMediaPicker,
   onOpenStockModal,
   readOnly = false,
@@ -142,7 +149,12 @@ export function VisualCanvas({
   const customGradFromInputRef = useRef<HTMLInputElement>(null)
   const customGradToInputRef = useRef<HTMLInputElement>(null)
 
-  // Brand colors list (uses custom business brandColors if provided)
+  // Ensure Google Fonts stylesheet loaded on client
+  React.useEffect(() => {
+    ensureGoogleFontsLoaded()
+  }, [])
+
+  // Brand colors list
   const activeBrandColors = useMemo(() => {
     if (brandColors && brandColors.length > 0) {
       return brandColors.map((hex, idx) => ({
@@ -154,10 +166,16 @@ export function VisualCanvas({
     return BRAND_BACKGROUND_COLORS
   }, [brandColors])
 
+  // Brand fonts list
+  const activeBrandFonts = useMemo(() => {
+    return brandFonts || []
+  }, [brandFonts])
+
   // Selection & active manipulation state
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
   const [isEditingText, setIsEditingText] = useState(false)
   const [editingTextValue, setEditingTextValue] = useState('')
+  const [textTab, setTextTab] = useState<'FONT' | 'COLOR' | 'STYLE' | 'EFFECT'>('FONT')
 
   // Popovers & Background category tab
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -324,19 +342,13 @@ export function VisualCanvas({
   }
 
   // --------------------------------------------------------------------------
-  // ELEMENT ACTIONS (ADD / EDIT / RESIZE / DELETE / STYLE)
+  // ELEMENT ACTIONS (ADD / EDIT / RESIZE / DELETE / RICH TEXT MUTATIONS)
   // --------------------------------------------------------------------------
   const handleAddText = () => {
     const textId =
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : `text-${composition.elements.length + 1}`
-    const isLightBg =
-      composition.background.type === 'COLOR'
-        ? composition.background.color === '#FFFFFF' ||
-          composition.background.color === '#FBF9F5' ||
-          composition.background.color === '#EDF4FC'
-        : false
 
     const newText: VisualTextElement = {
       id: textId,
@@ -345,8 +357,12 @@ export function VisualCanvas({
       x: 0.5,
       y: 0.5,
       scale: 1.0,
-      colorMode: isLightBg ? 'DARK' : 'LIGHT',
-      boxStyle: 'PILL',
+      colorMode: 'LIGHT',
+      fontFamily: 'Plus Jakarta Sans',
+      fontWeight: 'bold',
+      fontStyle: 'normal',
+      align: 'center',
+      autoContrast: false,
     }
 
     pushHistory({
@@ -409,26 +425,13 @@ export function VisualCanvas({
     })
   }
 
-  const handleToggleColorMode = () => {
+  const handleUpdateSelectedText = (updates: Partial<VisualTextElement>) => {
     if (!selectedElementId) return
     pushHistory({
       ...composition,
       elements: composition.elements.map((el) => {
         if (el.id !== selectedElementId || el.type !== 'TEXT') return el
-        const nextMode = el.colorMode === 'LIGHT' ? 'DARK' : 'LIGHT'
-        return { ...el, colorMode: nextMode }
-      }),
-    })
-  }
-
-  const handleToggleBoxStyle = () => {
-    if (!selectedElementId) return
-    pushHistory({
-      ...composition,
-      elements: composition.elements.map((el) => {
-        if (el.id !== selectedElementId || el.type !== 'TEXT') return el
-        const nextStyle = el.boxStyle === 'PILL' ? 'NONE' : 'PILL'
-        return { ...el, boxStyle: nextStyle }
+        return { ...el, ...updates }
       }),
     })
   }
@@ -620,8 +623,7 @@ export function VisualCanvas({
           const isSelected = el.id === selectedElementId
 
           if (el.type === 'TEXT') {
-            const isLight = el.colorMode === 'LIGHT'
-            const isPill = el.boxStyle === 'PILL'
+            const computedStyle = getTextElementCssStyle(el, composition.background)
 
             return (
               <div
@@ -633,22 +635,15 @@ export function VisualCanvas({
                   transform: `translate(-50%, -50%) scale(${el.scale})`,
                   touchAction: 'none',
                 }}
-                className={`absolute cursor-move select-none p-2 max-w-[85%] text-center transition-shadow ${
+                className={`absolute cursor-move select-none p-2 max-w-[85%] transition-shadow ${
                   isSelected && !readOnly
                     ? 'ring-2 ring-primary ring-offset-2 ring-offset-black/20 rounded-xl shadow-lg'
                     : ''
                 }`}
               >
                 <div
-                  className={`font-serif text-base font-bold leading-snug px-3 py-1.5 rounded-xl text-balance ${
-                    isPill
-                      ? isLight
-                        ? 'bg-black/60 text-white backdrop-blur-xs shadow-xs'
-                        : 'bg-white/90 text-ink backdrop-blur-xs shadow-xs'
-                      : isLight
-                        ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]'
-                        : 'text-ink drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]'
-                  }`}
+                  style={computedStyle}
+                  className="text-base leading-snug text-balance"
                 >
                   {el.text}
                 </div>
@@ -685,116 +680,689 @@ export function VisualCanvas({
       {/* 2. CANVAS CONTROLS & TOOLBAR */}
       {!readOnly && (
         <div className="flex flex-col gap-2 w-full max-w-md mx-auto">
-          {/* Active Element Context Bar */}
-          {selectedElement && (
-            <div className="flex items-center justify-between gap-2 p-2 bg-white border border-cream-border rounded-xl shadow-xs animate-fadeIn text-xs">
-              {selectedElement.type === 'TEXT' && (
-                <>
-                  {isEditingText ? (
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <input
-                        type="text"
-                        value={editingTextValue}
-                        onChange={(e) => setEditingTextValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveTextEdit()
-                          if (e.key === 'Escape') setIsEditingText(false)
-                        }}
-                        autoFocus
-                        placeholder="Modifier le texte..."
-                        className="w-full px-2 py-1 bg-cream-subtle border border-cream-border rounded-lg text-xs text-ink focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleSaveTextEdit}
-                        className="p-1.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
-                        title="Valider"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 min-w-0 flex-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingTextValue(
-                            selectedElement.type === 'TEXT' ? selectedElement.text : ''
-                          )
-                          setIsEditingText(true)
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 bg-cream-subtle hover:bg-cream-border rounded-lg text-ink truncate font-medium"
-                        title="Éditer le texte"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span className="truncate">
-                          {selectedElement.type === 'TEXT' ? selectedElement.text : ''}
-                        </span>
-                      </button>
+          {/* Active Element Context & Rich Customization Inspector */}
+          {selectedElement && selectedElement.type === 'TEXT' && (
+            <div className="flex flex-col gap-2.5 p-3 bg-white border border-cream-border rounded-2xl shadow-md animate-fadeIn text-xs">
+              {/* Header / Text inline edit bar */}
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-cream-border">
+                {isEditingText ? (
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={editingTextValue}
+                      onChange={(e) => setEditingTextValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveTextEdit()
+                        if (e.key === 'Escape') setIsEditingText(false)
+                      }}
+                      autoFocus
+                      placeholder="Modifier le texte..."
+                      className="w-full px-2.5 py-1 bg-cream-subtle border border-cream-border rounded-lg text-xs text-ink focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveTextEdit}
+                      className="p-1.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                      title="Valider"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingTextValue(selectedElement.text)
+                        setIsEditingText(true)
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-cream-subtle hover:bg-cream-border rounded-lg text-ink truncate font-medium"
+                      title="Éditer le texte"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="truncate max-w-[170px] font-semibold">{selectedElement.text}</span>
+                    </button>
+                  </div>
+                )}
 
-                      <button
-                        type="button"
-                        onClick={handleToggleColorMode}
-                        className="p-1.5 hover:bg-cream-subtle rounded-lg text-ink-muted hover:text-ink transition-colors"
-                        title={
-                          selectedElement.type === 'TEXT' && selectedElement.colorMode === 'LIGHT'
-                            ? 'Passer en texte sombre'
-                            : 'Passer en texte clair'
-                        }
-                      >
-                        {selectedElement.type === 'TEXT' &&
-                        selectedElement.colorMode === 'LIGHT' ? (
-                          <SunMedium className="w-3.5 h-3.5" />
-                        ) : (
-                          <Moon className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                {/* Resize & Delete */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleResizeSelected(-0.15)}
+                    className="p-1.5 hover:bg-cream-subtle rounded-md text-ink-muted hover:text-ink"
+                    title="Réduire"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleResizeSelected(0.15)}
+                    className="p-1.5 hover:bg-cream-subtle rounded-md text-ink-muted hover:text-ink"
+                    title="Agrandir"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="w-px h-4 bg-cream-border mx-0.5" />
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelected}
+                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                    title="Supprimer le bloc texte"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
 
-                      <button
-                        type="button"
-                        onClick={handleToggleBoxStyle}
-                        className={`px-2 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
-                          selectedElement.type === 'TEXT' && selectedElement.boxStyle === 'PILL'
-                            ? 'bg-primary-light text-primary-dark'
-                            : 'bg-cream-subtle text-ink-muted hover:text-ink'
-                        }`}
-                        title="Fond cartouche (Pill)"
-                      >
-                        Pill
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Shared Scale & Delete Actions */}
-              <div className="flex items-center gap-1 shrink-0 ml-auto">
+              {/* Inspector Section Tabs: [ Police ] [ Couleur ] [ Style ] [ Effet ] */}
+              <div className="flex items-center gap-1 p-1 bg-cream-subtle rounded-xl border border-cream-border/60">
                 <button
                   type="button"
-                  onClick={() => handleResizeSelected(-0.15)}
-                  className="p-1 hover:bg-cream-subtle rounded-md text-ink-muted hover:text-ink"
-                  title="Réduire"
+                  onClick={() => setTextTab('FONT')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs transition-all ${
+                    textTab === 'FONT'
+                      ? 'bg-white text-ink shadow-2xs font-bold'
+                      : 'text-ink-muted hover:text-ink font-medium'
+                  }`}
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  Police
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleResizeSelected(0.15)}
-                  className="p-1 hover:bg-cream-subtle rounded-md text-ink-muted hover:text-ink"
-                  title="Agrandir"
+                  onClick={() => setTextTab('COLOR')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs transition-all ${
+                    textTab === 'COLOR'
+                      ? 'bg-white text-ink shadow-2xs font-bold'
+                      : 'text-ink-muted hover:text-ink font-medium'
+                  }`}
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  Couleur
                 </button>
-                <div className="w-px h-4 bg-cream-border mx-0.5" />
                 <button
                   type="button"
-                  onClick={handleDeleteSelected}
-                  className="p-1 text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                  title="Supprimer l’élément"
+                  onClick={() => setTextTab('STYLE')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs transition-all ${
+                    textTab === 'STYLE'
+                      ? 'bg-white text-ink shadow-2xs font-bold'
+                      : 'text-ink-muted hover:text-ink font-medium'
+                  }`}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  Style
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTextTab('EFFECT')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs transition-all ${
+                    textTab === 'EFFECT'
+                      ? 'bg-white text-ink shadow-2xs font-bold'
+                      : 'text-ink-muted hover:text-ink font-medium'
+                  }`}
+                >
+                  Effet
                 </button>
               </div>
+
+              {/* 1. TAB: POLICE */}
+              {textTab === 'FONT' && (
+                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                  {/* Vos polices de marque (if available) */}
+                  {activeBrandFonts.length > 0 && (
+                    <div>
+                      <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1.5">
+                        Vos polices
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {activeBrandFonts.map((fName) => {
+                          const isSelected = selectedElement.fontFamily === fName
+                          const fontObj = CURATED_FONTS.find((f) => f.name === fName)
+                          const familyCss = fontObj ? fontObj.family : `'${fName}', sans-serif`
+
+                          return (
+                            <button
+                              key={fName}
+                              type="button"
+                              onClick={() => handleUpdateSelectedText({ fontFamily: fName })}
+                              className={`p-2 rounded-xl border text-left flex items-center justify-between transition-all ${
+                                isSelected
+                                  ? 'bg-primary-light/40 border-primary shadow-xs font-bold'
+                                  : 'bg-white border-cream-border hover:bg-cream-subtle'
+                              }`}
+                            >
+                              <span style={{ fontFamily: familyCss }} className="text-sm truncate">
+                                {fName}
+                              </span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-1" />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Autres polices */}
+                  <div>
+                    <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1.5">
+                      {activeBrandFonts.length > 0 ? 'Autres polices' : 'Polices disponibles'}
+                    </span>
+                    <div className="space-y-2">
+                      {/* Sans serif */}
+                      <div>
+                        <span className="text-[10px] font-semibold text-ink-muted/80 block mb-1">Sans serif</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {CURATED_FONTS.filter((f) => f.category === 'sans-serif').map((font) => {
+                            const isSelected = (selectedElement.fontFamily || 'Plus Jakarta Sans') === font.name
+                            return (
+                              <button
+                                key={font.name}
+                                type="button"
+                                onClick={() => handleUpdateSelectedText({ fontFamily: font.name })}
+                                className={`p-2 rounded-xl border text-left flex items-center justify-between transition-all ${
+                                  isSelected
+                                    ? 'bg-primary-light/40 border-primary shadow-xs font-bold'
+                                    : 'bg-white border-cream-border hover:bg-cream-subtle'
+                                }`}
+                              >
+                                <span style={{ fontFamily: font.family }} className="text-sm truncate">
+                                  {font.name}
+                                </span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-1" />}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Serif */}
+                      <div>
+                        <span className="text-[10px] font-semibold text-ink-muted/80 block mb-1">Serif</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {CURATED_FONTS.filter((f) => f.category === 'serif').map((font) => {
+                            const isSelected = selectedElement.fontFamily === font.name
+                            return (
+                              <button
+                                key={font.name}
+                                type="button"
+                                onClick={() => handleUpdateSelectedText({ fontFamily: font.name })}
+                                className={`p-2 rounded-xl border text-left flex items-center justify-between transition-all ${
+                                  isSelected
+                                    ? 'bg-primary-light/40 border-primary shadow-xs font-bold'
+                                    : 'bg-white border-cream-border hover:bg-cream-subtle'
+                                }`}
+                              >
+                                <span style={{ fontFamily: font.family }} className="text-sm truncate">
+                                  {font.name}
+                                </span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-1" />}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Expressives */}
+                      <div>
+                        <span className="text-[10px] font-semibold text-ink-muted/80 block mb-1">Expressives</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {CURATED_FONTS.filter((f) => f.category === 'expressive').map((font) => {
+                            const isSelected = selectedElement.fontFamily === font.name
+                            return (
+                              <button
+                                key={font.name}
+                                type="button"
+                                onClick={() => handleUpdateSelectedText({ fontFamily: font.name })}
+                                className={`p-2 rounded-xl border text-left flex items-center justify-between transition-all ${
+                                  isSelected
+                                    ? 'bg-primary-light/40 border-primary shadow-xs font-bold'
+                                    : 'bg-white border-cream-border hover:bg-cream-subtle'
+                                }`}
+                              >
+                                <span style={{ fontFamily: font.family }} className="text-sm truncate">
+                                  {font.name}
+                                </span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-1" />}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. TAB: COULEUR */}
+              {textTab === 'COLOR' && (
+                <div className="space-y-3">
+                  {/* Contraste Automatique Switch */}
+                  <div className="flex items-center justify-between p-2.5 bg-cream-subtle/80 rounded-xl border border-cream-border/60">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-ink">Contraste automatique</span>
+                      <span className="text-[10px] text-ink-muted">Ajuste le texte (Clair/Foncé) selon le fond</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateSelectedText({
+                          autoContrast: !selectedElement.autoContrast,
+                        })
+                      }
+                      className={`w-10 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        selectedElement.autoContrast ? 'bg-primary justify-end' : 'bg-cream-border justify-start'
+                      }`}
+                    >
+                      <div className="w-4 h-4 rounded-full bg-white shadow-xs" />
+                    </button>
+                  </div>
+
+                  {!selectedElement.autoContrast && (
+                    <>
+                      {/* Vos couleurs */}
+                      {activeBrandColors.length > 0 && (
+                        <div>
+                          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1.5">
+                            Vos couleurs
+                          </span>
+                          <div className="grid grid-cols-6 gap-2">
+                            {activeBrandColors.map((bg) => {
+                              const isSelected = selectedElement.color?.toUpperCase() === bg.hex.toUpperCase()
+                              return (
+                                <button
+                                  key={bg.hex}
+                                  type="button"
+                                  onClick={() => handleUpdateSelectedText({ color: bg.hex })}
+                                  style={{ backgroundColor: bg.hex }}
+                                  className={`w-8 h-8 rounded-xl border transition-all flex items-center justify-center ${
+                                    isSelected
+                                      ? 'ring-2 ring-primary ring-offset-1 scale-105 border-primary shadow-xs'
+                                      : 'border-cream-border/80 hover:scale-105'
+                                  }`}
+                                  title={bg.label}
+                                >
+                                  {isSelected && (
+                                    <Check
+                                      className={`w-3.5 h-3.5 ${
+                                        bg.textMode === 'LIGHT' ? 'text-white' : 'text-ink'
+                                      }`}
+                                    />
+                                  )}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Couleurs rapides */}
+                      <div>
+                        <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1.5">
+                          Couleurs
+                        </span>
+                        <div className="grid grid-cols-6 gap-2">
+                          {TEXT_PRESET_COLORS.map((c) => {
+                            const isSelected = selectedElement.color?.toUpperCase() === c.hex.toUpperCase()
+                            return (
+                              <button
+                                key={c.hex}
+                                type="button"
+                                onClick={() => handleUpdateSelectedText({ color: c.hex })}
+                                style={{ backgroundColor: c.hex }}
+                                className={`w-8 h-8 rounded-xl border transition-all flex items-center justify-center ${
+                                  isSelected
+                                    ? 'ring-2 ring-primary ring-offset-1 scale-105 border-primary shadow-xs'
+                                    : 'border-cream-border/80 hover:scale-105'
+                                }`}
+                                title={c.label}
+                              >
+                                {isSelected && (
+                                  <Check
+                                    className={`w-3.5 h-3.5 ${
+                                      c.hex === '#FFFFFF' || c.hex === '#FBF9F5' ? 'text-ink' : 'text-white'
+                                    }`}
+                                  />
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Custom HEX color (+) */}
+                      <div className="pt-2 border-t border-cream-border/60 flex items-center justify-between">
+                        <span className="text-xs font-medium text-ink">Couleur personnalisée</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedElement.color || '#FFFFFF'}
+                            onChange={(e) => handleUpdateSelectedText({ color: e.target.value })}
+                            className="w-7 h-7 rounded-lg cursor-pointer border border-cream-border p-0 bg-transparent"
+                            title="Choisir une couleur"
+                          />
+                          <input
+                            type="text"
+                            value={selectedElement.color || '#FFFFFF'}
+                            onChange={(e) => handleUpdateSelectedText({ color: e.target.value })}
+                            placeholder="#FFFFFF"
+                            className="w-20 px-2 py-1 bg-cream-subtle border border-cream-border rounded-lg text-xs font-mono text-ink"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* 3. TAB: STYLE */}
+              {textTab === 'STYLE' && (
+                <div className="space-y-3">
+                  {/* Gras & Italique & Uppercase */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateSelectedText({
+                          fontWeight: selectedElement.fontWeight === 'bold' ? 'normal' : 'bold',
+                        })
+                      }
+                      className={`py-2 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1 transition-all ${
+                        selectedElement.fontWeight === 'bold'
+                          ? 'bg-primary text-white border-primary shadow-xs'
+                          : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                      }`}
+                    >
+                      <span>B</span>
+                      <span>Gras</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateSelectedText({
+                          fontStyle: selectedElement.fontStyle === 'italic' ? 'normal' : 'italic',
+                        })
+                      }
+                      className={`py-2 px-3 rounded-xl border italic text-xs flex items-center justify-center gap-1 transition-all ${
+                        selectedElement.fontStyle === 'italic'
+                          ? 'bg-primary text-white border-primary shadow-xs'
+                          : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                      }`}
+                    >
+                      <span>I</span>
+                      <span>Italique</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateSelectedText({
+                          uppercase: !selectedElement.uppercase,
+                        })
+                      }
+                      className={`py-2 px-3 rounded-xl border text-xs flex items-center justify-center gap-1 transition-all ${
+                        selectedElement.uppercase
+                          ? 'bg-primary text-white border-primary shadow-xs font-bold'
+                          : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                      }`}
+                    >
+                      <span>AA</span>
+                      <span>Majuscules</span>
+                    </button>
+                  </div>
+
+                  {/* Alignement */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                      Alignement
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSelectedText({ align: 'left' })}
+                        className={`py-1.5 px-2 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1 transition-all ${
+                          selectedElement.align === 'left'
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                        }`}
+                      >
+                        Gauche
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSelectedText({ align: 'center' })}
+                        className={`py-1.5 px-2 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1 transition-all ${
+                          (!selectedElement.align || selectedElement.align === 'center')
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                        }`}
+                      >
+                        Centre
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSelectedText({ align: 'right' })}
+                        className={`py-1.5 px-2 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1 transition-all ${
+                          selectedElement.align === 'right'
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                        }`}
+                      >
+                        Droite
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Espacement des lettres */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                      Espacement des lettres
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSelectedText({ letterSpacing: 'normal' })}
+                        className={`py-1.5 px-2 rounded-xl border text-xs font-semibold flex items-center justify-center transition-all ${
+                          (!selectedElement.letterSpacing || selectedElement.letterSpacing === 'normal')
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                        }`}
+                      >
+                        Normal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSelectedText({ letterSpacing: '1.5px' })}
+                        className={`py-1.5 px-2 rounded-xl border text-xs font-semibold flex items-center justify-center transition-all ${
+                          selectedElement.letterSpacing === '1.5px'
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                        }`}
+                      >
+                        Espacé
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSelectedText({ letterSpacing: '3.5px' })}
+                        className={`py-1.5 px-2 rounded-xl border text-xs font-semibold flex items-center justify-center transition-all ${
+                          selectedElement.letterSpacing === '3.5px'
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                        }`}
+                      >
+                        Très espacé
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. TAB: EFFET */}
+              {textTab === 'EFFECT' && (
+                <div className="space-y-3">
+                  {/* Effet type selector */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { type: 'none', label: 'Aucun' },
+                      { type: 'shadow', label: 'Ombre' },
+                      { type: 'outline', label: 'Contour' },
+                      { type: 'highlight', label: 'Surligné' },
+                      { type: 'glow', label: 'Éclat' },
+                      { type: 'relief', label: 'Relief' },
+                    ].map((eff) => {
+                      const isSelected =
+                        (!selectedElement.effect && eff.type === (selectedElement.boxStyle === 'PILL' ? 'highlight' : 'none')) ||
+                        selectedElement.effect?.type === eff.type
+                      return (
+                        <button
+                          key={eff.type}
+                          type="button"
+                          onClick={() =>
+                            handleUpdateSelectedText({
+                              effect: {
+                                type: eff.type as TextEffectType,
+                                intensity: selectedElement.effect?.intensity ?? 0.5,
+                                color: selectedElement.effect?.color,
+                              },
+                              boxStyle: eff.type === 'highlight' ? 'PILL' : 'NONE',
+                            })
+                          }
+                          className={`py-2 px-2.5 rounded-xl border text-xs font-semibold text-center transition-all ${
+                            isSelected
+                              ? 'bg-primary text-white border-primary shadow-xs'
+                              : 'bg-white border-cream-border text-ink hover:bg-cream-subtle'
+                          }`}
+                        >
+                          {eff.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Effect Sub-controls */}
+                  {selectedElement.effect && selectedElement.effect.type !== 'none' && (
+                    <div className="pt-2 border-t border-cream-border/60 space-y-2.5">
+                      {/* Ombre options */}
+                      {selectedElement.effect.type === 'shadow' && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-ink-muted uppercase tracking-wider text-[10px]">
+                              Intensité de l’ombre
+                            </span>
+                            <span className="font-mono text-ink font-semibold">
+                              {Math.round((selectedElement.effect.intensity ?? 0.5) * 100)}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.1"
+                            max="1.0"
+                            step="0.05"
+                            value={selectedElement.effect.intensity ?? 0.5}
+                            onChange={(e) =>
+                              handleUpdateSelectedText({
+                                effect: {
+                                  ...selectedElement.effect!,
+                                  intensity: parseFloat(e.target.value),
+                                },
+                              })
+                            }
+                            className="w-full accent-primary h-1.5 bg-cream-border rounded-lg cursor-pointer"
+                          />
+                        </div>
+                      )}
+
+                      {/* Contour options */}
+                      {selectedElement.effect.type === 'outline' && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-ink-muted uppercase tracking-wider text-[10px]">
+                              Couleur du contour
+                            </span>
+                            <input
+                              type="color"
+                              value={selectedElement.effect.color || '#000000'}
+                              onChange={(e) =>
+                                handleUpdateSelectedText({
+                                  effect: {
+                                    ...selectedElement.effect!,
+                                    color: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-6 h-6 rounded-md cursor-pointer border border-cream-border p-0"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Surligné options */}
+                      {selectedElement.effect.type === 'highlight' && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-ink-muted uppercase tracking-wider text-[10px]">
+                              Couleur de fond
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {['rgba(15, 30, 54, 0.75)', 'rgba(255, 255, 255, 0.90)', '#1E4E8C', '#D97757'].map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() =>
+                                    handleUpdateSelectedText({
+                                      effect: {
+                                        ...selectedElement.effect!,
+                                        color: c,
+                                      },
+                                    })
+                                  }
+                                  style={{ backgroundColor: c }}
+                                  className="w-5 h-5 rounded-md border border-cream-border"
+                                />
+                              ))}
+                              <input
+                                type="color"
+                                value={selectedElement.effect.color || '#1E4E8C'}
+                                onChange={(e) =>
+                                  handleUpdateSelectedText({
+                                    effect: {
+                                      ...selectedElement.effect!,
+                                      color: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-5 h-5 rounded-md cursor-pointer border border-cream-border p-0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Éclat options */}
+                      {selectedElement.effect.type === 'glow' && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-ink-muted uppercase tracking-wider text-[10px]">
+                              Couleur de l’éclat
+                            </span>
+                            <input
+                              type="color"
+                              value={selectedElement.effect.color || selectedElement.color || '#FFFFFF'}
+                              onChange={(e) =>
+                                handleUpdateSelectedText({
+                                  effect: {
+                                    ...selectedElement.effect!,
+                                    color: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-6 h-6 rounded-md cursor-pointer border border-cream-border p-0"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

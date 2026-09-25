@@ -5,6 +5,7 @@ import type { PublicationItem } from '@/services/publication-history/types'
 import { ImageIcon, Layers } from 'lucide-react'
 
 import { getVisualBackgroundStyle } from '@/services/visual-composition/types'
+import { getTextElementCssStyle } from '@/services/visual-composition/fonts'
 import { VisualBackgroundEffectLayer } from '@/components/studio/visual-canvas'
 
 interface PublicationThumbnailProps {
@@ -45,26 +46,17 @@ export function PublicationThumbnail({ item, className = '' }: PublicationThumbn
         {/* Scaled Visual Elements */}
         {composition.elements?.map((el) => {
           if (el.type === 'TEXT') {
-            const isLight = el.colorMode === 'LIGHT'
+            const computedStyle = getTextElementCssStyle(el, bg)
             return (
               <div
                 key={el.id}
-                className={`absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none px-1 rounded max-w-[90%] ${
-                  el.boxStyle === 'PILL'
-                    ? isLight
-                      ? 'bg-ink/75 text-white shadow-xs'
-                      : 'bg-white/85 text-ink shadow-xs'
-                    : isLight
-                    ? 'text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
-                    : 'text-ink drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]'
-                }`}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none px-1 rounded max-w-[90%]"
                 style={{
                   left: `${el.x * 100}%`,
                   top: `${el.y * 100}%`,
                   fontSize: `clamp(7px, 2vw, ${Math.max(8, (el.scale || 1) * 9)}px)`,
-                  fontWeight: 600,
-                  textAlign: 'center',
                   lineHeight: 1.1,
+                  ...computedStyle,
                 }}
               >
                 <span className="line-clamp-2">{el.text}</span>

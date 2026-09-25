@@ -6,6 +6,7 @@ import type {
   VisualBackground,
   BackgroundEffectType,
   BackgroundGradientDirection,
+  TextEffectType,
 } from './types'
 
 export interface VisualValidationResult {
@@ -145,6 +146,35 @@ export function validateVisualComposition(input: unknown): VisualValidationResul
       const colorMode = rawEl.colorMode === 'LIGHT' ? 'LIGHT' : 'DARK'
       const boxStyle = rawEl.boxStyle === 'PILL' ? 'PILL' : 'NONE'
 
+      // Optional rich text customization fields
+      const fontFamily = typeof rawEl.fontFamily === 'string' ? sanitizeString(rawEl.fontFamily).slice(0, 60) : undefined
+      const fontSize = typeof rawEl.fontSize === 'number' ? clamp(rawEl.fontSize, 0.4, 4.0) : undefined
+      const fontWeight = rawEl.fontWeight === 'bold' || rawEl.fontWeight === 'normal' ? rawEl.fontWeight : undefined
+      const fontStyle = rawEl.fontStyle === 'italic' || rawEl.fontStyle === 'normal' ? rawEl.fontStyle : undefined
+      const color = typeof rawEl.color === 'string' && (VALID_COLOR_HEX.test(rawEl.color) || rawEl.color.startsWith('rgb')) ? rawEl.color : undefined
+      const align = rawEl.align === 'left' || rawEl.align === 'right' || rawEl.align === 'center' ? rawEl.align : undefined
+      const letterSpacing = typeof rawEl.letterSpacing === 'string' ? sanitizeString(rawEl.letterSpacing).slice(0, 20) : undefined
+      const uppercase = typeof rawEl.uppercase === 'boolean' ? rawEl.uppercase : undefined
+      const autoContrast = typeof rawEl.autoContrast === 'boolean' ? rawEl.autoContrast : undefined
+
+      // Optional text effect sanitization
+      let sanitizedTextEffect = undefined
+      if (rawEl.effect && typeof rawEl.effect === 'object') {
+        const validEffectTypes: TextEffectType[] = ['none', 'shadow', 'outline', 'highlight', 'glow', 'relief']
+        const rawType = (rawEl.effect.type || 'none') as TextEffectType
+        const type = validEffectTypes.includes(rawType) ? rawType : 'none'
+        const effectColor = typeof rawEl.effect.color === 'string' && (VALID_COLOR_HEX.test(rawEl.effect.color) || rawEl.effect.color.startsWith('rgb')) ? rawEl.effect.color : undefined
+        const intensity = typeof rawEl.effect.intensity === 'number' ? clamp(rawEl.effect.intensity, 0.0, 1.0) : undefined
+        const size = typeof rawEl.effect.size === 'number' ? clamp(rawEl.effect.size, 1, 10) : undefined
+
+        sanitizedTextEffect = {
+          type,
+          ...(effectColor ? { color: effectColor } : {}),
+          ...(typeof intensity === 'number' ? { intensity } : {}),
+          ...(typeof size === 'number' ? { size } : {}),
+        }
+      }
+
       const textEl: VisualTextElement = {
         id,
         type: 'TEXT',
@@ -154,6 +184,16 @@ export function validateVisualComposition(input: unknown): VisualValidationResul
         scale,
         colorMode,
         boxStyle,
+        ...(fontFamily ? { fontFamily } : {}),
+        ...(typeof fontSize === 'number' ? { fontSize } : {}),
+        ...(fontWeight ? { fontWeight } : {}),
+        ...(fontStyle ? { fontStyle } : {}),
+        ...(color ? { color } : {}),
+        ...(align ? { align } : {}),
+        ...(letterSpacing ? { letterSpacing } : {}),
+        ...(typeof uppercase === 'boolean' ? { uppercase } : {}),
+        ...(typeof autoContrast === 'boolean' ? { autoContrast } : {}),
+        ...(sanitizedTextEffect ? { effect: sanitizedTextEffect } : {}),
       }
       sanitizedElements.push(textEl)
     } else if (rawEl.type === 'EMOJI') {
