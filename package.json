@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx src/services/__tests__/media-upload-resilience.test.ts && npx tsx src/services/__tests__/visual-text-enrichment.test.ts && npx tsx src/services/__tests__/visual-backgrounds-enrichment.test.ts"
+    "test": "npx tsx src/services/__tests__/network-preview-modal.test.ts && npx tsx src/services/__tests__/media-upload-resilience.test.ts && npx tsx src/services/__tests__/visual-text-enrichment.test.ts && npx tsx src/services/__tests__/visual-backgrounds-enrichment.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.21.0",

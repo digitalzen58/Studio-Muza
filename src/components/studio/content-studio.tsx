@@ -89,6 +89,12 @@ export interface ContentStudioProps {
   } | null
   initialMediaAssets?: BrandMediaAsset[]
   initialContactInfo?: BusinessContactInfo
+  businessName?: string
+  socialAccounts?: Array<{
+    platform: string
+    accountName?: string | null
+    status?: string
+  }>
 }
 
 interface ActiveAssistanceState {
@@ -107,6 +113,8 @@ export function ContentStudio({
   recommendation,
   initialMediaAssets = [],
   initialContactInfo,
+  businessName,
+  socialAccounts = [],
 }: ContentStudioProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -969,6 +977,8 @@ export function ContentStudio({
         slides={slides}
         mediaAssets={mediaAssets}
         isScheduled={currentStatus === 'SCHEDULED'}
+        businessName={businessName}
+        socialAccounts={socialAccounts}
       />
 
       {/* 11. Publish Content Modal */}

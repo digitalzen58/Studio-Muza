@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getBusinessMediaAssets } from '@/services/media'
 import { getBusinessContactInfo } from '@/services/business-contact'
+import { getBusinessSocialAccounts } from '@/services/social/social-accounts'
 import { ContentStudio } from '@/components/studio/content-studio'
 
 interface ContentStudioPageProps {
@@ -165,8 +166,12 @@ export default async function ContentStudioPage({ params }: ContentStudioPagePro
     }
   }
 
-  // 7. Fetch business contact & conversion details
-  const contactInfo = await getBusinessContactInfo(content.business_id)
+  // 7. Fetch business details, contact info & connected social accounts
+  const [contactInfo, { data: bizData }, { accounts: socialAccounts }] = await Promise.all([
+    getBusinessContactInfo(content.business_id),
+    supabase.from('businesses').select('name').eq('id', content.business_id).maybeSingle(),
+    getBusinessSocialAccounts(content.business_id),
+  ])
 
   return (
     <ContentStudio
@@ -176,6 +181,8 @@ export default async function ContentStudioPage({ params }: ContentStudioPagePro
       recommendation={recommendation}
       initialMediaAssets={mediaAssets}
       initialContactInfo={contactInfo}
+      businessName={bizData?.name || 'Studio Mūza'}
+      socialAccounts={socialAccounts}
     />
   )
 }
