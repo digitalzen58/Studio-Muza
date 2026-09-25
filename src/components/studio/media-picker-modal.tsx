@@ -59,15 +59,23 @@ export function MediaPickerModal({
     formData.append('businessId', businessId)
 
     startUploadTransition(async () => {
-      const result = await uploadBusinessMediaAction(formData)
-      if (result.success) {
-        onMediaUploaded(result.mediaAsset)
-        onSelectMedia(result.mediaAsset)
-        onClose()
-      } else {
-        setUploadError(result.message)
+      try {
+        const result = await uploadBusinessMediaAction(formData)
+        if (result && result.success) {
+          onMediaUploaded(result.mediaAsset)
+          onSelectMedia(result.mediaAsset)
+          onClose()
+        } else {
+          setUploadError(
+            result?.message || "Impossible d'importer cette image. Réessayez."
+          )
+        }
+      } catch (err) {
+        console.error('Error uploading media asset:', err)
+        setUploadError("Impossible d'importer cette image. Réessayez.")
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = ''
       }
-      if (fileInputRef.current) fileInputRef.current.value = ''
     })
   }
 

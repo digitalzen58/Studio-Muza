@@ -75,15 +75,17 @@ export async function uploadBusinessMediaAction(
 
     // 3. Extract and validate file
     const file = formData.get('file') as File | null
-    if (!file || !(file instanceof File)) {
+    if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
       return {
         success: false,
         message: 'Aucun fichier sélectionné.',
       }
     }
 
+    const mimeType = (file.type || '').toLowerCase()
+
     // MIME type check
-    if (!ALLOWED_MIME_TYPES.includes(file.type.toLowerCase())) {
+    if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
       return {
         success: false,
         message: 'Format non supporté. Veuillez utiliser un fichier JPEG, PNG ou WebP.',
@@ -100,9 +102,9 @@ export async function uploadBusinessMediaAction(
 
     // 4. Derive safe filename and storage key
     const extension =
-      file.type === 'image/png'
+      mimeType === 'image/png'
         ? 'png'
-        : file.type === 'image/webp'
+        : mimeType === 'image/webp'
         ? 'webp'
         : 'jpg'
 
@@ -116,7 +118,7 @@ export async function uploadBusinessMediaAction(
     const { error: storageError } = await supabase.storage
       .from('media_assets')
       .upload(storageKey, buffer, {
-        contentType: file.type,
+        contentType: mimeType || 'image/jpeg',
         upsert: false,
       })
 
@@ -124,7 +126,7 @@ export async function uploadBusinessMediaAction(
       console.error('Error uploading file to storage:', storageError.message)
       return {
         success: false,
-        message: 'Échec du téléversement de l’image vers le stockage.',
+        message: "Impossible d'importer cette image. Réessayez.",
       }
     }
 
@@ -135,8 +137,8 @@ export async function uploadBusinessMediaAction(
         id: assetId,
         business_id: businessId,
         storage_key: storageKey,
-        original_filename: file.name,
-        mime_type: file.type,
+        original_filename: file.name || 'photo.jpg',
+        mime_type: mimeType || 'image/jpeg',
         media_type: 'IMAGE',
         file_size: file.size,
         source: 'USER_UPLOAD',
@@ -151,7 +153,7 @@ export async function uploadBusinessMediaAction(
       await supabase.storage.from('media_assets').remove([storageKey])
       return {
         success: false,
-        message: 'Échec de l’enregistrement des métadonnées de l’image.',
+        message: "Impossible d'importer cette image. Réessayez.",
       }
     }
 
@@ -170,9 +172,11 @@ export async function uploadBusinessMediaAction(
       url: signedUrl,
       mediaType: mediaRow.media_type,
       alt: mediaRow.original_filename || 'Photo personnelle',
+      original_filename: mediaRow.original_filename,
       width: mediaRow.width,
       height: mediaRow.height,
       orientation: mediaRow.orientation,
+      source: 'USER_UPLOAD',
     }
 
     return {
@@ -183,7 +187,7 @@ export async function uploadBusinessMediaAction(
     console.error('Unexpected error in uploadBusinessMediaAction:', err)
     return {
       success: false,
-      message: 'Une erreur imprévue est survenue lors de l’envoi de la photo.',
+      message: "Impossible d'importer cette image. Réessayez.",
     }
   }
 }

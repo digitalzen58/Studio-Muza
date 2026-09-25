@@ -302,17 +302,19 @@ export function ContentStudio({
   const activeSlide = slides.find((s) => s.index === activeSlideIndex) || slides[0]
 
   const handleAssignSlideMedia = (asset: BrandMediaAsset) => {
+    if (!asset || !asset.id) return
     if (format === 'POST') {
       setPrimaryMediaId(asset.id)
       setVisualComposition((prev) => ({
         ...prev,
         background: {
+          ...prev.background,
           type: 'IMAGE',
           mediaAssetId: asset.id,
-          mediaUrl: asset.url,
-          positionX: 0,
-          positionY: 0,
-          scale: 1.0,
+          mediaUrl: asset.url || prev.background?.mediaUrl || null,
+          positionX: prev.background?.type === 'IMAGE' ? prev.background.positionX ?? 0 : 0,
+          positionY: prev.background?.type === 'IMAGE' ? prev.background.positionY ?? 0 : 0,
+          scale: prev.background?.type === 'IMAGE' ? prev.background.scale ?? 1.0 : 1.0,
         },
       }))
     } else {
@@ -324,10 +326,12 @@ export function ContentStudio({
   }
 
   const handleMediaUploaded = (newAsset: BrandMediaAsset) => {
-    setMediaAssets((prev) => [newAsset, ...prev])
+    if (!newAsset || !newAsset.id) return
+    setMediaAssets((prev) => [newAsset, ...prev.filter((a) => a.id !== newAsset.id)])
   }
 
   const handleStockMediaImported = (importedAsset: BrandMediaAsset) => {
+    if (!importedAsset || !importedAsset.id) return
     setMediaAssets((prev) => [
       importedAsset,
       ...prev.filter((a) => a.id !== importedAsset.id),
