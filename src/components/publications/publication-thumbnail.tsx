@@ -4,6 +4,9 @@ import React from 'react'
 import type { PublicationItem } from '@/services/publication-history/types'
 import { ImageIcon, Layers } from 'lucide-react'
 
+import { getVisualBackgroundStyle } from '@/services/visual-composition/types'
+import { VisualBackgroundEffectLayer } from '@/components/studio/visual-canvas'
+
 interface PublicationThumbnailProps {
   item: PublicationItem
   className?: string
@@ -16,13 +19,13 @@ export function PublicationThumbnail({ item, className = '' }: PublicationThumbn
   // 1. Post with Visual Composition
   if (isPost && composition) {
     const bg = composition.background
-    const bgColor = bg?.color || '#FFFFFF'
+    const bgStyle = getVisualBackgroundStyle(bg)
     const bgImage = bg?.mediaUrl || item.coverMediaUrl
 
     return (
       <div
         className={`relative aspect-[4/5] rounded-xl overflow-hidden shadow-2xs border border-ivory-border/80 select-none ${className}`}
-        style={{ backgroundColor: bgColor }}
+        style={bgStyle}
       >
         {bg?.type === 'IMAGE' && bgImage && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -35,6 +38,9 @@ export function PublicationThumbnail({ item, className = '' }: PublicationThumbn
             }}
           />
         )}
+
+        {/* Background Effect Layer */}
+        <VisualBackgroundEffectLayer effect={bg?.effect} />
 
         {/* Scaled Visual Elements */}
         {composition.elements?.map((el) => {

@@ -4,6 +4,8 @@ import type {
   VisualTextElement,
   VisualEmojiElement,
   VisualBackground,
+  BackgroundEffectType,
+  BackgroundGradientDirection,
 } from './types'
 
 export interface VisualValidationResult {
@@ -53,6 +55,19 @@ export function validateVisualComposition(input: unknown): VisualValidationResul
   const rawBg = comp.background as Partial<VisualBackground>
   let sanitizedBg: VisualBackground
 
+  // Optional Effect Sanitization
+  const validEffectTypes: BackgroundEffectType[] = ['none', 'grain', 'paper', 'soft', 'light', 'vignette', 'glass']
+  let sanitizedEffect = undefined
+  if (rawBg.effect && typeof rawBg.effect === 'object') {
+    const rawEffectType = (rawBg.effect.type || 'none') as BackgroundEffectType
+    const effectType = validEffectTypes.includes(rawEffectType) ? rawEffectType : 'none'
+    const intensity = clamp(typeof rawBg.effect.intensity === 'number' ? rawBg.effect.intensity : 0.35, 0.0, 1.0)
+    sanitizedEffect = {
+      type: effectType,
+      intensity,
+    }
+  }
+
   if (rawBg.type === 'IMAGE') {
     if (!rawBg.mediaAssetId || typeof rawBg.mediaAssetId !== 'string') {
       return { valid: false, error: 'Identifiant de photo manquant pour le fond image.' }
@@ -64,6 +79,28 @@ export function validateVisualComposition(input: unknown): VisualValidationResul
       positionX: clamp(rawBg.positionX ?? 0, -1.5, 1.5),
       positionY: clamp(rawBg.positionY ?? 0, -1.5, 1.5),
       scale: clamp(rawBg.scale ?? 1.0, 0.8, 4.0),
+      ...(sanitizedEffect ? { effect: sanitizedEffect } : {}),
+    }
+  } else if (rawBg.type === 'GRADIENT') {
+    const validDirections: BackgroundGradientDirection[] = ['to bottom', 'to right', 'to bottom right', 'radial']
+    const rawGrad = rawBg.gradient || { from: '#FBF9F5', to: '#EDE4D8', direction: 'to bottom' }
+    const from = rawGrad.from && VALID_COLOR_HEX.test(rawGrad.from) ? rawGrad.from : '#FBF9F5'
+    const to = rawGrad.to && VALID_COLOR_HEX.test(rawGrad.to) ? rawGrad.to : '#EDE4D8'
+    const rawDir = rawGrad.direction as BackgroundGradientDirection
+    const direction = validDirections.includes(rawDir) ? rawDir : 'to bottom'
+
+    sanitizedBg = {
+      type: 'GRADIENT',
+      color: from,
+      gradient: {
+        from,
+        to,
+        direction,
+      },
+      positionX: 0,
+      positionY: 0,
+      scale: 1.0,
+      ...(sanitizedEffect ? { effect: sanitizedEffect } : {}),
     }
   } else if (rawBg.type === 'COLOR') {
     const color = rawBg.color && VALID_COLOR_HEX.test(rawBg.color) ? rawBg.color : '#FDFBF7'
@@ -73,6 +110,7 @@ export function validateVisualComposition(input: unknown): VisualValidationResul
       positionX: 0,
       positionY: 0,
       scale: 1.0,
+      ...(sanitizedEffect ? { effect: sanitizedEffect } : {}),
     }
   } else {
     return { valid: false, error: 'Type d’arrière-plan non supporté.' }

@@ -60,8 +60,10 @@ export function validatePostReadiness(
         input.visualComposition?.background?.mediaAssetId)
   )
   const hasColorBackground = Boolean(
-    input.visualComposition?.background?.type === 'COLOR' &&
-      input.visualComposition?.background?.color
+    (input.visualComposition?.background?.type === 'COLOR' &&
+      input.visualComposition?.background?.color) ||
+    (input.visualComposition?.background?.type === 'GRADIENT' &&
+      input.visualComposition?.background?.gradient?.from)
   )
 
   if (!hasPhoto && !hasColorBackground) {
