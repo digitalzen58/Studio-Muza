@@ -417,42 +417,51 @@ export async function saveContentDraftAction(
       sanitizedAction = { type: 'NONE', destination: null, is_override: false }
     }
 
-    // 3. Update platform variants (RLS enforced)
-    const variantMetadata: Record<string, unknown> = {
-      ...(payload.slides && Array.isArray(payload.slides) && payload.slides.length > 0
-        ? { slides: payload.slides }
-        : sanitizedVisualComposition
-        ? {
-            visual_composition: sanitizedVisualComposition,
-            primary_media_id:
-              sanitizedVisualComposition.background.type === 'IMAGE'
-                ? sanitizedVisualComposition.background.mediaAssetId
-                : null,
-          }
-        : payload.primaryMediaId !== undefined
-        ? { primary_media_id: payload.primaryMediaId }
-        : {}),
-      ...(sanitizedAction ? { action: sanitizedAction } : {}),
-    }
-
-    const variantUpdates: Record<string, unknown> = {
-      title: payload.workingTitle?.trim() || null,
-      caption: payload.caption?.trim() || null,
-      cta: payload.cta?.trim() || null,
-      metadata: variantMetadata,
-      updated_at: now,
-    }
-
-    const { error: variantUpdateError } = await supabase
+    // 3. Update platform variants (RLS enforced) preserving network adaptation metadata
+    const { data: existingVariantsForSave } = await supabase
       .from('content_variants')
-      .update(variantUpdates)
+      .select('id, metadata')
       .eq('content_id', payload.contentId)
 
-    if (variantUpdateError) {
-      console.error('Error updating content variant draft:', variantUpdateError)
-      return {
-        success: false,
-        message: 'Erreur lors de l’enregistrement des variantes du contenu.',
+    if (existingVariantsForSave && existingVariantsForSave.length > 0) {
+      for (const vRow of existingVariantsForSave) {
+        const existingMeta = (vRow.metadata as Record<string, unknown>) || {}
+        const mergedMetadata = {
+          ...existingMeta,
+          ...(payload.slides && Array.isArray(payload.slides) && payload.slides.length > 0
+            ? { slides: payload.slides }
+            : sanitizedVisualComposition
+            ? {
+                visual_composition: sanitizedVisualComposition,
+                primary_media_id:
+                  sanitizedVisualComposition.background.type === 'IMAGE'
+                    ? sanitizedVisualComposition.background.mediaAssetId
+                    : null,
+              }
+            : payload.primaryMediaId !== undefined
+            ? { primary_media_id: payload.primaryMediaId }
+            : {}),
+          ...(sanitizedAction ? { action: sanitizedAction } : {}),
+        }
+
+        const { error: variantUpdateError } = await supabase
+          .from('content_variants')
+          .update({
+            title: payload.workingTitle?.trim() || null,
+            caption: payload.caption?.trim() || null,
+            cta: payload.cta?.trim() || null,
+            metadata: mergedMetadata,
+            updated_at: now,
+          })
+          .eq('id', vRow.id)
+
+        if (variantUpdateError) {
+          console.error('Error updating content variant draft:', variantUpdateError)
+          return {
+            success: false,
+            message: 'Erreur lors de l’enregistrement des variantes du contenu.',
+          }
+        }
       }
     }
 
@@ -519,3 +528,186 @@ export async function saveContentDraftAction(
     }
   }
 }
+
+export interface SaveNetworkVariantPayload {
+  contentId: string
+  platform: 'INSTAGRAM' | 'FACEBOOK'
+  caption?: string | null
+  hashtags?: string[] | null
+  location?: string | null
+}
+
+/**
+ * Persists network-specific variant adaptations (Instagram / Facebook caption, hashtags, location) to DB.
+ */
+export async function saveNetworkVariantAdaptationAction(
+  payload: SaveNetworkVariantPayload
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    if (!payload?.contentId || !payload?.platform) {
+      return { success: false, message: 'Identifiant ou réseau manquant.' }
+    }
+
+    const supabase = await createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return { success: false, message: 'Vous devez être connecté.' }
+    }
+
+    const now = new Date().toISOString()
+    const canonicalPlatform = payload.platform.toUpperCase()
+
+    // 1. Find existing variant for this platform
+    const { data: existingVariant } = await supabase
+      .from('content_variants')
+      .select('id, metadata')
+      .eq('content_id', payload.contentId)
+      .eq('platform', canonicalPlatform)
+      .maybeSingle()
+
+    const rawMetadata = (existingVariant?.metadata as Record<string, unknown>) || {}
+    const updatedMetadata = {
+      ...rawMetadata,
+      ...(payload.location !== undefined ? { location: payload.location?.trim() || null } : {}),
+      ...(payload.hashtags !== undefined ? { hashtags: payload.hashtags } : {}),
+    }
+
+    const variantUpdates: Record<string, unknown> = {
+      ...(payload.caption !== undefined ? { caption: payload.caption?.trim() || null } : {}),
+      ...(payload.hashtags !== undefined ? { hashtags: payload.hashtags } : {}),
+      metadata: updatedMetadata,
+      updated_at: now,
+    }
+
+    if (existingVariant) {
+      const { error: updateErr } = await supabase
+        .from('content_variants')
+        .update(variantUpdates)
+        .eq('id', existingVariant.id)
+
+      if (updateErr) {
+        console.error('Error updating network variant adaptation:', updateErr)
+        return { success: false, message: updateErr.message }
+      }
+    } else {
+      const { error: insertErr } = await supabase.from('content_variants').insert({
+        content_id: payload.contentId,
+        platform: canonicalPlatform,
+        format: 'POST',
+        title: 'Adaptation',
+        caption: payload.caption?.trim() || null,
+        hashtags: payload.hashtags || [],
+        metadata: updatedMetadata,
+        status: 'DRAFT',
+        updated_at: now,
+      })
+
+      if (insertErr) {
+        console.error('Error inserting network variant adaptation:', insertErr)
+        return { success: false, message: insertErr.message }
+      }
+    }
+
+    return { success: true }
+  } catch (err) {
+    console.error('Unexpected error in saveNetworkVariantAdaptationAction:', err)
+    return { success: false, message: 'Erreur lors de la sauvegarde.' }
+  }
+}
+
+export interface SaveRenderedVisualPayload {
+  contentId: string
+  base64Image: string
+}
+
+/**
+ * Server Action to upload and persist a rendered VisualCanvas composite image (JPEG buffer) to private Supabase storage
+ * and associate its storage key in content_variants.metadata.rendered_storage_key.
+ */
+export async function saveRenderedVisualCompositionAction(
+  payload: SaveRenderedVisualPayload
+): Promise<{ success: boolean; storageKey?: string; message?: string }> {
+  try {
+    if (!payload?.contentId || !payload?.base64Image) {
+      return { success: false, message: 'Données de rendu visuel manquantes.' }
+    }
+
+    const supabase = await createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return { success: false, message: 'Vous devez être connecté.' }
+    }
+
+    // 1. Verify content ownership & resolve business ID
+    const { data: content, error: contentError } = await supabase
+      .from('contents')
+      .select('id, business_id')
+      .eq('id', payload.contentId)
+      .single()
+
+    if (contentError || !content) {
+      return { success: false, message: 'Contenu introuvable.' }
+    }
+
+    // 2. Decode base64 data URL into binary Buffer
+    const cleanBase64 = payload.base64Image.replace(/^data:image\/\w+;base64,/, '')
+    const buffer = Buffer.from(cleanBase64, 'base64')
+
+    if (buffer.length === 0) {
+      return { success: false, message: 'Fichier rendu invalide.' }
+    }
+
+    const now = Date.now()
+    const storageKey = `businesses/${content.business_id}/rendered/${payload.contentId}_${now}.jpg`
+
+    // 3. Upload JPEG buffer to private Supabase storage bucket media_assets
+    const { error: storageError } = await supabase.storage
+      .from('media_assets')
+      .upload(storageKey, buffer, {
+        contentType: 'image/jpeg',
+        upsert: true,
+      })
+
+    if (storageError) {
+      console.error('Error uploading rendered visual canvas image:', storageError.message)
+      return { success: false, message: 'Impossible d’enregistrer le visuel rendu.' }
+    }
+
+    // 4. Update all variants for this content with rendered_storage_key in metadata
+    const { data: variants } = await supabase
+      .from('content_variants')
+      .select('id, metadata')
+      .eq('content_id', payload.contentId)
+
+    if (variants && variants.length > 0) {
+      for (const v of variants) {
+        const existingMeta = (v.metadata as Record<string, unknown>) || {}
+        await supabase
+          .from('content_variants')
+          .update({
+            metadata: {
+              ...existingMeta,
+              rendered_storage_key: storageKey,
+              rendered_at: new Date().toISOString(),
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', v.id)
+      }
+    }
+
+    return { success: true, storageKey }
+  } catch (err) {
+    console.error('Unexpected error in saveRenderedVisualCompositionAction:', err)
+    return { success: false, message: 'Erreur lors de la sauvegarde du visuel.' }
+  }
+}
+

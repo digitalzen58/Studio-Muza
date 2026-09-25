@@ -178,7 +178,7 @@ export default async function ContentStudioPage({ params }: ContentStudioPagePro
 
   return (
     <ContentStudio
-      key={`${content.id}-${content.updated_at || ''}`}
+      key={content.id}
       content={content}
       variant={variant}
       recommendation={recommendation}

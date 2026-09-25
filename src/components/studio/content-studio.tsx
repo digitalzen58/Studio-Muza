@@ -17,9 +17,12 @@ import { Button } from '@/components/ui/button'
 import {
   saveContentDraftAction,
   deleteContentDraftAction,
+  saveRenderedVisualCompositionAction,
   type CarouselSlideData,
   type SaveContentDraftPayload,
 } from '@/actions/content'
+import { renderVisualCompositionToDataUrl } from '@/services/visual-composition/export-canvas'
+import { hasVisualCompositionModifications } from '@/services/visual-composition/validation'
 import { MediaPickerModal } from './media-picker-modal'
 import { StockMediaModal } from './stock-media-modal'
 import { ContentReadinessModal } from './content-readiness-modal'
@@ -386,6 +389,21 @@ export function ContentStudio({
       setSaveStatus('error')
       setErrorMessage(res.message)
       throw new Error(res.message)
+    }
+
+    // Auto-render composite visual canvas to JPEG & upload to storage if visual composition has modifications
+    if (format === 'POST' && hasVisualCompositionModifications(visualComposition)) {
+      try {
+        const dataUrl = await renderVisualCompositionToDataUrl(visualComposition, mediaAssets)
+        if (dataUrl) {
+          await saveRenderedVisualCompositionAction({
+            contentId: content.id,
+            base64Image: dataUrl,
+          })
+        }
+      } catch (renderErr) {
+        console.error('Non-blocking visual canvas export warning:', renderErr)
+      }
     }
 
     setIsDirty(false)
@@ -966,6 +984,8 @@ export function ContentStudio({
         onClose={() => setPreviewModalOpen(false)}
         onProceedToSchedule={handlePlanifierClick}
         onProceedToPublish={handlePublishClick}
+        contentId={content.id}
+        onCaptionChange={(newCaption) => setCaption(newCaption)}
         format={format}
         workingTitle={workingTitle}
         hook={hook}

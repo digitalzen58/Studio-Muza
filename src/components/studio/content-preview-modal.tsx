@@ -18,6 +18,7 @@ import {
   Check,
 } from 'lucide-react'
 import { VisualCanvas } from './visual-canvas'
+import { saveNetworkVariantAdaptationAction } from '@/actions/content'
 import type { VisualComposition } from '@/services/visual-composition/types'
 import type { BrandMediaAsset } from '@/services/media'
 import type { CarouselSlideData } from '@/actions/content'
@@ -59,6 +60,7 @@ interface ContentPreviewModalProps {
   onClose: () => void
   onProceedToSchedule: () => void
   onProceedToPublish?: () => void
+  contentId?: string
   format: 'POST' | 'CAROUSEL'
   workingTitle: string
   hook?: string | null
@@ -75,6 +77,7 @@ interface ContentPreviewModalProps {
   isScheduled?: boolean
   businessName?: string
   socialAccounts?: SocialAccountPreviewInfo[]
+  onCaptionChange?: (newCaption: string) => void
 }
 
 export function ContentPreviewModal({
@@ -82,6 +85,7 @@ export function ContentPreviewModal({
   onClose,
   onProceedToSchedule,
   onProceedToPublish,
+  contentId,
   format,
   workingTitle,
   hook,
@@ -95,6 +99,7 @@ export function ContentPreviewModal({
   isScheduled = false,
   businessName = 'Studio Mūza',
   socialAccounts = [],
+  onCaptionChange,
 }: ContentPreviewModalProps) {
   // Determine connection status per network
   const igAccount = socialAccounts.find(
@@ -126,6 +131,10 @@ export function ContentPreviewModal({
   const [carouselPageIndex, setCarouselPageIndex] = useState(1)
 
   // Network-specific optimization state (Instagram & Facebook discovery / SEO)
+  const [prevCaption, setPrevCaption] = useState<string | null | undefined>(caption)
+  const [igCaption, setIgCaption] = useState<string>(caption || '')
+  const [fbCaption, setFbCaption] = useState<string>(caption || '')
+
   const [igHashtags, setIgHashtags] = useState<string[]>([])
   const [igKeywords, setIgKeywords] = useState<string[]>([])
   const [igLocation, setIgLocation] = useState<string>('')
@@ -138,6 +147,34 @@ export function ContentPreviewModal({
   const [newTagInput, setNewTagInput] = useState('')
   const [newKeywordInput, setNewKeywordInput] = useState('')
   const [aiFeedback, setAiFeedback] = useState<string | null>(null)
+  const [, startTransition] = React.useTransition()
+
+  if (caption !== prevCaption) {
+    setPrevCaption(caption)
+    setIgCaption(caption || '')
+    setFbCaption(caption || '')
+  }
+
+  const handlePersistVariantAdaptation = (
+    platform: 'INSTAGRAM' | 'FACEBOOK',
+    newCaption: string,
+    newHashtags: string[],
+    newLocation: string
+  ) => {
+    if (onCaptionChange) {
+      onCaptionChange(newCaption)
+    }
+    if (!contentId) return
+    startTransition(async () => {
+      await saveNetworkVariantAdaptationAction({
+        contentId,
+        platform,
+        caption: newCaption,
+        hashtags: newHashtags,
+        location: newLocation,
+      })
+    })
+  }
 
   if (!isOpen) return null
 
@@ -441,7 +478,9 @@ export function ContentPreviewModal({
                     {hook?.trim() && (
                       <span className="font-semibold text-slate-900 block mt-1">{hook.trim()}</span>
                     )}
-                    {caption?.trim() ? (
+                    {igCaption?.trim() ? (
+                      <span className="whitespace-pre-wrap">{igCaption.trim()}</span>
+                    ) : caption?.trim() ? (
                       <span className="whitespace-pre-wrap">{caption.trim()}</span>
                     ) : (
                       <span className="text-slate-400 italic">Aucune légende rédigée.</span>
@@ -483,6 +522,24 @@ export function ContentPreviewModal({
                   <p className="text-[11px] text-ink-muted mt-0.5">
                     Ces mots et repères aident les bonnes personnes à trouver et comprendre votre publication.
                   </p>
+                </div>
+
+                {/* Légende Instagram */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                    Légende Instagram
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={igCaption}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setIgCaption(val)
+                      handlePersistVariantAdaptation('INSTAGRAM', val, igHashtags, igLocation)
+                    }}
+                    placeholder="Saisissez la légende spécifique pour Instagram..."
+                    className="w-full px-3 py-2 bg-white border border-cream-border rounded-xl text-xs text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-1 focus:ring-primary resize-y font-medium"
+                  />
                 </div>
 
                 {/* Hashtags Instagram */}
@@ -639,7 +696,9 @@ export function ContentPreviewModal({
                   {hook?.trim() && (
                     <p className="font-semibold text-slate-900">{hook.trim()}</p>
                   )}
-                  {caption?.trim() ? (
+                  {fbCaption?.trim() ? (
+                    <p className="whitespace-pre-wrap">{fbCaption.trim()}</p>
+                  ) : caption?.trim() ? (
                     <p className="whitespace-pre-wrap">{caption.trim()}</p>
                   ) : (
                     <p className="text-slate-400 italic">Aucun texte rédigé pour le moment.</p>
@@ -784,6 +843,24 @@ export function ContentPreviewModal({
                   <p className="text-[11px] text-ink-muted mt-0.5">
                     Ces mots-clés aident Facebook à diffuser votre publication auprès de l’audience la plus pertinente.
                   </p>
+                </div>
+
+                {/* Texte Facebook */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                    Texte Facebook
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={fbCaption}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setFbCaption(val)
+                      handlePersistVariantAdaptation('FACEBOOK', val, fbHashtags, fbLocation)
+                    }}
+                    placeholder="Saisissez le texte spécifique pour Facebook..."
+                    className="w-full px-3 py-2 bg-white border border-cream-border rounded-xl text-xs text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-1 focus:ring-primary resize-y font-medium"
+                  />
                 </div>
 
                 {/* Mots-clés Facebook */}

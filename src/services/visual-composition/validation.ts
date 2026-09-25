@@ -223,3 +223,42 @@ export function validateVisualComposition(input: unknown): VisualValidationResul
     },
   }
 }
+
+/**
+ * Checks whether a VisualComposition has visual modifications relative to a raw photo
+ * (e.g. text elements, emojis, non-default background color/gradient, overlay effects, crop/zoom/positioning).
+ */
+export function hasVisualCompositionModifications(
+  composition?: VisualComposition | null
+): boolean {
+  if (!composition) return false
+
+  // 1. Text or Emoji elements present
+  if (Array.isArray(composition.elements) && composition.elements.length > 0) {
+    return true
+  }
+
+  // 2. Non-default background (COLOR or GRADIENT)
+  const bg = composition.background
+  if (bg && (bg.type === 'COLOR' || bg.type === 'GRADIENT')) {
+    return true
+  }
+
+  // 3. Background effect applied
+  if (bg && bg.effect && bg.effect.type !== 'none') {
+    return true
+  }
+
+  // 4. Background image scaling or position offsets
+  if (bg && bg.type === 'IMAGE') {
+    if (
+      (typeof bg.scale === 'number' && bg.scale !== 1.0) ||
+      (typeof bg.positionX === 'number' && bg.positionX !== 0) ||
+      (typeof bg.positionY === 'number' && bg.positionY !== 0)
+    ) {
+      return true
+    }
+  }
+
+  return false
+}

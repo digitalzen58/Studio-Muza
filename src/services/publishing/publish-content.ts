@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { metaSocialAdapter } from '@/services/social/adapters/meta-adapter'
 import { decryptCredential } from '@/services/social/crypto'
+import { hasVisualCompositionModifications } from '@/services/visual-composition/validation'
+import type { VisualComposition } from '@/services/visual-composition/types'
 import type {
   PublishingDestinationPlatform,
   PublishingReadinessInfo,
@@ -204,13 +206,17 @@ export async function publishContentImmediately(params: {
     }
   }
 
-  // 4. Resolve primary media asset & generate temporary signed URL for Meta ingestion
+  // 4. Resolve primary media asset / rendered visual composite image & generate temporary signed URL for Meta ingestion
   const { data: existingVariants } = await supabase
     .from('content_variants')
     .select('id, platform, format, caption, hashtags, metadata')
     .eq('content_id', contentId)
 
   const primaryVariant = existingVariants?.[0] || null
+  const variantMeta = (primaryVariant?.metadata as Record<string, unknown>) || {}
+  const visualComposition = variantMeta.visual_composition as VisualComposition | undefined
+
+  const hasModifications = hasVisualCompositionModifications(visualComposition)
 
   const { data: mediaRows } = await supabase
     .from('content_media')
@@ -225,7 +231,56 @@ export async function publishContentImmediately(params: {
     null
 
   let metaImageUrl: string | null = null
-  if (primaryMediaId) {
+
+  // Prioritize rendered visual canvas export key or URL
+  const renderedStorageKey =
+    (variantMeta.rendered_storage_key as string) ||
+    (variantMeta.export_storage_key as string) ||
+    null
+
+  const renderedExportUrl =
+    (variantMeta.rendered_image_url as string) ||
+    (variantMeta.export_image_url as string) ||
+    null
+
+  if (renderedStorageKey) {
+    // Generate temporary signed URL with 3600s validity for Meta from rendered storage object
+    const { data: signedData, error: signedErr } = await supabase.storage
+      .from('media_assets')
+      .createSignedUrl(renderedStorageKey, 3600)
+
+    if (signedData?.signedUrl) {
+      metaImageUrl = signedData.signedUrl
+    } else if (signedErr) {
+      console.error('Error generating temporary signed URL for rendered storage key:', signedErr.message)
+    }
+  } else if (renderedExportUrl && (renderedExportUrl.startsWith('http://') || renderedExportUrl.startsWith('https://'))) {
+    metaImageUrl = renderedExportUrl
+  }
+
+  // STRICT RULE (NO SILENT FALLBACK): If the composition has visual modifications
+  // (text, emojis, custom background color/gradient, effects), but NO rendered export image exists:
+  // BLOCK PUBLICATION IMMEDIATELY! Do NOT silently send the raw unedited photo!
+  if (!metaImageUrl && hasModifications) {
+    console.error(`[PUBLISH_BLOCKED] Content ${contentId} has visual composition modifications but no rendered export image. Silent fallback blocked.`)
+    return {
+      success: false,
+      overallStatus: 'ALL_FAILED',
+      contentId,
+      destinations: targetPlatforms.map((p) => ({
+        platform: p,
+        socialAccountId: '',
+        accountName: p,
+        status: 'FAILED',
+        publishJobId: '',
+        errorMessage: 'Impossible de préparer le visuel composé pour la publication. Veuillez enregistrer votre visuel.',
+      })),
+      message: 'Impossible de préparer le visuel composé pour la publication. Veuillez enregistrer votre visuel.',
+    }
+  }
+
+  // Fallback to raw source media asset ONLY if there are 0 visual composition modifications
+  if (!metaImageUrl && primaryMediaId) {
     const { data: asset } = await supabase
       .from('media_assets')
       .select('id, storage_key')
@@ -368,6 +423,7 @@ export async function publishContentImmediately(params: {
         finalPublishCaption = formattedHashtags
       }
     }
+
 
     // 6. Anti-double submission guard (Server-side)
     // Check if an active publish_job was created in the last 45 seconds for this variant/account

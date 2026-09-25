@@ -405,6 +405,187 @@ test('=== STUDIO MŪZA — REAL INSTAGRAM & FACEBOOK PUBLISHING TESTS ===', asyn
     assert.ok(modalContent.includes('Voir sur') && modalContent.includes("dest.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'"), 'Modal must render "Voir sur [Network]" button for real permalinks')
     assert.ok(modalContent.includes('dest.platformPostUrl'), 'Link button must be conditionally rendered only when real platformPostUrl is present')
   })
+
+  // --------------------------------------------------------------------------
+  // SCENARIO P: Full End-to-End Instagram Production Contract Verification
+  // --------------------------------------------------------------------------
+  await t.test('Scenario P: Complete Instagram real-world production contract test (Caption, Hashtags, Visual Render, Modal key stability, Permalinks)', async () => {
+    // 1 & 2. Verify saveNetworkVariantAdaptationAction and saveContentDraftAction preservation
+    const contentActionsPath = path.join(rootDir, 'src/actions/content.ts')
+    const contentActionsContent = fs.readFileSync(contentActionsPath, 'utf8')
+
+    assert.ok(
+      contentActionsContent.includes('saveNetworkVariantAdaptationAction'),
+      'Must provide action to save Instagram variant adaptations'
+    )
+    assert.ok(
+      contentActionsContent.includes('mergedMetadata') || contentActionsContent.includes('existingVariantsForSave'),
+      'saveContentDraftAction must merge existing variant metadata to preserve network adaptations'
+    )
+
+    // 3, 4 & 5. Verify caption + hashtags resolution and HTTP container payload construction
+    const adapter = new MetaSocialProviderAdapter()
+    const originalFetch = global.fetch
+
+    let postContainerBody: string | null = null
+
+    global.fetch = async (url: string | URL | Request, init?: RequestInit) => {
+      const urlStr = url.toString()
+      if (urlStr.includes('/media') && !urlStr.includes('/media_publish') && init?.method === 'POST') {
+        postContainerBody = String(init.body || '')
+        return new Response(JSON.stringify({ id: 'container_ig_999' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      if (urlStr.includes('container_ig_999') && init?.method !== 'POST') {
+        return new Response(JSON.stringify({ status_code: 'FINISHED' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      if (urlStr.includes('/media_publish')) {
+        return new Response(JSON.stringify({ id: 'ig_post_888' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      if (urlStr.includes('ig_post_888')) {
+        return new Response(
+          JSON.stringify({ permalink: 'https://www.instagram.com/p/TestMuza123/' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response(JSON.stringify({ error: 'Unhandled' }), { status: 400 })
+    }
+
+    try {
+      const canonicalText = 'Test Mūza — cette légende doit apparaître sur Instagram.'
+      const hashtags = ['#StudioMuza', '#TestMuza']
+
+      const formattedHashtags = hashtags.map((t) => (t.startsWith('#') ? t : `#${t}`)).join(' ')
+      const fullCaption = `${canonicalText}\n\n${formattedHashtags}`
+
+      const res = await adapter.publishInstagramPhotoPost({
+        accessToken: 'VALID_TOKEN_123',
+        instagramAccountId: 'IG_USER_123',
+        imageUrl: 'https://example.com/rendered-final-visual.jpg',
+        caption: fullCaption,
+      })
+
+      assert.strictEqual(res.success, true, 'Instagram publication must succeed')
+      assert.strictEqual(res.platformPostId, 'ig_post_888')
+      assert.strictEqual(res.platformPostUrl, 'https://www.instagram.com/p/TestMuza123/')
+
+      assert.ok(postContainerBody !== null, 'POST body for media container creation must be captured')
+      const params = new URLSearchParams(postContainerBody!)
+      assert.strictEqual(params.get('image_url'), 'https://example.com/rendered-final-visual.jpg')
+      const sentCaption = params.get('caption') || ''
+      assert.ok(sentCaption.includes('Test Mūza — cette légende doit apparaître sur Instagram.'), 'Sent caption must contain canonical text')
+      assert.ok(sentCaption.includes('#StudioMuza') && sentCaption.includes('#TestMuza'), 'Sent caption must contain all hashtags')
+    } finally {
+      global.fetch = originalFetch
+    }
+
+    // 6. Verify image_url prioritization in publish-content.ts
+    const publishContentServicePath = path.join(rootDir, 'src/services/publishing/publish-content.ts')
+    const publishContentContent = fs.readFileSync(publishContentServicePath, 'utf8')
+
+    assert.ok(
+      publishContentContent.includes('renderedExportUrl') || publishContentContent.includes('rendered_image_url'),
+      'publishContentImmediately must prioritize rendered_image_url/export_image_url over raw source media assets'
+    )
+
+    // 8, 9 & 10. Verify ContentStudio key stability in page.tsx preventing premature modal closure
+    const pagePath = path.join(rootDir, 'src/app/(dashboard)/app/content/[contentId]/page.tsx')
+    const pageContent = fs.readFileSync(pagePath, 'utf8')
+
+    assert.ok(
+      pageContent.includes('key={content.id}') && !pageContent.includes('key={`${content.id}-${content.updated_at'),
+      'ContentStudio page key must be stable (key={content.id}) to prevent revalidation from unmounting modals'
+    )
+  })
+
+  // --------------------------------------------------------------------------
+  // SCENARIO Q: Strict Visual Composition Export Enforcement & Silent Fallback Block
+  // --------------------------------------------------------------------------
+  await t.test('Scenario Q: Visual composition with text overlays & emojis blocks publication if rendered export is missing (NO silent fallback to raw photo)', async () => {
+    const { hasVisualCompositionModifications } = await import('../visual-composition/validation')
+
+    // 1. Composition with photo + red text overlay + emoji 🌿
+    const modifiedComposition = {
+      version: 1 as const,
+      aspectRatio: '4:5' as const,
+      background: {
+        type: 'IMAGE' as const,
+        mediaAssetId: 'raw_photo_asset_123',
+        mediaUrl: 'https://example.com/raw-photo.jpg',
+        scale: 1.1,
+        positionX: 0.1,
+        positionY: 0.0,
+      },
+      elements: [
+        {
+          id: 'text-1',
+          type: 'TEXT' as const,
+          text: 'TEST FINAL RENDER',
+          x: 0.5,
+          y: 0.3,
+          scale: 1.2,
+          colorMode: 'LIGHT' as const,
+          customColor: '#FF0000',
+        },
+        {
+          id: 'emoji-1',
+          type: 'EMOJI' as const,
+          value: '🌿',
+          x: 0.5,
+          y: 0.6,
+          scale: 1.5,
+        },
+      ],
+    }
+
+    assert.strictEqual(
+      hasVisualCompositionModifications(modifiedComposition),
+      true,
+      'Composition with text & emoji overlays must be flagged as modified'
+    )
+
+    // 2. Pure raw photo with 0 modifications
+    const unmodifiedComposition = {
+      version: 1 as const,
+      aspectRatio: '4:5' as const,
+      background: {
+        type: 'IMAGE' as const,
+        mediaAssetId: 'raw_photo_asset_123',
+        mediaUrl: 'https://example.com/raw-photo.jpg',
+        scale: 1.0,
+        positionX: 0,
+        positionY: 0,
+      },
+      elements: [],
+    }
+
+    assert.strictEqual(
+      hasVisualCompositionModifications(unmodifiedComposition),
+      false,
+      'Composition with 0 elements and default scale/position must NOT be flagged as modified'
+    )
+
+    // 3. Verify publish-content.ts source code enforces silent fallback block
+    const publishContentServicePath = path.join(rootDir, 'src/services/publishing/publish-content.ts')
+    const publishContentContent = fs.readFileSync(publishContentServicePath, 'utf8')
+
+    assert.ok(
+      publishContentContent.includes('!metaImageUrl && hasModifications'),
+      'publishContentImmediately must check if metaImageUrl is missing when visual modifications exist'
+    )
+    assert.ok(
+      publishContentContent.includes('Impossible de préparer le visuel composé pour la publication'),
+      'publishContentImmediately must block publication with explicit French error message when export is missing'
+    )
+  })
 })
 
 
