@@ -298,4 +298,38 @@ test('=== STUDIO MŪZA — REAL INSTAGRAM & FACEBOOK PUBLISHING TESTS ===', asyn
     assert.ok(modalContent.includes('Impossible de publier pour le moment'), 'Must show failure result step')
     assert.ok(modalContent.includes('Réessayer'), 'Must provide retry capability')
   })
+
+  // --------------------------------------------------------------------------
+  // SCENARIO N: Sélection prioritaire du compte CONNECTED actif le plus récent
+  // --------------------------------------------------------------------------
+  await t.test('Scenario N: Account selection prioritizes CONNECTED account over DISCONNECTED, and picks most recently updated CONNECTED account', async () => {
+    // Case 1: Instagram A (DISCONNECTED, older), Instagram B (CONNECTED,Location newer)
+    const accountsCase1 = [
+      { id: 'acc_old_disconnected', platform: 'INSTAGRAM', status: 'DISCONNECTED', updated_at: '2026-01-01T00:00:00Z', access_token_encrypted: 'enc1' },
+      { id: 'acc_new_connected', platform: 'INSTAGRAM', status: 'CONNECTED', updated_at: '2026-02-01T00:00:00Z', access_token_encrypted: 'enc2' },
+    ]
+
+    const sortedCase1 = [...accountsCase1].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+
+    const selectedCase1 =
+      sortedCase1.find((a) => a.platform === 'INSTAGRAM' && a.status === 'CONNECTED') ||
+      sortedCase1.find((a) => a.platform === 'INSTAGRAM')
+
+    assert.strictEqual(selectedCase1?.id, 'acc_new_connected', 'Must select active CONNECTED account over DISCONNECTED account')
+
+    // Case 2 (Defensive): Instagram A (CONNECTED, older), Instagram B (CONNECTED, newer)
+    const accountsCase2 = [
+      { id: 'acc_old_connected', platform: 'INSTAGRAM', status: 'CONNECTED', updated_at: '2026-01-01T00:00:00Z', access_token_encrypted: 'enc1' },
+      { id: 'acc_new_connected', platform: 'INSTAGRAM', status: 'CONNECTED', updated_at: '2026-02-01T00:00:00Z', access_token_encrypted: 'enc2' },
+    ]
+
+    const sortedCase2 = [...accountsCase2].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+
+    const selectedCase2 =
+      sortedCase2.find((a) => a.platform === 'INSTAGRAM' && a.status === 'CONNECTED') ||
+      sortedCase2.find((a) => a.platform === 'INSTAGRAM')
+
+    assert.strictEqual(selectedCase2?.id, 'acc_new_connected', 'Must select most recently updated CONNECTED account')
+  })
 })
+

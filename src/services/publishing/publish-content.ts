@@ -192,6 +192,7 @@ export async function publishContentImmediately(params: {
     .select('id, business_id, platform, external_account_id, account_name, account_type, access_token_encrypted, status')
     .eq('business_id', content.business_id)
     .in('platform', targetPlatforms)
+    .order('updated_at', { ascending: false })
 
   if (accountsError || !socialAccounts || socialAccounts.length === 0) {
     return {
@@ -255,7 +256,10 @@ export async function publishContentImmediately(params: {
 
   // 5. Execute publishing per requested platform
   for (const platform of targetPlatforms) {
-    const account = socialAccounts.find((a) => a.platform === platform)
+    // Prefer CONNECTED account if multiple account records exist for this platform
+    const account =
+      socialAccounts.find((a) => a.platform === platform && a.status === 'CONNECTED') ||
+      socialAccounts.find((a) => a.platform === platform)
     const accountName = account?.account_name || platform
 
     // Verify account status
