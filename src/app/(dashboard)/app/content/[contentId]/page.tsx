@@ -167,11 +167,14 @@ export default async function ContentStudioPage({ params }: ContentStudioPagePro
   }
 
   // 7. Fetch business details, contact info & connected social accounts
-  const [contactInfo, { data: bizData }, { accounts: socialAccounts }] = await Promise.all([
-    getBusinessContactInfo(content.business_id),
-    supabase.from('businesses').select('name').eq('id', content.business_id).maybeSingle(),
-    getBusinessSocialAccounts(content.business_id),
-  ])
+  const contactInfo = await getBusinessContactInfo(content.business_id)
+  const { data: bizData } = await supabase
+    .from('businesses')
+    .select('name')
+    .eq('id', content.business_id)
+    .maybeSingle()
+  const socialAccountsRes = await getBusinessSocialAccounts(content.business_id)
+  const socialAccounts = socialAccountsRes?.accounts || []
 
   return (
     <ContentStudio

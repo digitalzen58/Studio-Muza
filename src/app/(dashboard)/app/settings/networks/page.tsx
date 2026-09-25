@@ -48,7 +48,8 @@ export default async function SettingsNetworksPage({
   }
 
   // 3. Fetch connected social accounts for this business
-  const { accounts } = await getBusinessSocialAccounts(business.id)
+  const socialAccountsRes = await getBusinessSocialAccounts(business.id)
+  const accounts = socialAccountsRes?.accounts || []
 
   // 4. Retrieve provider configuration status (booleans only, 0 secret values)
   const metaConfig = getProviderConfigStatus('META')

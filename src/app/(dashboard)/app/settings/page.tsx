@@ -56,10 +56,9 @@ export default async function SettingsPage() {
   }
 
   // 4. Fetch Contact info & Connected Social Accounts
-  const [contactInfo, { accounts: socialAccounts }] = await Promise.all([
-    getBusinessContactInfo(business.id),
-    getBusinessSocialAccounts(business.id),
-  ])
+  const contactInfo = await getBusinessContactInfo(business.id)
+  const socialAccountsRes = await getBusinessSocialAccounts(business.id)
+  const socialAccounts = socialAccountsRes?.accounts || []
 
   return (
     <SettingsView
