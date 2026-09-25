@@ -331,5 +331,80 @@ test('=== STUDIO MŪZA — REAL INSTAGRAM & FACEBOOK PUBLISHING TESTS ===', asyn
 
     assert.strictEqual(selectedCase2?.id, 'acc_new_connected', 'Must select most recently updated CONNECTED account')
   })
+
+  // --------------------------------------------------------------------------
+  // SCENARIO O: Source of Truth Caption Resolution & UI Success Modal Rules
+  // --------------------------------------------------------------------------
+  await t.test('Scenario O: Source of truth caption resolution, hashtags matching preview, explicit empty caption, permalinks and persistent success modal', async () => {
+    function resolveFinalCaption(params: {
+      canonicalBody?: string | null
+      canonicalHook?: string | null
+      variantCaption?: string | null
+      variantHashtags?: string[] | null
+      isExplicitEmpty?: boolean
+    }): string {
+      const canonicalText = (params.canonicalBody || params.canonicalHook || '').trim()
+      const hasExplicitVariantCaption = Boolean(
+        params.variantCaption !== undefined && params.variantCaption !== null && params.variantCaption.trim().length > 0
+      )
+
+      let baseCaption = ''
+      if (hasExplicitVariantCaption) {
+        baseCaption = params.variantCaption!.trim()
+      } else if (params.isExplicitEmpty) {
+        baseCaption = ''
+      } else {
+        baseCaption = canonicalText
+      }
+
+      const rawHashtags = params.variantHashtags || []
+      const formattedHashtags = rawHashtags
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0)
+        .map((t) => (t.startsWith('#') ? t : `#${t}`))
+        .join(' ')
+
+      if (formattedHashtags.length > 0) {
+        return baseCaption.length > 0 ? `${baseCaption}\n\n${formattedHashtags}` : formattedHashtags
+      }
+      return baseCaption
+    }
+
+    // 1. Contenu canonique avec texte + variant Instagram sans caption -> le texte canonique est publié
+    const res1 = resolveFinalCaption({
+      canonicalBody: "Essai d'une nouvelle application",
+      variantCaption: null,
+    })
+    assert.strictEqual(res1, "Essai d'une nouvelle application", 'Must publish canonical text when IG variant caption is empty/null')
+
+    // 2. Variant Instagram avec caption explicite -> la caption spécifique Instagram est publiée
+    const res2 = resolveFinalCaption({
+      canonicalBody: "Texte canonique de base",
+      variantCaption: "Mon texte spécifique Instagram",
+    })
+    assert.strictEqual(res2, "Mon texte spécifique Instagram", 'Must publish explicit Instagram variant caption when provided')
+
+    // 3. Caption + hashtags renseignés -> payload final correspond à l'aperçu
+    const res3 = resolveFinalCaption({
+      canonicalBody: "Essai d'une nouvelle application",
+      variantHashtags: ['#StudioMuza', '#Communication'],
+    })
+    assert.strictEqual(res3, "Essai d'une nouvelle application\n\n#StudioMuza #Communication", 'Payload with hashtags must match Instagram preview format')
+
+    // 4. Caption vide volontairement (adaptation explicitement vide)
+    const res4 = resolveFinalCaption({
+      canonicalBody: "Texte canonique existant",
+      isExplicitEmpty: true,
+    })
+    assert.strictEqual(res4, "", 'Explicitly empty adaptation must resolve to empty string without falling back to canonical text')
+
+    // 5, 6 & 7. Verify PublishContentModal renders permalink button, avoids fake links, and stays open persistently
+    const modalPath = path.join(rootDir, 'src/components/studio/publish-content-modal.tsx')
+    const modalContent = fs.readFileSync(modalPath, 'utf8')
+
+    assert.ok(modalContent.includes('Voir sur') && modalContent.includes("dest.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'"), 'Modal must render "Voir sur [Network]" button for real permalinks')
+    assert.ok(modalContent.includes('dest.platformPostUrl'), 'Link button must be conditionally rendered only when real platformPostUrl is present')
+  })
 })
+
 

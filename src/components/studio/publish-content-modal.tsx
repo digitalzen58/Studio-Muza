@@ -502,23 +502,23 @@ export function PublishContentModal({
                         ) : (
                           <FacebookIcon className="w-4 h-4 text-blue-600" />
                         )}
-                        <span className="font-medium text-ink">
+                        <span className="font-semibold text-ink">
                           {dest.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'}
                         </span>
                         <span className="text-ink-muted">({dest.accountName})</span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-emerald-700 font-medium">Publié</span>
+                        <span className="text-emerald-700 font-semibold">Publié</span>
                         {dest.platformPostUrl && (
                           <a
                             href={dest.platformPostUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline ml-1"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-800 hover:bg-emerald-100/60 transition-colors shadow-2xs ml-1"
                           >
-                            <span>Voir</span>
-                            <ExternalLink className="w-3 h-3" />
+                            <span>Voir sur {dest.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'}</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
                       </div>
@@ -531,7 +531,7 @@ export function PublishContentModal({
                     type="button"
                     size="sm"
                     onClick={handleClose}
-                    className="bg-primary hover:bg-primary-hover text-white text-xs font-medium"
+                    className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold px-5"
                   >
                     Fermer
                   </Button>
@@ -571,23 +571,23 @@ export function PublishContentModal({
                         ) : (
                           <FacebookIcon className="w-4 h-4 text-blue-600" />
                         )}
-                        <span className="font-medium text-ink">
+                        <span className="font-semibold text-ink">
                           {dest.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'}
                         </span>
                       </div>
 
                       {dest.status === 'PUBLISHED' ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-emerald-700 font-medium">Publié</span>
+                          <span className="text-emerald-700 font-semibold">Publié</span>
                           {dest.platformPostUrl && (
                             <a
                               href={dest.platformPostUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline ml-1"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-800 hover:bg-emerald-100/60 transition-colors shadow-2xs ml-1"
                             >
-                              <span>Voir</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <span>Voir sur {dest.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'}</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
                         </div>

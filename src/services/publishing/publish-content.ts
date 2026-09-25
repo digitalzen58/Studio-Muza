@@ -207,7 +207,7 @@ export async function publishContentImmediately(params: {
   // 4. Resolve primary media asset & generate temporary signed URL for Meta ingestion
   const { data: existingVariants } = await supabase
     .from('content_variants')
-    .select('id, platform, format, caption, metadata')
+    .select('id, platform, format, caption, hashtags, metadata')
     .eq('content_id', contentId)
 
   const primaryVariant = existingVariants?.[0] || null
@@ -251,7 +251,6 @@ export async function publishContentImmediately(params: {
     }
   }
 
-  const captionText = primaryVariant?.caption || content.body || content.hook || ''
   const destinationResults: DestinationPublishResult[] = []
 
   // 5. Execute publishing per requested platform
@@ -298,6 +297,8 @@ export async function publishContentImmediately(params: {
 
     // Find or create content_variant for this specific platform
     let variant = existingVariants?.find((v) => v.platform === platform)
+    const canonicalText = (content.body || content.hook || '').trim()
+
     if (!variant) {
       const { data: newVariant, error: variantInsertError } = await supabase
         .from('content_variants')
@@ -307,11 +308,11 @@ export async function publishContentImmediately(params: {
           platform,
           format: primaryVariant?.format || 'POST',
           title: content.topic || 'Publication',
-          caption: captionText,
+          caption: canonicalText,
           metadata: primaryVariant?.metadata || {},
           status: 'DRAFT',
         })
-        .select('id, platform, format, caption, metadata')
+        .select('id, platform, format, caption, hashtags, metadata')
         .single()
 
       if (variantInsertError || !newVariant) {
@@ -326,6 +327,46 @@ export async function publishContentImmediately(params: {
         continue
       }
       variant = newVariant
+    }
+
+    // Resolve final platform caption following Source of Truth rule
+    const isExplicitEmpty = Boolean(
+      variant?.metadata && (variant.metadata as Record<string, unknown>).is_explicit_empty_caption === true
+    )
+    const hasExplicitVariantCaption = Boolean(
+      variant?.caption !== undefined && variant?.caption !== null && variant.caption.trim().length > 0
+    )
+
+    let baseCaption = ''
+    if (hasExplicitVariantCaption) {
+      baseCaption = variant!.caption!.trim()
+    } else if (isExplicitEmpty) {
+      baseCaption = ''
+    } else {
+      baseCaption = canonicalText
+    }
+
+    // Resolve hashtags (from variant.hashtags or variant.metadata.hashtags)
+    const rawHashtags =
+      (Array.isArray(variant?.hashtags) ? (variant?.hashtags as string[]) : null) ||
+      (Array.isArray((variant?.metadata as Record<string, unknown>)?.hashtags)
+        ? ((variant?.metadata as Record<string, unknown>).hashtags as string[])
+        : null) ||
+      []
+
+    const formattedHashtags = rawHashtags
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0)
+      .map((t) => (t.startsWith('#') ? t : `#${t}`))
+      .join(' ')
+
+    let finalPublishCaption = baseCaption
+    if (formattedHashtags.length > 0) {
+      if (baseCaption.length > 0) {
+        finalPublishCaption = `${baseCaption}\n\n${formattedHashtags}`
+      } else {
+        finalPublishCaption = formattedHashtags
+      }
     }
 
     // 6. Anti-double submission guard (Server-side)
@@ -400,7 +441,7 @@ export async function publishContentImmediately(params: {
         const fbResult = await metaSocialAdapter.publishFacebookPost({
           accessToken: decryptedToken,
           pageId: account.external_account_id,
-          message: captionText,
+          message: finalPublishCaption,
           imageUrl: metaImageUrl,
         })
 
@@ -500,7 +541,7 @@ export async function publishContentImmediately(params: {
             accessToken: decryptedToken,
             instagramAccountId: account.external_account_id,
             imageUrl: metaImageUrl,
-            caption: captionText,
+            caption: finalPublishCaption,
           })
 
           if (igResult.success) {
